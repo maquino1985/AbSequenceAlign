@@ -27,36 +27,34 @@ def detect_isotype_with_hmmer(sequence: str, hmm_dir: str = "data/isotype_hmms")
         for hmmfile in os.listdir(hmm_dir):
             if hmmfile.endswith(".hmm"):
                 hmm_path = os.path.join(hmm_dir, hmmfile)
-                with tempfile.NamedTemporaryFile("r", delete=False, suffix=".tblout") as tblout_file:
-                    tblout_path = tblout_file.name
                 cmd = [
                     "hmmsearch",
                     "--noali",
-                    "--tblout", tblout_path,
+                    "--tblout=-",
                     hmm_path,
                     fasta_path
                 ]
                 result = subprocess.run(cmd, capture_output=True, text=True)
-                # Read tblout file
-                with open(tblout_path, "r") as tbl:
-                    for line in tbl:
-                        if line.startswith("#") or not line.strip():
-                            continue
-                        fields = line.split()
-                        if len(fields) < 6:
-                            continue
-                        target = hmmfile.replace(".hmm", "")
-                        try:
-                            evalue = float(fields[4])
-                            score = float(fields[5])
-                        except ValueError:
-                            continue
-                        if score > best_score or (score == best_score and evalue < best_evalue):
-                            best_score = score
-                            best_evalue = evalue
-                            best_isotype = target
-                        break  # Only consider the top hit per HMM
-                os.unlink(tblout_path)
+                # HMMER writes --tblout to stdout if '-' is given
+                tblout = result.stdout
+                for line in tblout.splitlines():
+                    if line.startswith("#") or not line.strip():
+                        continue
+                    fields = line.split()
+                    # HMMER tblout: target name, accession, query name, accession, e-value, score, ...
+                    if len(fields) < 6:
+                        continue
+                    target = hmmfile.replace(".hmm", "")
+                    try:
+                        evalue = float(fields[4])
+                        score = float(fields[5])
+                    except ValueError:
+                        continue
+                    if score > best_score or (score == best_score and evalue < best_evalue):
+                        best_score = score
+                        best_evalue = evalue
+                        best_isotype = target
+                    break  # Only consider the top hit per HMM
     finally:
         os.unlink(fasta_path)
     return best_isotype

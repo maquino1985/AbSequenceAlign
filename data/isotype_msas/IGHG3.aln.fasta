@@ -1,9 +1,621 @@
->sp|P01860|IGHG3_HUMAN Immunoglobulin heavy constant gamma 3 OS=Homo sapiens OX=9606 GN=IGHG3 PE=1 SV=3
-ASTKGPSVFPLAPCSRSTSGGTAALGCLVKDYFPEPVTVSWNSGALTSGVHTFPAVLQSS
-GLYSLSSVVTVPSSSLGTQTYTCNVNHKPSNTKVDKRVELKTPLGDTTHTCPRCPEPKSC
-DTPPPCPRCPEPKSCDTPPPCPRCPEPKSCDTPPPCPRCPAPELLGGPSVFLFPPKPKDT
-LMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTKPREEQYNSTFRVVSVLTVLH
-QDWLNGKEYKCKVSNKALPAPIEKTISKTKGQPREPQVYTLPPSREEMTKNQVSLTCLVK
-GFYPSDIAVEWESSGQPENNYNTTPPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHE
-ALHNRFTQKSLSLSPELQLEESCAEAQDGELDGLWTTITIFITLFLLSVCYSATVTFFKV
-KWIFSSVVDLKQTIIPDYRNMIGQGA
+>D78345|IGHG3*01|Homo sapiens|F|CH1|g,8305..8597|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>D78345|IGHG3*01|Homo sapiens|F|H1|g,8990..9039|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>D78345|IGHG3*01|Homo sapiens|F|H2|g,9184..9227|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>D78345|IGHG3*01|Homo sapiens|F|H3|g,9372..9415|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>D78345|IGHG3*01|Homo sapiens|F|H4|g,9560..9603|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>D78345|IGHG3*01|Homo sapiens|F|CH2|g,9723..10051|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>D78345|IGHG3*01|Homo sapiens|F|CH3-CHS|g,10150..10469|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESSGQPENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRFTQKSLSLSPGK
+>D78345|IGHG3*01|Homo sapiens|F|M1|g,11762..11892|132 nt|1|+1| | |44 AA|44+0=44| | |
+EL-----------------------QLEESCA----EAQDGELDGLWTT-----------
+---------------ITIFIT------LFLLSVCYSATVTFFK----------
+>D78345|IGHG3*01|Homo sapiens|F|M2|13706..13786|81 nt|1| | | |27 AA|27+0=27| | |
+--------------------------------------------VKW-------------
+---------------------------IFSSVVDLKQTIIPDYRNM--IGQGA
+>K01313|IGHG3*02|Homo sapiens|F|CH1|1..34|34 nt|2| |-1| |11 AA|11+0=11|partial in 5'| |
+------------------------------------------------------------
+-----------------------------------KPSNTKVDKRV-------
+>K01313|IGHG3*02|Homo sapiens|F|H1|g,426..475|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>K01313|IGHG3*02|Homo sapiens|F|H2|g,620..663|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>K01313|IGHG3*02|Homo sapiens|F|H3|g,808..851|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>K01313|IGHG3*02|Homo sapiens|F|H4|g,996..1039|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>K01313|IGHG3*02|Homo sapiens|F|CH2|g,1159..1208|51 nt|1|+1| | |17 AA|17+0=17|partial in 3'| |
+APELLGGPSVFLFPPKP-------------------------------------------
+-----------------------------------------------------
+>K01314|IGHG3*02|Homo sapiens|F|CH3-CHS|1..35|35 nt|3| | ||11 AA|11+0=11|partial in 5' and in 3' | |
+------------------------------------------------------NNYNTT
+PPMLD------------------------------------------------
+>X16110|IGHG3*03|Homo sapiens_LAT|F|CH1|g,216..508|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>X16110|IGHG3*03|Homo sapiens_LAT|F|H1|g,902..951|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>X16110|IGHG3*03|Homo sapiens_LAT|F|H3|g,1096..1139|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>X16110|IGHG3*03|Homo sapiens_LAT|F|H4|g,1284..1327|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>X16110|IGHG3*03|Homo sapiens_LAT|F|CH2|g,1447..1775|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>X16110|IGHG3*03|Homo sapiens_LAT|F|CH3-CHS|g,1874..2193|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESSGQPENNYNTT
+PPVLDSDGSFFLYSRLTVDKSRWQEGNVFSCSVMHEALHNRFTQKSLSLSPGK
+>M60195|IGHG3*03|Homo sapiens_LAT|F|M1|g,285..415|132 nt|1|+1| | |44 AA|44+0=44| | |
+EL-----------------------QLEESCA----EAQDGELDGLWTT-----------
+---------------ITILIT------LFLLSVCYSATVTFFK----------
+>M60196|IGHG3*03|Homo sapiens_LAT|F|M2|385..465|81 nt|1| | | |27 AA|27+0=27| | |
+--------------------------------------------VKW-------------
+---------------------------IFSSVVDLKQTIIPDYRNM--IGQGA
+>X99549|IGHG3*04|Homo sapiens_Mandenka individual (eastern Senegal)|F|CH1|g,7..299|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>X99549|IGHG3*04|Homo sapiens_Mandenka individual (eastern Senegal)|F|H1|g,693..742|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>X99549|IGHG3*04|Homo sapiens_Mandenka individual (eastern Senegal)|F|H4|g,887..930|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>X99549|IGHG3*04|Homo sapiens_Mandenka individual (eastern Senegal)|F|CH2|g,1050..1378|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>X99549|IGHG3*04|Homo sapiens_Mandenka individual (eastern Senegal)|F|CH3-CHS|g,1477..1796|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESSGQPENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRFTQKSLSLSPGK
+>AJ390236|IGHG3*05|Homo sapiens_Mandenka individual (Mand-205)|F|CH1|g,26..318|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>AJ390236|IGHG3*05|Homo sapiens_Mandenka individual (Mand-205)|F|H1|g,712..761|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390236|IGHG3*05|Homo sapiens_Mandenka individual (Mand-205)|F|H2|g,906..949|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390236|IGHG3*05|Homo sapiens_Mandenka individual (Mand-205)|F|H3|g,1094..1137|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390236|IGHG3*05|Homo sapiens_Mandenka individual (Mand-205)|F|H4|g,1282..1325|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390236|IGHG3*05|Homo sapiens_Mandenka individual (Mand-205)|F|CH2|g,1445..1773|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>AJ390236|IGHG3*05|Homo sapiens_Mandenka individual (Mand-205)|F|CH3-CHS|g,1872..2191|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESSGQPENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRFTQKSLSLSPGK
+>AJ390237|IGHG3*06|Homo sapiens_Mandenka individual (Mand-108)|F|CH1|g,26..318|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>AJ390237|IGHG3*06|Homo sapiens_Mandenka individual (Mand-108)|F|H1|g,712..761|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390237|IGHG3*06|Homo sapiens_Mandenka individual (Mand-108)|F|H2|g,906..949|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390237|IGHG3*06|Homo sapiens_Mandenka individual (Mand-108)|F|H3|g,1094..1137|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390237|IGHG3*06|Homo sapiens_Mandenka individual (Mand-108)|F|H4|g,1282..1325|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390237|IGHG3*06|Homo sapiens_Mandenka individual (Mand-108)|F|CH2|g,1445..1773|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>AJ390237|IGHG3*06|Homo sapiens_Mandenka individual (Mand-108)|F|CH3-CHS|g,1872..2191|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESSGQPENNYKTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRFTQKSLSLSPGK
+>AJ390238|IGHG3*07|Homo sapiens_Mandenka individual (Mand-548)|F|CH1|g,26..318|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>AJ390238|IGHG3*07|Homo sapiens_Mandenka individual (Mand-548)|F|H1|g,712..761|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390238|IGHG3*07|Homo sapiens_Mandenka individual (Mand-548)|F|H2|g,906..949|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390238|IGHG3*07|Homo sapiens_Mandenka individual (Mand-548)|F|H3|g,1094..1137|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390238|IGHG3*07|Homo sapiens_Mandenka individual (Mand-548)|F|H4|g,1282..1325|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390238|IGHG3*07|Homo sapiens_Mandenka individual (Mand-548)|F|CH2|g,1445..1773|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>AJ390238|IGHG3*07|Homo sapiens_Mandenka individual (Mand-548)|F|CH3-CHS|g,1872..2191|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESSGQPENNYKTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRFTQKSLSLSPGK
+>AJ390241|IGHG3*08|Homo sapiens_Mandenka individual (Mand-114)|F|CH1|g,26..318|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>AJ390241|IGHG3*08|Homo sapiens_Mandenka individual (Mand-114)|F|H1|g,712..761|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390241|IGHG3*08|Homo sapiens_Mandenka individual (Mand-114)|F|H2|g,906..949|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390241|IGHG3*08|Homo sapiens_Mandenka individual (Mand-114)|F|H3|g,1094..1137|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390241|IGHG3*08|Homo sapiens_Mandenka individual (Mand-114)|F|H4|g,1282..1325|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390241|IGHG3*08|Homo sapiens_Mandenka individual (Mand-114)|F|CH2|g,1445..1773|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>AJ390241|IGHG3*08|Homo sapiens_Mandenka individual (Mand-114)|F|CH3-CHS|g,1872..2191|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESNGQPENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRFTQKSLSLSPGK
+>AJ390242|IGHG3*09|Homo sapiens_Mandenka individual (Mand-333)|F|CH1|g,26..318|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>AJ390242|IGHG3*09|Homo sapiens_Mandenka individual (Mand-333)|F|H1|g,712..761|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390242|IGHG3*09|Homo sapiens_Mandenka individual (Mand-333)|F|H2|g,906..949|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390242|IGHG3*09|Homo sapiens_Mandenka individual (Mand-333)|F|H3|g,1094..1137|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390242|IGHG3*09|Homo sapiens_Mandenka individual (Mand-333)|F|H4|g,1282..1325|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390242|IGHG3*09|Homo sapiens_Mandenka individual (Mand-333)|F|CH2|g,1445..1773|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PREEQYNSTFRVVSVLTVVHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>AJ390242|IGHG3*09|Homo sapiens_Mandenka individual (Mand-333)|F|CH3-CHS|g,1872..2191|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESSGQPENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRFTQKSLSLSPGK
+>AL122127|IGHG3*10|Homo sapiens|F|CH1|g,41146..41438|294 nt|1|+1|-1| |98 AA|98+0=98| |rev-compl|
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>AL122127|IGHG3*10|Homo sapiens|F|H1|g,40703..40752|51 nt|1|+1|-1| |17 AA|17+0=17| |rev-compl|
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>AL122127|IGHG3*10|Homo sapiens|F|H2|g,40515..40558|45 nt|1|+1|-1| |15 AA|15+0=15| |rev-compl|
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AL122127|IGHG3*10|Homo sapiens|F|H3|g,40327..40370|45 nt|1|+1|-1| |15 AA|15+0=15| |rev-compl|
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AL122127|IGHG3*10|Homo sapiens|F|H4|g,40139..40182|45 nt|1|+1|-1| |15 AA|15+0=15| |rev-compl|
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AL122127|IGHG3*10|Homo sapiens|F|CH2|g,39691..40019|330 nt|1|+1|-1| |110 AA|110+0=110| |rev-compl|
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>AL122127|IGHG3*10|Homo sapiens|F|CH3-CHS|g,39274..39593|321 nt|1|+1| | |107 AA|107+0=107| |rev-compl|
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESSGQPENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRFTQKSLSLSPGK
+>AL122127|IGHG3*10|Homo sapiens|F|M1|g,37847..37977|132 nt|1|+1| | |44 AA|44+0=44| |rev-compl|
+EL-----------------------QLEESCA----EAQDGELDGLWTT-----------
+---------------ITIFIT------LFLLSVCYSATVTFFK----------
+>AL122127|IGHG3*10|Homo sapiens|F|M2|35951..36031|81 nt|1| | | |27 AA|27+0=27| |rev-compl|
+--------------------------------------------VKW-------------
+---------------------------IFSSVVDLKQTIIPDYRNM--IGQGA
+>BK063800|IGHG3*11|Homo sapiens|F|CH1|g,1118637..1118929|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>BK063800|IGHG3*11|Homo sapiens|F|H1|g,1119323..1119372|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>BK063800|IGHG3*11|Homo sapiens|F|H2|g,1119517..1119560|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>BK063800|IGHG3*11|Homo sapiens|F|H3|g,1119705..1119748|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>BK063800|IGHG3*11|Homo sapiens|F|H4|g,1119893..1119936|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>BK063800|IGHG3*11|Homo sapiens|F|CH2|g,1120056..1120384|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PREEQFNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>BK063800|IGHG3*11|Homo sapiens|F|CH3-CHS|g,1120483..1120802|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESSGQPENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRFTQKSLSLSPGK
+>BK063800|IGHG3*11|Homo sapiens|F|M1|g,1122085..1122215|132 nt|1|+1| | |44 AA|44+0=44| | |
+EL-----------------------QLEESCA----EAQDGELDGLWTT-----------
+---------------ITIFIT------LFLLSVCYSATVTFFK----------
+>BK063800|IGHG3*11|Homo sapiens|F|M2|1124031..1124111|81 nt|1| | | |27 AA|27+0=27| | |
+--------------------------------------------VKW-------------
+---------------------------IFSSVVDLKQTIIPDYRNM--IGQGA
+>AJ390252|IGHG3*12|Homo sapiens_French individual (Fr-BL)|F|CH1|g,26..318|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>AJ390252|IGHG3*12|Homo sapiens_French individual (Fr-BL)|F|H1|g,712..761|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390252|IGHG3*12|Homo sapiens_French individual (Fr-BL)|F|H2|g,906..949|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390252|IGHG3*12|Homo sapiens_French individual (Fr-BL)|F|H4|g,1094..1137|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390252|IGHG3*12|Homo sapiens_French individual (Fr-BL)|F|CH2|g,1257..1585|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PREEQFNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>AJ390252|IGHG3*12|Homo sapiens_French individual (Fr-BL)|F|CH3-CHS|g,1684..2003|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESSGQPENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRFTQKSLSLSPGK
+>AJ390244|IGHG3*13|Homo sapiens_Mandenka individual (Mand-428)|F|CH1|g,26..318|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>AJ390244|IGHG3*13|Homo sapiens_Mandenka individual (Mand-428)|F|H1|g,712..761|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390244|IGHG3*13|Homo sapiens_Mandenka individual (Mand-428)|F|H2|g,906..949|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390244|IGHG3*13|Homo sapiens_Mandenka individual (Mand-428)|F|H3|g,1094..1137|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390244|IGHG3*13|Homo sapiens_Mandenka individual (Mand-428)|F|H4|g,1282..1325|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390244|IGHG3*13|Homo sapiens_Mandenka individual (Mand-428)|F|CH2|g,1445..1773|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>AJ390244|IGHG3*13|Homo sapiens_Mandenka individual (Mand-428)|F|CH3-CHS|g,1872..2191|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESSGQPENNYKTT
+PPMLDSDGSFFLYSKLTVDKSRWQEGNIFSCSVMHEALHNRFTQKSLSLSPGK
+>BK068299|IGHG3*14|Homo sapiens|F|CH1|g,1122483..1122775|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>BK068299|IGHG3*14|Homo sapiens|F|H1|g,1123169..1123218|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>BK068299|IGHG3*14|Homo sapiens|F|H2|g,1123363..1123406|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>BK068299|IGHG3*14|Homo sapiens|F|H3|g,1123551..1123594|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>BK068299|IGHG3*14|Homo sapiens|F|H4|g,1123739..1123782|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>BK068299|IGHG3*14|Homo sapiens|F|CH2|g,1123902..1124230|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+LREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>BK068299|IGHG3*14|Homo sapiens|F|CH3-CHS|g,1124329..1124648|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESNGQPENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRYTQKSLSLSPGK
+>BK068299|IGHG3*14|Homo sapiens|F|M1|g,1125945..1126075|132 nt|1|+1| | |44 AA|44+0=44| | |
+EL-----------------------QLEESCA----EAQDGELDGLWTT-----------
+---------------ITIFIT------LFLLSVCYSATVTFFK----------
+>BK068299|IGHG3*14|Homo sapiens|F|M2|1127891..1127971|81 nt|1| | | |27 AA|27+0=27| | |
+--------------------------------------------VKW-------------
+---------------------------IFSSVVDLKQTIIPDYRNM--IGQGA
+>AJ390260|IGHG3*15|Homo sapiens_Sel'Kup individual (Kp-150)|F|CH1|g,26..318|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>AJ390260|IGHG3*15|Homo sapiens_Sel'Kup individual (Kp-150)|F|H1|g,712..761|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390260|IGHG3*15|Homo sapiens_Sel'Kup individual (Kp-150)|F|H2|g,906..949|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390260|IGHG3*15|Homo sapiens_Sel'Kup individual (Kp-150)|F|H3|g,1094..1137|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390260|IGHG3*15|Homo sapiens_Sel'Kup individual (Kp-150)|F|H4|g,1282..1325|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390260|IGHG3*15|Homo sapiens_Sel'Kup individual (Kp-150)|F|CH2|g,1445..1773|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+LREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>AJ390260|IGHG3*15|Homo sapiens_Sel'Kup individual (Kp-150)|F|CH3-CHS|g,1872..2191|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESNGQPENNYKTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRYTQKSLSLSPGK
+>AJ390262|IGHG3*16|Homo sapiens_Lebanese individual (LibF2)|F|CH1|g,26..318|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>AJ390262|IGHG3*16|Homo sapiens_Lebanese individual (LibF2)|F|H1|g,712..761|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390262|IGHG3*16|Homo sapiens_Lebanese individual (LibF2)|F|H2|g,906..949|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390262|IGHG3*16|Homo sapiens_Lebanese individual (LibF2)|F|H3|g,1094..1137|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390262|IGHG3*16|Homo sapiens_Lebanese individual (LibF2)|F|H4|g,1282..1325|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390262|IGHG3*16|Homo sapiens_Lebanese individual (LibF2)|F|CH2|g,1445..1773|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+LREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKAK
+>AJ390262|IGHG3*16|Homo sapiens_Lebanese individual (LibF2)|F|CH3-CHS|g,1872..2191|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESNGQPENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRYTQKSLSLSPGK
+>AJ390272|IGHG3*17|Homo sapiens_Mandenka individual (Mand-231)|F|CH1|g,26..318|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSN-FGTQTYTCNVNHKPSNTKVDKRV-------
+>AJ390272|IGHG3*17|Homo sapiens_Mandenka individual (Mand-231)|F|H1|g,712..761|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390272|IGHG3*17|Homo sapiens_Mandenka individual (Mand-231)|F|H3|g,906..949|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390272|IGHG3*17|Homo sapiens_Mandenka individual (Mand-231)|F|H4|g,1094..1137|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390272|IGHG3*17|Homo sapiens_Mandenka individual (Mand-231)|F|CH2|g,1257..1585|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>AJ390272|IGHG3*17|Homo sapiens_Mandenka individual (Mand-231)|F|CH3-CHS|g,1684..2003|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAMEWESSGQPENNYKTT
+PPVLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNHYTQKSLSLSPGK
+>AJ390276|IGHG3*18|Homo sapiens_Lebanese individual (Lib-C5)|F|CH1|g,26..318|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQYSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>AJ390276|IGHG3*18|Homo sapiens_Lebanese individual (Lib-C5)|F|H1|g,712..761|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390276|IGHG3*18|Homo sapiens_Lebanese individual (Lib-C5)|F|H3|g,906..949|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390276|IGHG3*18|Homo sapiens_Lebanese individual (Lib-C5)|F|H4|g,1094..1137|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390276|IGHG3*18|Homo sapiens_Lebanese individual (Lib-C5)|F|CH2|g,1257..1585|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PWEEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>AJ390276|IGHG3*18|Homo sapiens_Lebanese individual (Lib-C5)|F|CH3-CHS|g,1684..2003|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAMEWESSGQPENNYKTT
+PPVLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNHYTQKSLSLSPGK
+>AJ390279|IGHG3*19|Homo sapiens_Sel'Kup individual (Kp-60)|F|CH1|g,26..318|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>AJ390279|IGHG3*19|Homo sapiens_Sel'Kup individual (Kp-60)|F|H1|g,712..761|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390279|IGHG3*19|Homo sapiens_Sel'Kup individual (Kp-60)|F|H3|g,906..949|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390279|IGHG3*19|Homo sapiens_Sel'Kup individual (Kp-60)|F|H4|g,1094..1137|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>AJ390279|IGHG3*19|Homo sapiens_Sel'Kup individual (Kp-60)|F|CH2|g,1257..1585|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PWEEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>AJ390279|IGHG3*19|Homo sapiens_Sel'Kup individual (Kp-60)|F|CH3-CHS|g,1684..2003|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAMEWESSGQPENNYKTT
+PPVLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNHYTQKSLSLSPGK
+>MG920256|IGHG3*20|Homo sapiens|F|CH1|g,2..294|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>MG920256|IGHG3*20|Homo sapiens|F|H1|g,688..737|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920256|IGHG3*20|Homo sapiens|F|H2|g,882..925|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920256|IGHG3*20|Homo sapiens|F|H3|g,1070..1113|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920256|IGHG3*20|Homo sapiens|F|H4|g,1258..1301|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920256|IGHG3*20|Homo sapiens|F|CH2|g,1421..1749|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+LREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>MG920256|IGHG3*20|Homo sapiens|F|CH3-CHS|g,1848..2167|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESNGQRENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRYTQKSLSLSPGK
+>IMGT000112|IGHG3*21|Homo sapiens|F|CH1|g,1169307..1169599|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>IMGT000112|IGHG3*21|Homo sapiens|F|H1|g,1169993..1170042|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>IMGT000112|IGHG3*21|Homo sapiens|F|H2|g,1170187..1170230|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>IMGT000112|IGHG3*21|Homo sapiens|F|H3|g,1170375..1170418|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>IMGT000112|IGHG3*21|Homo sapiens|F|H4|g,1170563..1170606|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>IMGT000112|IGHG3*21|Homo sapiens|F|CH2|g,1170726..1171054|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>IMGT000112|IGHG3*21|Homo sapiens|F|CH3-CHS|g,1171153..1171472|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESSGQPENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRFTQKSLSLSPGK
+>IMGT000112|IGHG3*21|Homo sapiens|F|M1|g,1172767..1172897|132 nt|1|+1| | |44 AA|44+0=44| | |
+EL-----------------------QLEESCA----EAQDGELDGLWTT-----------
+---------------ITIFIT------LFLLSVCYSATVTFFK----------
+>IMGT000112|IGHG3*21|Homo sapiens|F|M2|1174712..1174792|81 nt|1| | | |27 AA|27+0=27| | |
+--------------------------------------------VKW-------------
+---------------------------IFSSVVDLKQTIIPDYRNM--IGQGA
+>MG920254|IGHG3*22|Homo sapiens|F|CH1|g,2..294|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>MG920254|IGHG3*22|Homo sapiens|F|H1|g,688..737|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920254|IGHG3*22|Homo sapiens|F|H2|g,882..925|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920254|IGHG3*22|Homo sapiens|F|H3|g,1070..1113|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920254|IGHG3*22|Homo sapiens|F|H4|g,1258..1301|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920254|IGHG3*22|Homo sapiens|F|CH2|g,1421..1749|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+LREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>MG920254|IGHG3*22|Homo sapiens|F|CH3-CHS|g,1848..2167|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESNGQPENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNHYTQKSLSLSPGK
+>MH025837|IGHG3*23|Homo sapiens|F|CH1|g,2..294|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>MH025837|IGHG3*23|Homo sapiens|F|H1|g,688..737|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>MH025837|IGHG3*23|Homo sapiens|F|H2|g,882..925|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MH025837|IGHG3*23|Homo sapiens|F|H4|g,1258..1301|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MH025837|IGHG3*23|Homo sapiens|F|CH2|g,1421..1749|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PWEEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>MH025837|IGHG3*23|Homo sapiens|F|CH3-CHS|g,1848..2167|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESSGQPENNYKTT
+PPVLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNHYTQKSLSLSPGK
+>MG920257|IGHG3*24|Homo sapiens|F|CH1|g,2..294|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>MG920257|IGHG3*24|Homo sapiens|F|H1|g,688..737|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920257|IGHG3*24|Homo sapiens|F|H2|g,882..925|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920257|IGHG3*24|Homo sapiens|F|H3|g,1070..1113|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920257|IGHG3*24|Homo sapiens|F|H4|g,1258..1301|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920257|IGHG3*24|Homo sapiens|F|CH2|g,1421..1749|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>MG920257|IGHG3*24|Homo sapiens|F|CH3-CHS|g,1848..2167|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESNGQPENNYKTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRYTQKSLSLSPGK
+>MG920258|IGHG3*25|Homo sapiens|F|CH1|g,2..294|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>MG920258|IGHG3*25|Homo sapiens|F|H1|g,688..737|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920258|IGHG3*25|Homo sapiens|F|H2|g,882..925|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920258|IGHG3*25|Homo sapiens|F|H3|g,1070..1113|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920258|IGHG3*25|Homo sapiens|F|H4|g,1258..1301|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920258|IGHG3*25|Homo sapiens|F|CH2|g,1421..1749|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVKFKWYVDGVEVHNAKTK
+LREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>MG920258|IGHG3*25|Homo sapiens|F|CH3-CHS|g,1848..2167|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESNGQPENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRYTQKSLSLSPGK
+>MG920259|IGHG3*26|Homo sapiens|F|CH1|g,2..294|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>MG920259|IGHG3*26|Homo sapiens|F|H1|g,688..737|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920259|IGHG3*26|Homo sapiens|F|H2|g,882..925|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920259|IGHG3*26|Homo sapiens|F|H3|g,1070..1113|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920259|IGHG3*26|Homo sapiens|F|H4|g,1258..1301|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920259|IGHG3*26|Homo sapiens|F|CH2|g,1421..1749|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PREEQFNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKGLPAPIEKTI---SKTK
+>MG920259|IGHG3*26|Homo sapiens|F|CH3-CHS|g,1848..2167|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESSGQPENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRFTQKSLSLSPGK
+>MG920260|IGHG3*27|Homo sapiens|F|CH1|g,2..294|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>MG920260|IGHG3*27|Homo sapiens|F|H1|g,688..737|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920260|IGHG3*27|Homo sapiens|F|H2|g,882..925|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920260|IGHG3*27|Homo sapiens|F|H3|g,1070..1113|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920260|IGHG3*27|Homo sapiens|F|H4|g,1258..1301|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920260|IGHG3*27|Homo sapiens|F|CH2|g,1421..1749|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+LREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>MG920260|IGHG3*27|Homo sapiens|F|CH3-CHS|g,1848..2167|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESNGQPENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRYTQKSLSLSPGK
+>MG786813|IGHG3*28|Homo sapiens|F|CH1|g,2..294|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>MG786813|IGHG3*28|Homo sapiens|F|H1|g,688..737|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>MG786813|IGHG3*28|Homo sapiens|F|H2|g,882..925|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG786813|IGHG3*28|Homo sapiens|F|H3|g,1070..1113|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG786813|IGHG3*28|Homo sapiens|F|H4|g,1258..1301|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG786813|IGHG3*28|Homo sapiens|F|CH2|g,1421..1749|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+PREEQFNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>MG786813|IGHG3*28|Homo sapiens|F|CH3-CHS|g,1848..2167|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESSGQPENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRFTQKSLSLSPGK
+>MG920261|IGHG3*29|Homo sapiens|F|CH1|g,2..294|294 nt|1|+1|-1| |98 AA|98+0=98| | |
+AST--KGPSVFPLAPCSRS--TSGGTAALGCLVKDYFPEP--VTVSWNS-GALTSGVHTF
+PAVLQSSGLYSLSSVVTVPSSS-LGTQTYTCNVNHKPSNTKVDKRV-------
+>MG920261|IGHG3*29|Homo sapiens|F|H1|g,688..737|51 nt|1|+1|-1| |17 AA|17+0=17| | |
+ELK---TPLGDTTHTCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920261|IGHG3*29|Homo sapiens|F|H2|g,882..925|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920261|IGHG3*29|Homo sapiens|F|H3|g,1070..1113|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920261|IGHG3*29|Homo sapiens|F|H4|g,1258..1301|45 nt|1|+1|-1| |15 AA|15+0=15| | |
+EPKSCDTP-----PPCPR------------CP----------------------------
+-----------------------------------------------------
+>MG920261|IGHG3*29|Homo sapiens|F|CH2|g,1421..1749|330 nt|1|+1|-1| |110 AA|110+0=110| | |
+APELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVQFKWYVDGVEVHNAKTK
+LREEQYNSTFRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTI---SKTK
+>MG920261|IGHG3*29|Homo sapiens|F|CH3-CHS|g,1848..2167|321 nt|1|+1| | |107 AA|107+0=107| | |
+GQP--REPQVYTLPPSREE--MTKNQVSLTCLVKGFYPSD--IAVEWESNGQPENNYNTT
+PPMLDSDGSFFLYSKLTVDKSRWQQGNIFSCSVMHEALHNRYTQKSLSLSPGK

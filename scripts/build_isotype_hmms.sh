@@ -8,30 +8,35 @@ set -e
 # Create output directories
 mkdir -p data/isotype_fastas data/isotype_msas data/isotype_hmms
 
-# List of isotypes and their IMGT accession numbers (curated, human)
-declare -A ISOTYPE_URLS=(
-  [IGHG1]="https://www.uniprot.org/uniprotkb/P01857.fasta"
-  [IGHG2]="https://www.uniprot.org/uniprotkb/P01859.fasta"
-  [IGHG3]="https://www.uniprot.org/uniprotkb/P01860.fasta"
-  [IGHG4]="https://www.uniprot.org/uniprotkb/P01861.fasta"
-  [IGHA1]="https://www.uniprot.org/uniprotkb/P01876.fasta"
-  [IGHA2]="https://www.uniprot.org/uniprotkb/P01877.fasta"
-  [IGHE]="https://www.uniprot.org/uniprotkb/P01854.fasta"
-  [IGHD]="https://www.uniprot.org/uniprotkb/P01880.fasta"
-  [IGHM]="https://www.uniprot.org/uniprotkb/P01871.fasta"
+# List of IMGT FTP URLs for all human constant region alleles per isotype
+IMGT_BASE="https://www.imgt.org/download/GENE-DB/IMGTGENEDB-GENE-ALLELE-ProteinSequences/Homo_sapiens"
+declare -A ISOTYPE_IMGT_FILES=(
+  [IGHG1]="IGHG1_prot.fa"
+  [IGHG2]="IGHG2_prot.fa"
+  [IGHG3]="IGHG3_prot.fa"
+  [IGHG4]="IGHG4_prot.fa"
+  [IGHA1]="IGHA1_prot.fa"
+  [IGHA2]="IGHA2_prot.fa"
+  [IGHE]="IGHE_prot.fa"
+  [IGHD]="IGHD_prot.fa"
+  [IGHM]="IGHM_prot.fa"
 )
 
-# Download FASTA sequences for each isotype
-for iso in "${!ISOTYPE_URLS[@]}"; do
-  url="${ISOTYPE_URLS[$iso]}"
-  fasta="data/isotype_fastas/${iso}.fasta"
-  if [ ! -f "$fasta" ]; then
-    echo "Downloading $iso sequence..."
-    curl -sSL "$url" -o "$fasta"
-  fi
-  # For demonstration, you may want to add more alleles per isotype for a better HMM
-  # (e.g., from IMGT or NCBI RefSeq)
-done
+# Skip downloading if data/isotype_fastas directory exists
+if [ -d "data/isotype_fastas" ]; then
+  echo "data/isotype_fastas directory exists, skipping download."
+else
+  # Download FASTA sequences for each isotype from IMGT (all alleles)
+  for iso in "${!ISOTYPE_IMGT_FILES[@]}"; do
+    imgt_file="${ISOTYPE_IMGT_FILES[$iso]}"
+    url="$IMGT_BASE/$imgt_file"
+    fasta="data/isotype_fastas/${iso}.fasta"
+    if [ ! -f "$fasta" ]; then
+      echo "Downloading $iso alleles from IMGT..."
+      curl -sSL "$url" -o "$fasta"
+    fi
+  done
+fi
 
 # Align each isotype FASTA with MAFFT
 for fasta in data/isotype_fastas/*.fasta; do
@@ -52,4 +57,3 @@ for msa in data/isotype_msas/*.aln.fasta; do
 done
 
 echo "All isotype HMMs built in data/isotype_hmms/"
-
