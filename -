@@ -1,0 +1,14 @@
+#                                                               --- full sequence ---- --- best 1 domain ---- --- domain number estimation ----
+# target name        accession  query name           accession    E-value  score  bias   E-value  score  bias   exp reg clu  ov env dom rep inc description of target
+#------------------- ---------- -------------------- ---------- --------- ------ ----- --------- ------ -----   --- --- --- --- --- --- --- --- ---------------------
+query                -          IGHM.aln             -            3.2e-39  120.9   0.1   3.8e-39  120.6   0.1   1.0   1   0   0   1   1   1   1 -
+#
+# Program:         hmmsearch
+# Version:         3.4 (Aug 2023)
+# Pipeline mode:   SEARCH
+# Query file:      /Users/aquinmx3/repos/AbSequenceAlign/tests/../data/isotype_hmms/IGHM.hmm
+# Target file:     /var/folders/t2/srgns23d793bvcxpy0b5hc858b71yq/T/tmpippc1hib.fasta
+# Option settings: hmmsearch --tblout - --noali /Users/aquinmx3/repos/AbSequenceAlign/tests/../data/isotype_hmms/IGHM.hmm /var/folders/t2/srgns23d793bvcxpy0b5hc858b71yq/T/tmpippc1hib.fasta 
+# Current dir:     /Users/aquinmx3/repos/AbSequenceAlign
+# Date:            Sun Aug  3 14:30:38 2025
+# [ok]

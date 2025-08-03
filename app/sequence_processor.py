@@ -4,9 +4,7 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from io import StringIO
-import logging
-
-logger = logging.getLogger(__name__)
+from app.logger import logger
 
 
 class SequenceProcessor:
@@ -146,4 +144,4 @@ class SequenceProcessor:
             "max_length": max(lengths),
             "avg_length": sum(lengths) / len(lengths),
             "total_length": sum(lengths)
-        } 
+        }

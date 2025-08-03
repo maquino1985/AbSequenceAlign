@@ -95,44 +95,18 @@ class AnnotationEngine:
             best_hit = hit_tables[0]
             if best_hit and len(best_hit) > 0:
                 germline_info = best_hit[0]  # First element contains germline info
-                if isinstance(germline_info, dict) and 'germline' in germline_info:
-                    seq_info.germline = germline_info['germline']
-        
-        # Extract isotype information (for heavy chains)
-        if chain_type and chain_type.upper() in ['H', 'HEAVY']:
-            seq_info.isotype = self._predict_isotype(sequence)
-        
+                if isinstance(germline_info, dict):
+                    if 'germline' in germline_info:
+                        seq_info.germline = germline_info['germline']
+                    # Use isotype if provided by ANARCI/fallback (preferred over motif matching)
+                    if 'isotype' in germline_info:
+                        seq_info.isotype = germline_info['isotype']
+
+        # Extract regions (CDR/FR boundaries) if available
+        if numbering and isinstance(numbering, dict) and 'regions' in numbering:
+            seq_info.regions = numbering['regions']
+
         return seq_info
-    
-    def _predict_isotype(self, sequence: str) -> Optional[str]:
-        """
-        Predict antibody isotype from sequence
-        
-        Args:
-            sequence: Protein sequence
-            
-        Returns:
-            Predicted isotype or None
-        """
-        # Simple isotype prediction based on C-terminal sequence patterns
-        # This is a simplified version - in practice, you'd use more sophisticated methods
-        
-        isotype_patterns = {
-            'IgG1': ['DKTHTCPPCPAPELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVKFNWYVDGVEVHNAKTKPREEQYNSTYRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTISKAKGQPREPQVYTLPPSRDELTKNQVSLTCLVKGFYPSDIAVEWESNGQPENNYKTTPPVLDSDGSFFLYSKLTVDKSRWQQGNVFSCSVMHEALHNHYTQKSLSLSPGK'],
-            'IgG2': ['DKTHTCPPCPAPELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVKFNWYVDGVEVHNAKTKPREEQYNSTYRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTISKAKGQPREPQVYTLPPSRDELTKNQVSLTCLVKGFYPSDIAVEWESNGQPENNYKTTPPVLDSDGSFFLYSKLTVDKSRWQQGNVFSCSVMHEALHNHYTQKSLSLSPGK'],
-            'IgG3': ['DKTHTCPPCPAPELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVKFNWYVDGVEVHNAKTKPREEQYNSTYRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTISKAKGQPREPQVYTLPPSRDELTKNQVSLTCLVKGFYPSDIAVEWESNGQPENNYKTTPPVLDSDGSFFLYSKLTVDKSRWQQGNVFSCSVMHEALHNHYTQKSLSLSPGK'],
-            'IgG4': ['DKTHTCPPCPAPELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVKFNWYVDGVEVHNAKTKPREEQYNSTYRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTISKAKGQPREPQVYTLPPSRDELTKNQVSLTCLVKGFYPSDIAVEWESNGQPENNYKTTPPVLDSDGSFFLYSKLTVDKSRWQQGNVFSCSVMHEALHNHYTQKSLSLSPGK'],
-        }
-        
-        # Check for isotype-specific patterns in the C-terminal region
-        c_terminal = sequence[-50:] if len(sequence) >= 50 else sequence
-        
-        for isotype, patterns in isotype_patterns.items():
-            for pattern in patterns:
-                if pattern in c_terminal:
-                    return isotype
-        
-        return None
     
     def get_annotation_statistics(self, annotated_sequences: List[SequenceInfo]) -> Dict[str, Any]:
         """
@@ -168,4 +142,4 @@ class AnnotationEngine:
             "isotypes": isotypes,
             "species": species,
             "annotated_count": len([s for s in annotated_sequences if s.chain_type])
-        } 
+        }

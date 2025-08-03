@@ -1,6 +1,7 @@
-name: absequencealign
+name: AbSequenceAlign
 channels:
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
   - python=3.11
@@ -8,6 +9,7 @@ dependencies:
   - muscle
   - mafft
   - hmmer
+  - anarci
   # Python packages
   - biopython
   - scipy
@@ -32,6 +34,6 @@ dependencies:
   - git
   - curl
   # Pip packages (not available in conda)
-  - pip
-  - pip:
-    - git+https://github.com/oxpig/ANARCI.git 
+#  - pip
+#  - pip:
+#    - git+https://github.com/oxpig/ANARCI.git

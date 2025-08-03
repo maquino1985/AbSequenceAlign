@@ -15,7 +15,7 @@ RUN conda config --add channels bioconda && \
 
 # Install bioinformatics tools and Python dependencies via conda
 RUN conda install -y \
-    python=3.11 \ 
+    python=3.11 \
     muscle \
     mafft \
     hmmer \

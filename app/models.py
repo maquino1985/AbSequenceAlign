@@ -62,6 +62,7 @@ class SequenceInfo(BaseModel):
     isotype: Optional[str] = None
     species: Optional[str] = None
     germline: Optional[str] = None
+    regions: Optional[Dict[str, Any]] = None
 
 
 class AnnotationResult(BaseModel):
@@ -96,4 +97,4 @@ class APIResponse(BaseModel):
     success: bool
     message: str
     data: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None 
+    error: Optional[str] = None

@@ -1,4 +1,3 @@
-import logging
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -13,10 +12,7 @@ from app.sequence_processor import SequenceProcessor
 from app.annotation_engine import AnnotationEngine
 from app.alignment_engine import AlignmentEngine
 from app.data_store import data_store
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from app.logger import logger
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -310,4 +306,4 @@ async def delete_dataset(dataset_id: str):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    uvicorn.run(app, host="0.0.0.0", port=8000)

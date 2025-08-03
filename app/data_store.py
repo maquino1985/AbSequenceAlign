@@ -1,11 +1,8 @@
 import uuid
-import time
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from app.models import DatasetInfo, SequenceInfo, AlignmentResult, AnnotationResult
-
-logger = logging.getLogger(__name__)
-
+from app.logger import logger
 
 class DataStore:
     """Simple in-memory data store for managing datasets and results"""
@@ -146,4 +143,4 @@ class DataStore:
 
 
 # Global data store instance
-data_store = DataStore() 
+data_store = DataStore()
