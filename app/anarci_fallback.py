@@ -105,10 +105,6 @@ class ANARCIFallback:
         }]]
 
 
-# Global fallback instance
-anarci_fallback = ANARCIFallback()
-
-
 def anarci(sequences: List[str], scheme: str = "imgt", allowed_species: Optional[List[str]] = None) -> List[Tuple]:
     """
     ANARCI function that tries the real ANARCI first, falls back to simplified version
@@ -123,8 +119,9 @@ def anarci(sequences: List[str], scheme: str = "imgt", allowed_species: Optional
     """
     try:
         # Try to import and use the real ANARCI
-        from anarci import anarci as real_anarci
-        return real_anarci(sequences, scheme=scheme, allowed_species=allowed_species)
+        from anarci import anarci
+        return anarci(sequences, scheme=scheme, allowed_species=allowed_species)
     except ImportError:
         # Fall back to simplified implementation
-        return anarci_fallback.anarci(sequences, scheme=scheme, allowed_species=allowed_species) 
+        #return anarci_fallback.anarci(sequences, scheme=scheme, allowed_species=allowed_species)
+        raise ImportError("ANARCI is not installed, please install it or use the fallback implementation.")

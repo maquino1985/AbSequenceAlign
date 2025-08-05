@@ -35,26 +35,35 @@ def detect_isotype_with_hmmer(sequence: str, hmm_dir: str = "data/isotype_hmms")
                     fasta_path
                 ]
                 result = subprocess.run(cmd, capture_output=True, text=True)
-                # HMMER writes --tblout to stdout if '-' is given
+                target = ""
                 tblout = result.stdout
-                for line in tblout.splitlines():
-                    if line.startswith("#") or not line.strip():
+                for tbloutline in tblout.splitlines():
+                    if tbloutline.startswith("#") or not tbloutline.strip():
                         continue
-                    fields = line.split()
-                    # HMMER tblout: target name, accession, query name, accession, e-value, score, ...
-                    if len(fields) < 6:
+                    fields = tbloutline.split()
+
+                    if fields[0] == "Query:":
+                        # Extract the target name from fields[1] (should end with .aln or .ALN)
+                        target = fields[1]
+                        if target.lower().endswith('.aln'):
+                            target = target[:-4]
                         continue
-                    target = hmmfile.replace(".hmm", "")
+                    elif len(fields) < 6:
+                        continue
+                    # Use full sequence score/E-value (fields[0]=E-value, fields[1]=score)
                     try:
-                        evalue = float(fields[4])
-                        score = float(fields[5])
+                        # full sequence
+                        evalue = float(fields[0])
+                        score = float(fields[1])
+                        # best 1 domain
+                        # evalue = float(fields[3])
+                        # score = float(fields[4])
                     except ValueError:
                         continue
                     if score > best_score or (score == best_score and evalue < best_evalue):
                         best_score = score
                         best_evalue = evalue
                         best_isotype = target
-                    break  # Only consider the top hit per HMM
     finally:
         os.unlink(fasta_path)
     return best_isotype
