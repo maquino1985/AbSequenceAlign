@@ -1,7 +1,7 @@
 import uuid
 from typing import Dict, Any, Optional, List
 from datetime import datetime
-from app.models import DatasetInfo, SequenceInfo, AlignmentResult, AnnotationResult
+from app.models.models import DatasetInfo, AlignmentResult, AnnotationResult
 from app.logger import logger
 
 class DataStore:

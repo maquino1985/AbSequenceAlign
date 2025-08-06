@@ -2,6 +2,7 @@ import os
 import subprocess
 from typing import Optional
 
+
 def detect_isotype_with_hmmer(sequence: str, hmm_dir: str = "data/isotype_hmms") -> Optional[str]:
     """
     Detect antibody isotype using HMMER against isotype HMMs.
@@ -12,7 +13,6 @@ def detect_isotype_with_hmmer(sequence: str, hmm_dir: str = "data/isotype_hmms")
         Best-matching isotype (e.g., 'IGHG1', 'IGHA1', etc.) or None if no confident match
     """
     import tempfile
-    import shutil
 
     # Write sequence to temp FASTA
     with tempfile.NamedTemporaryFile("w", delete=False, suffix=".fasta") as fasta:
@@ -30,7 +30,7 @@ def detect_isotype_with_hmmer(sequence: str, hmm_dir: str = "data/isotype_hmms")
                 cmd = [
                     "hmmsearch",
                     "--noali",
-                    "--tblout=-",
+                    # "--tblout=-",
                     hmm_path,
                     fasta_path
                 ]
