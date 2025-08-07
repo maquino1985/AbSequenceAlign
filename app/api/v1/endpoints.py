@@ -9,7 +9,7 @@ from app.data_store import data_store
 from app.logger import logger
 from app.models.models import (
     AlignmentRequest, AnnotationRequest,
-    APIResponse, AlignmentResult
+    APIResponse, AlignmentResult, SequenceInput
 )
 
 router = APIRouter()
@@ -79,11 +79,20 @@ async def upload_sequences(
 @router.post("/annotate", response_model=APIResponse)
 async def annotate_sequences(request: AnnotationRequest):
     try:
-        valid_sequences, errors = sequence_processor.validate_sequences(request.sequences)
+        # Extract all sequences from the flexible structure
+        sequence_strings = []
+        for seq_input in request.sequences:
+            # Get all fields except 'name' as chain sequences
+            chain_sequences = {k: v for k, v in seq_input.model_dump().items() if k != 'name'}
+            sequence_strings.extend(chain_sequences.values())
+        
+        valid_sequences, errors = sequence_processor.validate_sequences(sequence_strings)
         if not valid_sequences:
             raise HTTPException(status_code=400, detail=f"Sequence validation failed: {'; '.join(errors)}")
+        
+        # If validation passes, use the original request.sequences directly
         annotation_result = annotate_sequences_with_processor(
-            sequences=valid_sequences,
+            sequences=request.sequences,
             numbering_scheme=request.numbering_scheme
         )
         return APIResponse(

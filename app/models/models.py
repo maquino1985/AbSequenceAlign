@@ -39,6 +39,14 @@ class ChainType(str, Enum):
     IOTA = "I"
 
 
+class SequenceInput(BaseModel):
+    """Individual sequence input with name and variable chain data"""
+    name: str = Field(..., description="Name/identifier for the sequence")
+    # Allow any additional fields as chain labels with sequence values
+    class Config:
+        extra = "allow"  # Allow additional fields beyond 'name'
+
+
 class UploadRequest(BaseModel):
     """Request model for sequence upload"""
     sequences: List[str] = Field(..., description="List of protein sequences in FASTA format")
@@ -58,7 +66,7 @@ class AlignmentRequest(BaseModel):
 
 class AnnotationRequest(BaseModel):
     """Request model for sequence annotation"""
-    sequences: List[str] = Field(..., description="List of protein sequences")
+    sequences: List[SequenceInput] = Field(..., description="List of sequences with names and variable chain data")
     numbering_scheme: NumberingScheme = Field(default=NumberingScheme.IMGT, description="Numbering scheme")
     chain_type: Optional[ChainType] = Field(None, description="Expected chain type")
 

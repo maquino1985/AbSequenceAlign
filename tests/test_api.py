@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 from app.main import app
 from app.logger import logger
-
+from app.utils.json_to_fasta import json_seqs_to_fasta
 client = TestClient(app)
 
 # Real antibody sequences from test_anarci_result_processor.py
@@ -22,9 +22,8 @@ def test_health():
     assert response.status_code == 200
     assert response.json()["status"] == "healthy"
 
-def test_upload_and_annotate():
-    # Use real antibody sequence for upload
-    fasta = f">seq1\n{IGHG1_SEQ}"
+def test_upload_and_annotate(IGHG1_SEQ):
+    fasta = json_seqs_to_fasta([IGHG1_SEQ])
     response = client.post(
         "/api/v1/upload",
         files={"file": ("test.fasta", fasta, "text/plain")}
@@ -33,10 +32,17 @@ def test_upload_and_annotate():
     data = response.json()["data"]
     assert "dataset_id" in data
     dataset_id = data["dataset_id"]
-    # Test annotation endpoint with real antibody sequence
     response = client.post(
         "/api/v1/annotate",
-        json={"sequences": [IGHG1_SEQ], "numbering_scheme": "cgg"}
+        json={
+            "sequences": [
+                {
+                    "name": "IGHG1_SEQ",
+                    **IGHG1_SEQ
+                }
+            ], 
+            "numbering_scheme": "cgg"
+        }
     )
     logger.info(f"Annotation response: {response.json()}")
     assert response.status_code == 200
@@ -58,9 +64,43 @@ def test_annotate_invalid():
     # Invalid sequence
     response = client.post(
         "/api/v1/annotate",
-        json={"sequences": ["12345"]}
+        json={
+            "sequences": [
+                {
+                    "name": "invalid_seq",
+                    "heavy_chain": "12345"
+                }
+            ]
+        }
     )
     assert response.status_code == 400
     assert "Sequence validation failed" in response.json()["detail"]
+
+def test_annotate_multiple_chains():
+    """Test annotation with multiple chains per sequence"""
+    response = client.post(
+        "/api/v1/annotate",
+        json={
+            "sequences": [
+                {
+                    "name": "igg_test",
+                    "heavy_chain": "EVQLVESGGGLVQPGGSLRLSCAASGFTFSYFAMSWVRQAPGKGLEWVATISGGGGNTYYLDRVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCVRQTYGGFGYWGQGTLVTVSS",
+                    "light_chain": "DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK"
+                },
+                {
+                    "name": "kih_test",
+                    "heavy_chain_1": "ELQLQESGPGLVKPSETLSLTCAVSGVSFSDYHWAWIRDPPGKGLEWIGDINHRGHTNYNPSLKSRVTVSIDTSKNQFSLKLSSVTAADTAVYFCARDFPNFIFDFWGQGTLVTVSS",
+                    "heavy_chain_2": "ELQLQESGPGLVKPSETLSLTCAVSGVSFSDYHWAWIRDPPGKGLEWIGDINHRGHTNYNPSLKSRVTVSIDTSKNQFSLKLSSVTAADTAVYFCARDFPNFIFDFWGQGTLVTVSS",
+                    "light_chain_1": "DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK",
+                    "light_chain_2": "DIVLTQSPATLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK"
+                }
+            ],
+            "numbering_scheme": "imgt"
+        }
+    )
+    assert response.status_code == 200
+    result = response.json()["data"]["annotation_result"]
+    assert result["total_sequences"] > 0
+    assert result["numbering_scheme"] == "imgt"
 
 # Additional tests for /align, /dataset, /datasets, /alignment can be added as needed.

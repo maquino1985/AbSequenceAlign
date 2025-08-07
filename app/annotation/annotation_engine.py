@@ -3,12 +3,12 @@
 
 # If you need annotation, import annotate_sequences_with_processor from this module.
 from app.annotation.AnarciResultProcessor import AnarciResultProcessor
-from app.models.models import SequenceInfo, AnnotationResult, NumberingScheme
+from app.models.models import SequenceInfo, AnnotationResult, NumberingScheme, SequenceInput
 from typing import List
 
 
 def annotate_sequences_with_processor(
-        sequences: List[str],
+        sequences: List[SequenceInput],
         numbering_scheme: NumberingScheme = NumberingScheme.IMGT
 ) -> AnnotationResult:
     """
@@ -17,13 +17,21 @@ def annotate_sequences_with_processor(
     if not sequences:
         return AnnotationResult(sequences=[], numbering_scheme=numbering_scheme, total_sequences=0, chain_types={},
                                 isotypes={}, species={})
-    # Prepare input dict for AnarciResultProcessor
-    input_dict = {f"seq_{i + 1}": {f"chain_{i + 1}": seq} for i, seq in enumerate(sequences)}
+    
+    # Convert SequenceInput objects to the format expected by AnarciResultProcessor
+    # Each sequence becomes {name: {chain_label: sequence_value}}
+    input_dict = {}
+    for seq in sequences:
+        # Get all fields except 'name' as chain data
+        chain_data = {k: v for k, v in seq.model_dump().items() if k != 'name'}
+        input_dict[seq.name] = chain_data
+    
     processor = AnarciResultProcessor(input_dict, numbering_scheme=numbering_scheme.value)
     all_sequence_infos = []
     chain_types = {}
     isotypes = {}
     species_counts = {}
+    
     for result_obj in processor.results:
         for chain in result_obj.chains:
             for domain in chain.domains:
@@ -44,6 +52,7 @@ def annotate_sequences_with_processor(
                     isotypes[domain.isotype] = isotypes.get(domain.isotype, 0) + 1
                 if domain.species:
                     species_counts[domain.species] = species_counts.get(domain.species, 0) + 1
+    
     return AnnotationResult(
         sequences=all_sequence_infos,
         numbering_scheme=numbering_scheme,
