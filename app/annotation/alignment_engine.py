@@ -4,9 +4,7 @@ import subprocess
 import tempfile
 from typing import List, Dict, Any
 
-from Bio import pairwise2
-from Bio.Align import substitution_matrices
-from Bio.pairwise2 import format_alignment
+from Bio.Align import PairwiseAligner, substitution_matrices
 
 from app.models.models import AlignmentMethod, NumberingScheme
 
@@ -72,15 +70,17 @@ class AlignmentEngine:
             scoring_matrix = self.available_matrices["BLOSUM62"]
 
         # Perform alignment
-        alignments = pairwise2.align.globalds(
+        alignments = PairwiseAligner.align.globalds(
             sequences[0], sequences[1],
             scoring_matrix, gap_open, gap_extend
         )
+        
 
         if not alignments:
             raise RuntimeError("No alignment found")
 
         best_alignment = alignments[0]
+        best_alignment.format()
 
         # Calculate statistics
         score = best_alignment.score
@@ -88,7 +88,7 @@ class AlignmentEngine:
 
         return {
             "method": "pairwise_global",
-            "alignment": format_alignment(*best_alignment),
+            "alignment": best_alignment,
             "score": score,
             "identity": identity,
             "length": len(best_alignment.seqA),
@@ -109,7 +109,7 @@ class AlignmentEngine:
             scoring_matrix = self.available_matrices["BLOSUM62"]
 
         # Perform alignment
-        alignments = pairwise2.align.localds(
+        alignments = PairwiseAligner.align.localds(
             sequences[0], sequences[1],
             scoring_matrix, gap_open, gap_extend
         )
@@ -125,7 +125,7 @@ class AlignmentEngine:
 
         return {
             "method": "pairwise_local",
-            "alignment": format_alignment(*best_alignment),
+            "alignment": best_alignment.format(),
             "score": score,
             "identity": identity,
             "length": len(best_alignment.seqA),
