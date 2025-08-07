@@ -1,5 +1,5 @@
-from typing import List, Optional, Dict, Any, Literal
-from pydantic import BaseModel, Field
+from typing import List, Optional, Dict, Any, Literal, Union
+from pydantic import BaseModel, Field, field_validator
 from enum import Enum
 
 
@@ -42,9 +42,58 @@ class ChainType(str, Enum):
 class SequenceInput(BaseModel):
     """Individual sequence input with name and variable chain data"""
     name: str = Field(..., description="Name/identifier for the sequence")
-    # Allow any additional fields as chain labels with sequence values
-    class Config:
-        extra = "allow"  # Allow additional fields beyond 'name'
+    
+    # Common chain patterns
+    heavy_chain: Optional[str] = Field(None, description="Heavy chain sequence")
+    light_chain: Optional[str] = Field(None, description="Light chain sequence")
+    scfv: Optional[str] = Field(None, description="Single-chain Fv sequence")
+    
+    # Variable chain patterns (e.g., heavy_chain_1, heavy_chain_2, etc.)
+    heavy_chain_1: Optional[str] = Field(None, description="First heavy chain sequence")
+    heavy_chain_2: Optional[str] = Field(None, description="Second heavy chain sequence")
+    heavy_chain_3: Optional[str] = Field(None, description="Third heavy chain sequence")
+    heavy_chain_4: Optional[str] = Field(None, description="Fourth heavy chain sequence")
+    
+    light_chain_1: Optional[str] = Field(None, description="First light chain sequence")
+    light_chain_2: Optional[str] = Field(None, description="Second light chain sequence")
+    light_chain_3: Optional[str] = Field(None, description="Third light chain sequence")
+    light_chain_4: Optional[str] = Field(None, description="Fourth light chain sequence")
+    
+    # Additional custom chains
+    custom_chains: Optional[Dict[str, str]] = Field(None, description="Additional custom chain sequences with arbitrary labels")
+    
+    @field_validator('heavy_chain', 'light_chain', 'scfv', 'heavy_chain_1', 'heavy_chain_2', 'heavy_chain_3', 'heavy_chain_4', 
+                    'light_chain_1', 'light_chain_2', 'light_chain_3', 'light_chain_4', mode='before')
+    @classmethod
+    def validate_chain_sequences(cls, v, info):
+        """Validate that chain sequences are valid amino acid sequences"""
+        if v is not None:
+            # Basic validation - check for valid amino acids
+            valid_aa = set("ACDEFGHIKLMNPQRSTVWY")
+            invalid_chars = set(v.upper()) - valid_aa
+            if invalid_chars:
+                raise ValueError(f"Invalid amino acids in {info.field_name}: {invalid_chars}")
+            
+            # Check minimum length
+            if len(v) < 15:
+                raise ValueError(f"{info.field_name} sequence too short ({len(v)} AA). Minimum 15 AA required.")
+        
+        return v
+    
+    def get_all_chains(self) -> Dict[str, str]:
+        """Get all chain sequences as a dictionary"""
+        chains = {}
+        
+        # Add standard chains if present
+        for field_name, value in self.model_dump().items():
+            if field_name not in ['name', 'custom_chains'] and value is not None:
+                chains[field_name] = value
+        
+        # Add custom chains if present
+        if self.custom_chains:
+            chains.update(self.custom_chains)
+        
+        return chains
 
 
 class UploadRequest(BaseModel):

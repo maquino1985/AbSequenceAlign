@@ -22,9 +22,10 @@ def annotate_sequences_with_processor(
     # Each sequence becomes {name: {chain_label: sequence_value}}
     input_dict = {}
     for seq in sequences:
-        # Get all fields except 'name' as chain data
-        chain_data = {k: v for k, v in seq.model_dump().items() if k != 'name'}
-        input_dict[seq.name] = chain_data
+        # Get all chains using the new explicit method
+        chain_data = seq.get_all_chains()
+        if chain_data:  # Only add if there are chains
+            input_dict[seq.name] = chain_data
     
     processor = AnarciResultProcessor(input_dict, numbering_scheme=numbering_scheme.value)
     all_sequence_infos = []

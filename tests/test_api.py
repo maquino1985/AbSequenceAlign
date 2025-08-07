@@ -61,7 +61,7 @@ def test_upload_invalid():
     assert "Invalid FASTA format" in response.json()["detail"]
 
 def test_annotate_invalid():
-    # Invalid sequence
+    # Invalid sequence - should be caught by Pydantic validation
     response = client.post(
         "/api/v1/annotate",
         json={
@@ -73,8 +73,8 @@ def test_annotate_invalid():
             ]
         }
     )
-    assert response.status_code == 400
-    assert "Sequence validation failed" in response.json()["detail"]
+    assert response.status_code == 422  # Validation error from Pydantic
+    assert "Invalid amino acids" in response.json()["detail"][0]["msg"]
 
 def test_annotate_multiple_chains():
     """Test annotation with multiple chains per sequence"""
@@ -92,7 +92,29 @@ def test_annotate_multiple_chains():
                     "heavy_chain_1": "ELQLQESGPGLVKPSETLSLTCAVSGVSFSDYHWAWIRDPPGKGLEWIGDINHRGHTNYNPSLKSRVTVSIDTSKNQFSLKLSSVTAADTAVYFCARDFPNFIFDFWGQGTLVTVSS",
                     "heavy_chain_2": "ELQLQESGPGLVKPSETLSLTCAVSGVSFSDYHWAWIRDPPGKGLEWIGDINHRGHTNYNPSLKSRVTVSIDTSKNQFSLKLSSVTAADTAVYFCARDFPNFIFDFWGQGTLVTVSS",
                     "light_chain_1": "DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK",
-                    "light_chain_2": "DIVLTQSPATLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK"
+                    "light_chain_2": "DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK"
+                }
+            ],
+            "numbering_scheme": "imgt"
+        }
+    )
+    assert response.status_code == 200
+    result = response.json()["data"]["annotation_result"]
+    assert result["total_sequences"] > 0
+    assert result["numbering_scheme"] == "imgt"
+
+def test_annotate_with_custom_chains():
+    """Test annotation with custom chain labels"""
+    response = client.post(
+        "/api/v1/annotate",
+        json={
+            "sequences": [
+                {
+                    "name": "custom_test",
+                    "custom_chains": {
+                        "custom_heavy": "EVQLVESGGGLVQPGGSLRLSCAASGFTFSYFAMSWVRQAPGKGLEWVATISGGGGNTYYLDRVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCVRQTYGGFGYWGQGTLVTVSS",
+                        "custom_light": "DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK"
+                    }
                 }
             ],
             "numbering_scheme": "imgt"

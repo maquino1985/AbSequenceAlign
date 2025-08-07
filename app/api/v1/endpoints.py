@@ -79,12 +79,12 @@ async def upload_sequences(
 @router.post("/annotate", response_model=APIResponse)
 async def annotate_sequences(request: AnnotationRequest):
     try:
-        # Extract all sequences from the flexible structure
+        # Extract all sequences from the explicit structure
         sequence_strings = []
         for seq_input in request.sequences:
-            # Get all fields except 'name' as chain sequences
-            chain_sequences = {k: v for k, v in seq_input.model_dump().items() if k != 'name'}
-            sequence_strings.extend(chain_sequences.values())
+            # Get all chains using the explicit method
+            chain_data = seq_input.get_all_chains()
+            sequence_strings.extend(chain_data.values())
         
         valid_sequences, errors = sequence_processor.validate_sequences(sequence_strings)
         if not valid_sequences:
