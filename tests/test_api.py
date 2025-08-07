@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 from app.main import app
+from app.logger import logger
 
 client = TestClient(app)
 
@@ -35,12 +36,13 @@ def test_upload_and_annotate():
     # Test annotation endpoint with real antibody sequence
     response = client.post(
         "/api/v1/annotate",
-        json={"sequences": [IGHG1_SEQ]}
+        json={"sequences": [IGHG1_SEQ], "numbering_scheme": "cgg"}
     )
+    logger.info(f"Annotation response: {response.json()}")
     assert response.status_code == 200
     result = response.json()["data"]["annotation_result"]
     assert result["total_sequences"] > 0
-    assert result["numbering_scheme"] == "imgt"
+    assert result["numbering_scheme"] == "cgg"
 
 def test_upload_invalid():
     # Invalid FASTA

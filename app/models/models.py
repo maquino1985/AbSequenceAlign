@@ -10,6 +10,7 @@ class NumberingScheme(str, Enum):
     CHOTHIA = "chothia"
     MARTIN = "martin"
     AHO = "aho"
+    CGG = "cgg"
 
 
 class AlignmentMethod(str, Enum):
@@ -28,6 +29,14 @@ class ChainType(str, Enum):
     LIGHT = "L"
     KAPPA = "K"
     LAMBDA = "L"
+    BETA = "B"
+    GAMMA = "G"
+    DELTA = "D"
+    EPSILON = "E"
+    ZETA = "Z"
+    ALPHA = "A"
+    THETA = "T"
+    IOTA = "I"
 
 
 class UploadRequest(BaseModel):
