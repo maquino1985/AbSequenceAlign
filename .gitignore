@@ -5,6 +5,7 @@ __pycache__/
 
 #cursor
 agent.yml
+.cursorrules
 
 # C extensions
 *.so
