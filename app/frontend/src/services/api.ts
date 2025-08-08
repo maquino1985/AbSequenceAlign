@@ -4,7 +4,9 @@ import axios from 'axios';
 import type { 
   AnnotationRequest, 
   APIResponse, 
-  AnnotationResult
+  AnnotationResult,
+  MSACreationRequest,
+  MSAAnnotationRequest
 } from '../types/api';
 
 // Configure axios defaults
@@ -76,6 +78,44 @@ export const api = {
   // Get datasets (for future use)
   getDatasets: async (): Promise<APIResponse<{ datasets: Record<string, unknown>[] }>> => {
     const response = await apiClient.get('/datasets');
+    return response.data;
+  },
+
+  // MSA Methods
+  uploadMSASequences: async (
+    data: FormData
+  ): Promise<APIResponse<{ sequences: any[]; validation_errors: string[] }>> => {
+    const response = await apiClient.post('/msa-viewer/upload', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  createMSA: async (
+    request: MSACreationRequest
+  ): Promise<APIResponse<{ job_id?: string; msa_result?: any; annotation_result?: any; use_background: boolean }>> => {
+    const response = await apiClient.post('/msa-viewer/create-msa', request);
+    return response.data;
+  },
+
+  annotateMSA: async (
+    request: MSAAnnotationRequest
+  ): Promise<APIResponse<{ job_id: string; status: string }>> => {
+    const response = await apiClient.post('/msa-viewer/annotate-msa', request);
+    return response.data;
+  },
+
+  getJobStatus: async (
+    jobId: string
+  ): Promise<APIResponse<any>> => {
+    const response = await apiClient.get(`/msa-viewer/job/${jobId}`);
+    return response.data;
+  },
+
+  listJobs: async (): Promise<APIResponse<{ jobs: any[] }>> => {
+    const response = await apiClient.get('/msa-viewer/jobs');
     return response.data;
   },
 };

@@ -4,7 +4,7 @@ from typing import List, Dict, Tuple, Optional, Any
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 
-from backend.logger import logger
+from ..logger import logger
 
 
 class SequenceProcessor:
@@ -59,9 +59,9 @@ class SequenceProcessor:
         if invalid_chars:
             return False, f"Invalid amino acids found: {invalid_chars}"
 
-        # Check minimum length (antibody sequences should be at least 100 AA)
-        if len(clean_seq) < 100:
-            return False, f"Sequence too short ({len(clean_seq)} AA). Minimum 100 AA required."
+        # Check minimum length (sequences should be at least 15 AA for HMMER3 compatibility)
+        if len(clean_seq) < 15:
+            return False, f"Sequence too short ({len(clean_seq)} AA). Minimum 15 AA required."
 
         return True, ""
 

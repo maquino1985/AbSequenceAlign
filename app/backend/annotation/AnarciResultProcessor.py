@@ -4,8 +4,8 @@ from typing import List, Optional, Dict
 
 from anarci import run_anarci
 
-from backend.annotation.AntibodyRegionAnnotator import AntibodyRegionAnnotator
-from backend.utils.types import Chain, Domain
+from .AntibodyRegionAnnotator import AntibodyRegionAnnotator
+from ..utils.types import Chain, Domain
 
 
 class AnarciResultObject:

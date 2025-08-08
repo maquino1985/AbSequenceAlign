@@ -158,6 +158,54 @@ class DatasetInfo(BaseModel):
     status: str  # "uploaded", "annotated", "aligned", "error"
 
 
+class MSASequence(BaseModel):
+    """Individual sequence in MSA with annotations"""
+    name: str = Field(..., description="Sequence name/identifier")
+    original_sequence: str = Field(..., description="Original unaligned sequence")
+    aligned_sequence: str = Field(..., description="Aligned sequence with gaps")
+    start_position: int = Field(..., description="Start position in alignment")
+    end_position: int = Field(..., description="End position in alignment")
+    gaps: List[int] = Field(default_factory=list, description="Positions with gaps")
+    annotations: Optional[List[Dict[str, Any]]] = Field(None, description="Region annotations")
+
+class MSAResult(BaseModel):
+    """Result of multiple sequence alignment"""
+    msa_id: str = Field(..., description="Unique MSA identifier")
+    sequences: List[MSASequence] = Field(..., description="Aligned sequences")
+    alignment_matrix: List[List[str]] = Field(..., description="2D array of aligned sequences")
+    consensus: str = Field(..., description="Consensus sequence")
+    alignment_method: AlignmentMethod = Field(..., description="Method used for alignment")
+    created_at: str = Field(..., description="Creation timestamp")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+
+class MSAAnnotationResult(BaseModel):
+    """Result of MSA annotation"""
+    msa_id: str = Field(..., description="MSA identifier")
+    annotated_sequences: List[MSASequence] = Field(..., description="Sequences with annotations")
+    numbering_scheme: NumberingScheme = Field(..., description="Numbering scheme used")
+    region_mappings: Dict[str, List[Dict[str, Any]]] = Field(..., description="Region mappings across sequences")
+
+class MSACreationRequest(BaseModel):
+    """Request model for MSA creation"""
+    sequences: List[SequenceInput] = Field(..., description="Sequences to align")
+    alignment_method: AlignmentMethod = Field(default=AlignmentMethod.MUSCLE, description="Alignment method")
+    numbering_scheme: NumberingScheme = Field(default=NumberingScheme.IMGT, description="Numbering scheme for annotation")
+
+class MSAAnnotationRequest(BaseModel):
+    """Request model for MSA annotation"""
+    msa_id: str = Field(..., description="MSA identifier")
+    numbering_scheme: NumberingScheme = Field(default=NumberingScheme.IMGT, description="Numbering scheme")
+
+class MSAJobStatus(BaseModel):
+    """Status of MSA job"""
+    job_id: str = Field(..., description="Job identifier")
+    status: str = Field(..., description="Job status: pending, running, completed, failed")
+    progress: float = Field(default=0.0, description="Progress percentage")
+    message: str = Field(..., description="Status message")
+    result: Optional[Dict[str, Any]] = Field(None, description="Job result when completed")
+    created_at: str = Field(..., description="Job creation timestamp")
+    completed_at: Optional[str] = Field(None, description="Job completion timestamp")
+
 class APIResponse(BaseModel):
     """Standard API response wrapper"""
     success: bool

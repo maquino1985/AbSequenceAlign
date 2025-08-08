@@ -11,9 +11,9 @@ import {
   Tooltip
 } from '@mui/material';
 import { ZoomIn, ZoomOut, Palette } from '@mui/icons-material';
-import type { Region, ColorScheme } from '../../types/sequence';
-import { COLOR_SCHEMES, getAminoAcidColor } from '../../utils/colorUtils';
-import { ColorSchemeType } from '../../types/sequence';
+import type { Region, ColorScheme } from '../../../../types/sequence';
+import { COLOR_SCHEMES, getAminoAcidColor } from '../../../../utils/colorUtils';
+import { ColorSchemeType } from '../../../../types/sequence';
 
 interface AminoAcidSequenceProps {
   sequence: string;

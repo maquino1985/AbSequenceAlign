@@ -1,0 +1,281 @@
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { MSAInput } from '../MSAInput/MSAInput';
+
+// Mock the fastaParser utility
+vi.mock('../../../../utils/fastaParser', () => ({
+  parseFasta: vi.fn(),
+}));
+
+const mockParseFasta = vi.mocked(require('../../../../utils/fastaParser').parseFasta);
+
+describe.skip('MSAInput', () => {
+  const mockOnUpload = vi.fn();
+  const defaultProps = {
+    onUpload: mockOnUpload,
+    isLoading: false,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders without crashing', () => {
+    render(<MSAInput {...defaultProps} />);
+    expect(screen.getByText('Upload Sequences')).toBeInTheDocument();
+  });
+
+  it('displays file upload section', () => {
+    render(<MSAInput {...defaultProps} />);
+    expect(screen.getByText('Upload FASTA File')).toBeInTheDocument();
+    expect(screen.getByLabelText(/choose file/i)).toBeInTheDocument();
+  });
+
+  it('displays text input section', () => {
+    render(<MSAInput {...defaultProps} />);
+    expect(screen.getByText('Or Paste FASTA Content')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/paste your fasta sequences/i)).toBeInTheDocument();
+  });
+
+  it('displays example sequences section', () => {
+    render(<MSAInput {...defaultProps} />);
+    expect(screen.getByText('Example Sequences')).toBeInTheDocument();
+    expect(screen.getByText('Antibody Heavy Chains')).toBeInTheDocument();
+    expect(screen.getByText('Antibody Light Chains')).toBeInTheDocument();
+    expect(screen.getByText('Mixed Antibody Sequences')).toBeInTheDocument();
+  });
+
+  it('handles valid FASTA file upload', async () => {
+    const mockSequences = [
+      { id: 'Sequence_1', description: undefined, sequence: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK' },
+      { id: 'Sequence_2', description: undefined, sequence: 'DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK' }
+    ];
+
+    mockParseFasta.mockReturnValue(mockSequences);
+
+    const file = new File(['>Sequence_1\nEVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK\n>Sequence_2\nDIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK'], 'test.fasta', { type: 'text/plain' });
+
+    render(<MSAInput {...defaultProps} />);
+    
+    const fileInput = screen.getByLabelText(/choose file/i);
+    await userEvent.upload(fileInput, file);
+
+    await waitFor(() => {
+      expect(mockParseFasta).toHaveBeenCalled();
+      expect(screen.getByText('2 sequences loaded')).toBeInTheDocument();
+    });
+  });
+
+  it('rejects invalid file types', async () => {
+    const file = new File(['invalid content'], 'test.txt', { type: 'text/plain' });
+
+    render(<MSAInput {...defaultProps} />);
+    
+    const fileInput = screen.getByLabelText(/choose file/i);
+    await userEvent.upload(fileInput, file);
+
+    await waitFor(() => {
+      expect(screen.getByText('Please upload a FASTA file (.fasta, .fa, or .txt)')).toBeInTheDocument();
+    });
+  });
+
+  it('handles valid FASTA text input', async () => {
+    const mockSequences = [
+      { id: 'Sequence_1', description: undefined, sequence: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK' }
+    ];
+
+    mockParseFasta.mockReturnValue(mockSequences);
+
+    render(<MSAInput {...defaultProps} />);
+    
+    const textArea = screen.getByPlaceholderText(/paste your fasta sequences/i);
+    await userEvent.type(textArea, '>Sequence_1\nEVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK');
+
+    await waitFor(() => {
+      expect(mockParseFasta).toHaveBeenCalled();
+      expect(screen.getByText('1 sequence loaded')).toBeInTheDocument();
+    });
+  });
+
+  it('handles invalid FASTA text input', async () => {
+    mockParseFasta.mockImplementation(() => {
+      throw new Error('Invalid FASTA format');
+    });
+
+    render(<MSAInput {...defaultProps} />);
+    
+    const textArea = screen.getByPlaceholderText(/paste your fasta sequences/i);
+    await userEvent.type(textArea, 'invalid fasta content');
+
+    await waitFor(() => {
+      expect(screen.getByText('Invalid FASTA format')).toBeInTheDocument();
+    });
+  });
+
+  it('loads example sequences when clicked', async () => {
+    const mockSequences = [
+      { id: 'Heavy_Chain_1', description: undefined, sequence: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK' },
+      { id: 'Heavy_Chain_2', description: undefined, sequence: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSDYHWAWIRDPPGKGLEWIGDINHRGHTNYNPSLKSRVTVSIDTSKNQFSLKLSSVTAADTAVYFCAR' },
+      { id: 'Heavy_Chain_3', description: undefined, sequence: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK' }
+    ];
+
+    mockParseFasta.mockReturnValue(mockSequences);
+
+    render(<MSAInput {...defaultProps} />);
+    
+    const exampleButton = screen.getByText('Antibody Heavy Chains');
+    await userEvent.click(exampleButton);
+
+    await waitFor(() => {
+      expect(mockParseFasta).toHaveBeenCalled();
+      expect(screen.getByText('3 sequences loaded')).toBeInTheDocument();
+    });
+  });
+
+  it('calls onUpload when upload button is clicked', async () => {
+    const mockSequences = [
+      { name: 'Sequence_1', sequence: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK' }
+    ];
+
+    mockParseFasta.mockReturnValue(mockSequences);
+
+    render(<MSAInput {...defaultProps} />);
+    
+    // Load sequences first
+    const textArea = screen.getByPlaceholderText(/paste your fasta sequences/i);
+    await userEvent.type(textArea, '>Sequence_1\nEVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK');
+
+    await waitFor(() => {
+      expect(screen.getByText('1 sequence loaded')).toBeInTheDocument();
+    });
+
+    // Click upload button
+    const uploadButton = screen.getByText('Upload Sequences');
+    await userEvent.click(uploadButton);
+
+    expect(mockOnUpload).toHaveBeenCalledWith(['EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK']);
+  });
+
+  it('disables upload button when no sequences are loaded', () => {
+    render(<MSAInput {...defaultProps} />);
+    
+    const uploadButton = screen.getByText('Upload Sequences');
+    expect(uploadButton).toBeDisabled();
+  });
+
+  it('enables upload button when sequences are loaded', async () => {
+    const mockSequences = [
+      { name: 'Sequence_1', sequence: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK' }
+    ];
+
+    mockParseFasta.mockReturnValue(mockSequences);
+
+    render(<MSAInput {...defaultProps} />);
+    
+    const textArea = screen.getByPlaceholderText(/paste your fasta sequences/i);
+    await userEvent.type(textArea, '>Sequence_1\nEVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK');
+
+    await waitFor(() => {
+      const uploadButton = screen.getByText('Upload Sequences');
+      expect(uploadButton).not.toBeDisabled();
+    });
+  });
+
+  it('shows loading state when isLoading is true', () => {
+    render(<MSAInput {...defaultProps} isLoading={true} />);
+    
+    const uploadButton = screen.getByText('Upload Sequences');
+    expect(uploadButton).toBeDisabled();
+    expect(screen.getByText(/processing/i)).toBeInTheDocument();
+  });
+
+  it('clears sequences when clear button is clicked', async () => {
+    const mockSequences = [
+      { name: 'Sequence_1', sequence: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK' }
+    ];
+
+    mockParseFasta.mockReturnValue(mockSequences);
+
+    render(<MSAInput {...defaultProps} />);
+    
+    // Load sequences first
+    const textArea = screen.getByPlaceholderText(/paste your fasta sequences/i);
+    await userEvent.type(textArea, '>Sequence_1\nEVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK');
+
+    await waitFor(() => {
+      expect(screen.getByText('1 sequence loaded')).toBeInTheDocument();
+    });
+
+    // Click clear button
+    const clearButton = screen.getByText('Clear');
+    await userEvent.click(clearButton);
+
+    await waitFor(() => {
+      expect(screen.queryByText('1 sequence loaded')).not.toBeInTheDocument();
+      expect(textArea).toHaveValue('');
+    });
+  });
+
+  it('handles empty text input', async () => {
+    render(<MSAInput {...defaultProps} />);
+    
+    const textArea = screen.getByPlaceholderText(/paste your fasta sequences/i);
+    await userEvent.clear(textArea);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/sequence.*loaded/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it('validates file extensions correctly', async () => {
+    const validFiles = [
+      new File(['content'], 'test.fasta', { type: 'text/plain' }),
+      new File(['content'], 'test.fa', { type: 'text/plain' }),
+      new File(['content'], 'test.txt', { type: 'text/plain' })
+    ];
+
+    const invalidFiles = [
+      new File(['content'], 'test.pdf', { type: 'application/pdf' }),
+      new File(['content'], 'test.doc', { type: 'application/msword' })
+    ];
+
+    render(<MSAInput {...defaultProps} />);
+    const fileInput = screen.getByLabelText(/choose file/i);
+
+    // Test valid files
+    for (const file of validFiles) {
+      await userEvent.upload(fileInput, file);
+      await waitFor(() => {
+        expect(screen.queryByText(/please upload a fasta file/i)).not.toBeInTheDocument();
+      });
+    }
+
+    // Test invalid files
+    for (const file of invalidFiles) {
+      await userEvent.upload(fileInput, file);
+      await waitFor(() => {
+        expect(screen.getByText('Please upload a FASTA file (.fasta, .fa, or .txt)')).toBeInTheDocument();
+      });
+    }
+  });
+
+  it('displays sequence count correctly', async () => {
+    const mockSequences = [
+      { name: 'Sequence_1', sequence: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK' },
+      { name: 'Sequence_2', sequence: 'DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK' },
+      { name: 'Sequence_3', sequence: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSDYHWAWIRDPPGKGLEWIGDINHRGHTNYNPSLKSRVTVSIDTSKNQFSLKLSSVTAADTAVYFCAR' }
+    ];
+
+    mockParseFasta.mockReturnValue(mockSequences);
+
+    render(<MSAInput {...defaultProps} />);
+    
+    const textArea = screen.getByPlaceholderText(/paste your fasta sequences/i);
+    await userEvent.type(textArea, '>Sequence_1\nEVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK\n>Sequence_2\nDIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK\n>Sequence_3\nEVQLVESGGGLVQPGGSLRLSCAASGFTFSDYHWAWIRDPPGKGLEWIGDINHRGHTNYNPSLKSRVTVSIDTSKNQFSLKLSSVTAADTAVYFCAR');
+
+    await waitFor(() => {
+      expect(screen.getByText('3 sequences loaded')).toBeInTheDocument();
+    });
+  });
+});

@@ -1,0 +1,250 @@
+import React, { useState } from 'react';
+import { 
+  Box, 
+  Typography, 
+  Paper, 
+  Tabs, 
+  Tab,
+  Alert,
+  CircularProgress
+} from '@mui/material';
+import { FastaInput } from '../components/SequenceInput/FastaInput';
+import { DomainGraphics } from '../components/Visualization/DomainGraphics';
+import { AminoAcidSequence } from '../components/Visualization/AminoAcidSequence';
+import { FeatureTable } from '../components/FeatureTable/FeatureTable';
+import { useSequenceData } from '../../../hooks/useSequenceData';
+import type { NumberingScheme } from '../../../types/api';
+import { api } from '../../../services/api';
+import { parseFasta } from '../../../utils/fastaParser';
+
+export const SequenceAnnotation: React.FC = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState(0);
+  
+  const { 
+    sequences, 
+    selectedRegions,
+    selectedPositions,
+    colorScheme,
+    setColorScheme,
+    selectRegion,
+    selectPosition,
+    setSequences
+  } = useSequenceData();
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setSelectedTab(newValue);
+  };
+
+  const handleSubmit = async (fastaContent: string, numberingScheme: NumberingScheme) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Parse FASTA content
+      const parsedSequences = parseFasta(fastaContent);
+      
+      if (parsedSequences.length === 0) {
+        throw new Error('No valid sequences found in FASTA content');
+      }
+
+      // Prepare request for API
+      const request = {
+        sequences: parsedSequences.map(seq => ({
+          name: seq.id || `Sequence_${seq.sequence.substring(0, 10)}`,
+          heavy_chain: seq.sequence // Assume it's a heavy chain for now
+        })),
+        numbering_scheme: numberingScheme
+      };
+
+      // Call API
+      const response = await api.annotateSequences(request);
+      
+      if (response.success && response.data?.annotation_result) {
+        setSequences(response.data.annotation_result);
+      } else {
+        throw new Error(response.message || 'Annotation failed');
+      }
+    } catch (err) {
+      console.error('Annotation error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to annotate sequences');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Box>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Antibody Sequence Annotation
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+        Upload and analyze antibody sequences to identify regions and visualize annotations.
+      </Typography>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      {isLoading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+          <CircularProgress />
+        </Box>
+      )}
+
+      {/* Sequence Input Section */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Sequence Input
+        </Typography>
+        <FastaInput 
+          onSubmit={handleSubmit}
+        />
+      </Paper>
+
+      {/* Results Section */}
+      {sequences.length > 0 ? (
+        <Box>
+          {/* Tabbed Interface for Sequences */}
+          <Box sx={{ width: '100%' }}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+              <Tabs 
+                value={selectedTab} 
+                onChange={handleTabChange}
+                aria-label="sequence tabs"
+                variant="scrollable"
+                scrollButtons="auto"
+              >
+                {sequences.map((sequence, index) => (
+                  <Tab 
+                    key={sequence.id} 
+                    label={sequence.name} 
+                    id={`sequence-tab-${index}`}
+                    aria-controls={`sequence-tabpanel-${index}`}
+                  />
+                ))}
+              </Tabs>
+            </Box>
+            
+            {/* Tab Content */}
+            {sequences.map((sequence, sequenceIndex) => (
+              <Box
+                key={sequence.id}
+                role="tabpanel"
+                hidden={selectedTab !== sequenceIndex}
+                id={`sequence-tabpanel-${sequenceIndex}`}
+                aria-labelledby={`sequence-tab-${sequenceIndex}`}
+              >
+                {selectedTab === sequenceIndex && (
+                  <Box sx={{ mt: 3 }}>
+                                         {sequence.chains.map((chain) => (
+                      <Paper key={chain.id} sx={{ p: 3, mb: 3 }}>
+                        <Typography variant="h6" gutterBottom>
+                          {chain.type} Chain
+                        </Typography>
+                        
+                        {/* Domain Structure Visualization */}
+                        <Box sx={{ mb: 3 }}>
+                          <Typography variant="subtitle1" gutterBottom>
+                            Domain Structure
+                          </Typography>
+                          <DomainGraphics
+                            regions={chain.annotations}
+                            sequenceLength={chain.sequence.length}
+                            width={800}
+                            height={80}
+                            onRegionClick={(region) => selectRegion(region.id)}
+                            selectedRegions={selectedRegions}
+                          />
+                        </Box>
+                        
+                        {/* Interactive Amino Acid Sequence */}
+                        <Box sx={{ mb: 3 }}>
+                          <Typography variant="subtitle1" gutterBottom>
+                            Amino Acid Sequence
+                          </Typography>
+                          <AminoAcidSequence
+                            sequence={chain.sequence}
+                            regions={chain.annotations}
+                            colorScheme={colorScheme}
+                            onAminoAcidClick={(position) => selectPosition(position)}
+                            onColorSchemeChange={setColorScheme}
+                            selectedPositions={selectedPositions}
+                            selectedRegions={selectedRegions}
+                          />
+                        </Box>
+                        
+                        {/* Feature Table */}
+                        <Box sx={{ mb: 3 }}>
+                          <Typography variant="subtitle1" gutterBottom>
+                            Feature Table
+                          </Typography>
+                          <FeatureTable
+                            regions={chain.annotations}
+                            selectedRegions={selectedRegions}
+                            onRegionSelect={selectRegion}
+                          />
+                        </Box>
+                        
+                        {/* Region Summary Chips */}
+                        <Box>
+                          <Typography variant="subtitle2" gutterBottom>
+                            Regions ({chain.annotations.length})
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            {chain.annotations.map((region) => (
+                              <Box
+                                key={region.id}
+                                sx={{
+                                  px: 1.5,
+                                  py: 0.5,
+                                  bgcolor: region.color,
+                                  color: 'white',
+                                  borderRadius: 1,
+                                  fontSize: '0.875rem',
+                                  cursor: 'pointer',
+                                  opacity: selectedRegions.includes(region.id) ? 1 : 0.8,
+                                  border: selectedRegions.includes(region.id) ? '2px solid #000' : '1px solid transparent',
+                                  transition: 'all 0.2s ease',
+                                  '&:hover': {
+                                    opacity: 1,
+                                    transform: 'translateY(-1px)',
+                                    boxShadow: 2
+                                  }
+                                }}
+                                onClick={() => selectRegion(region.id)}
+                              >
+                                <Typography variant="caption" component="span" sx={{ fontWeight: 'bold' }}>
+                                  {region.name}
+                                </Typography>
+                                <Typography variant="caption" component="span" sx={{ ml: 1, opacity: 0.9 }}>
+                                  {region.start}-{region.stop}
+                                </Typography>
+                              </Box>
+                            ))}
+                          </Box>
+                        </Box>
+                      </Paper>
+                    ))}
+                  </Box>
+                )}
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      ) : (
+        <Paper sx={{ p: 4, textAlign: 'center' }}>
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            No sequences uploaded
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Upload FASTA sequences to begin analysis
+          </Typography>
+        </Paper>
+      )}
+    </Box>
+  );
+};

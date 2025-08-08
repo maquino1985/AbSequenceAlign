@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { Box, Typography } from '@mui/material';
-import type { Region } from '../../types/sequence';
+import type { Region } from '../../../../types/sequence';
 
 interface DomainGraphicsProps {
   regions: Region[];

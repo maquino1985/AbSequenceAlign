@@ -2,8 +2,8 @@
 # All annotation should use the new pipeline.
 
 # If you need annotation, import annotate_sequences_with_processor from this module.
-from backend.annotation.AnarciResultProcessor import AnarciResultProcessor
-from backend.models.models import SequenceInfo, AnnotationResult, NumberingScheme, SequenceInput
+from .AnarciResultProcessor import AnarciResultProcessor
+from ..models.models import SequenceInfo, AnnotationResult, NumberingScheme, SequenceInput
 from typing import List
 
 

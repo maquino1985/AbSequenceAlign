@@ -85,3 +85,64 @@ export const AlignmentMethod = {
 } as const;
 
 export type AlignmentMethod = typeof AlignmentMethod[keyof typeof AlignmentMethod];
+
+// MSA Types
+export interface MSASequence {
+  name: string;
+  original_sequence: string;
+  aligned_sequence: string;
+  start_position: number;
+  end_position: number;
+  gaps: number[];
+  annotations?: Array<{
+    name: string;
+    start: number;
+    stop: number;
+    sequence: string;
+    color: string;
+  }>;
+}
+
+export interface MSAResult {
+  msa_id: string;
+  sequences: MSASequence[];
+  alignment_matrix: string[][];
+  consensus: string;
+  alignment_method: AlignmentMethod;
+  created_at: string;
+  metadata: Record<string, any>;
+}
+
+export interface MSAAnnotationResult {
+  msa_id: string;
+  annotated_sequences: MSASequence[];
+  numbering_scheme: NumberingScheme;
+  region_mappings: Record<string, Array<{
+    sequence_name: string;
+    start: number;
+    stop: number;
+    sequence: string;
+    color: string;
+  }>>;
+}
+
+export interface MSACreationRequest {
+  sequences: SequenceInput[];
+  alignment_method?: AlignmentMethod;
+  numbering_scheme?: NumberingScheme;
+}
+
+export interface MSAAnnotationRequest {
+  msa_id: string;
+  numbering_scheme?: NumberingScheme;
+}
+
+export interface MSAJobStatus {
+  job_id: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  progress: number;
+  message: string;
+  result?: any;
+  created_at: string;
+  completed_at?: string;
+}

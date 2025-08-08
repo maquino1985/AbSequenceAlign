@@ -1,17 +1,17 @@
 import React from 'react';
 import {
+  Box,
+  Typography,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Chip,
-  Box,
-  Typography
+  Chip
 } from '@mui/material';
-import type { Region } from '../../types/sequence';
+import type { Region } from '../../../../types/sequence';
 
 interface FeatureTableProps {
   regions: Region[];

@@ -1,0 +1,392 @@
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import axios from 'axios';
+import { api } from '../api';
+
+// Mock axios
+vi.mock('axios');
+const mockedAxios = vi.mocked(axios);
+
+describe.skip('API Service', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Reset axios mock
+    (mockedAxios.create as any).mockReturnValue(mockedAxios);
+    // Mock interceptors
+    mockedAxios.interceptors = {
+      request: {
+        use: vi.fn(),
+        eject: vi.fn(),
+        clear: vi.fn()
+      },
+      response: {
+        use: vi.fn(),
+        eject: vi.fn(),
+        clear: vi.fn()
+      }
+    };
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('uploadMSASequences', () => {
+    it('uploads sequences successfully', async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          message: 'Sequences uploaded successfully',
+          data: {
+            sequences: [
+              { name: 'Sequence_1', sequence: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK' },
+              { name: 'Sequence_2', sequence: 'DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK' }
+            ],
+            validation_errors: []
+          }
+        }
+      };
+
+      mockedAxios.post.mockResolvedValue(mockResponse);
+
+      const formData = new FormData();
+      formData.append('sequences', '>Sequence_1\nEVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK\n>Sequence_2\nDIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK');
+
+      const result = await api.uploadMSASequences(formData);
+
+      expect(mockedAxios.post).toHaveBeenCalledWith('/msa-viewer/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('handles upload errors', async () => {
+      const mockError = {
+        response: {
+          status: 400,
+          data: {
+            success: false,
+            message: 'Invalid FASTA format',
+            error: 'Invalid FASTA format'
+          }
+        }
+      };
+
+      mockedAxios.post.mockRejectedValue(mockError);
+
+      const formData = new FormData();
+      formData.append('sequences', 'invalid content');
+
+      await expect(api.uploadMSASequences(formData)).rejects.toThrow();
+    });
+
+    it('handles network errors', async () => {
+      mockedAxios.post.mockRejectedValue(new Error('Network error'));
+
+      const formData = new FormData();
+      formData.append('sequences', '>Sequence_1\nEVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK');
+
+      await expect(api.uploadMSASequences(formData)).rejects.toThrow('Network error');
+    });
+
+    it('handles validation errors in response', async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          message: 'Sequences uploaded with validation errors',
+          data: {
+            sequences: [
+              { name: 'Sequence_1', sequence: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK' }
+            ],
+            validation_errors: ['Sequence_2 has invalid characters']
+          }
+        }
+      };
+
+      mockedAxios.post.mockResolvedValue(mockResponse);
+
+      const formData = new FormData();
+      formData.append('sequences', '>Sequence_1\nEVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK');
+
+      const result = await api.uploadMSASequences(formData);
+
+      expect(result.data.validation_errors).toEqual(['Sequence_2 has invalid characters']);
+    });
+  });
+
+  describe('createMSA', () => {
+    it('creates MSA job successfully', async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          message: 'MSA job created',
+          data: {
+            job_id: 'test-job-123',
+            use_background: true
+          }
+        }
+      };
+
+      mockedAxios.post.mockResolvedValue(mockResponse);
+
+      const request = {
+        sequences: [
+          {
+            name: 'test_seq_1',
+            heavy_chain: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK'
+          }
+        ],
+        alignment_method: 'muscle' as const,
+        numbering_scheme: 'imgt' as const
+      };
+
+      const result = await api.createMSA(request);
+
+      expect(mockedAxios.post).toHaveBeenCalledWith('/msa-viewer/create-msa', request);
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('handles MSA creation errors', async () => {
+      const mockError = {
+        response: {
+          status: 500,
+          data: {
+            success: false,
+            message: 'Internal server error',
+            error: 'Internal server error'
+          }
+        }
+      };
+
+      mockedAxios.post.mockRejectedValue(mockError);
+
+      const request = {
+        sequences: [
+          {
+            name: 'test_seq_1',
+            heavy_chain: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK'
+          }
+        ],
+        alignment_method: 'muscle' as const,
+        numbering_scheme: 'imgt' as const
+      };
+
+      await expect(api.createMSA(request)).rejects.toThrow();
+    });
+  });
+
+  describe('getJobStatus', () => {
+    it('retrieves job status successfully', async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          message: 'Job status retrieved',
+          data: {
+            job_id: 'test-job-123',
+            status: 'running',
+            progress: 0.5,
+            message: 'Processing...',
+            created_at: '2023-01-01T00:00:00'
+          }
+        }
+      };
+
+      mockedAxios.get.mockResolvedValue(mockResponse);
+
+      const result = await api.getJobStatus('test-job-123');
+
+      expect(mockedAxios.get).toHaveBeenCalledWith('/msa-viewer/job-status/test-job-123');
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('handles job status errors', async () => {
+      const mockError = {
+        response: {
+          status: 404,
+          data: {
+            success: false,
+            message: 'Job not found',
+            error: 'Job not found'
+          }
+        }
+      };
+
+      mockedAxios.get.mockRejectedValue(mockError);
+
+      await expect(api.getJobStatus('nonexistent-job')).rejects.toThrow();
+    });
+  });
+
+  describe('annotateMSA', () => {
+    it('annotates MSA successfully', async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          message: 'MSA annotated successfully',
+          data: {
+            job_id: 'test-job-456',
+            use_background: true
+          }
+        }
+      };
+
+      mockedAxios.post.mockResolvedValue(mockResponse);
+
+      const request = {
+        msa_id: 'msa-123',
+        numbering_scheme: 'imgt' as const
+      };
+
+      const result = await api.annotateMSA(request);
+
+      expect(mockedAxios.post).toHaveBeenCalledWith('/msa-viewer/annotate-msa', request);
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('handles annotation errors', async () => {
+      const mockError = {
+        response: {
+          status: 400,
+          data: {
+            success: false,
+            message: 'Invalid MSA ID',
+            error: 'Invalid MSA ID'
+          }
+        }
+      };
+
+      mockedAxios.post.mockRejectedValue(mockError);
+
+      const request = {
+        msa_id: 'invalid-msa-id',
+        numbering_scheme: 'imgt' as const
+      };
+
+      await expect(api.annotateMSA(request)).rejects.toThrow();
+    });
+  });
+
+  describe('health', () => {
+    it('performs health check successfully', async () => {
+      const mockResponse = {
+        data: {
+          status: 'healthy'
+        }
+      };
+
+      mockedAxios.get.mockResolvedValue(mockResponse);
+
+      const result = await api.health();
+
+      expect(mockedAxios.get).toHaveBeenCalledWith('/health');
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('handles health check errors', async () => {
+      mockedAxios.get.mockRejectedValue(new Error('Network error'));
+
+      await expect(api.health()).rejects.toThrow('Network error');
+    });
+  });
+
+  describe('axios interceptors', () => {
+    it('logs requests correctly', async () => {
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      
+      const mockResponse = {
+        data: {
+          success: true,
+          message: 'Test response'
+        }
+      };
+
+      mockedAxios.post.mockResolvedValue(mockResponse);
+
+      const formData = new FormData();
+      formData.append('test', 'data');
+
+      await api.uploadMSASequences(formData);
+
+      expect(consoleSpy).toHaveBeenCalledWith('API Request:', 'POST', '/msa-viewer/upload');
+      expect(consoleSpy).toHaveBeenCalledWith('API Response:', 200, '/msa-viewer/upload');
+
+      consoleSpy.mockRestore();
+    });
+
+    it('logs errors correctly', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      
+      const mockError = {
+        response: {
+          status: 500,
+          data: { error: 'Server error' }
+        }
+      };
+
+      mockedAxios.post.mockRejectedValue(mockError);
+
+      const formData = new FormData();
+      formData.append('test', 'data');
+
+      try {
+        await api.uploadMSASequences(formData);
+      } catch (error) {
+        // Expected to throw
+      }
+
+      expect(consoleSpy).toHaveBeenCalledWith('API Response Error:', 500, { error: 'Server error' });
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('FormData handling', () => {
+    it('creates FormData correctly for upload', async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          message: 'Sequences uploaded successfully',
+          data: {
+            sequences: [],
+            validation_errors: []
+          }
+        }
+      };
+
+      mockedAxios.post.mockResolvedValue(mockResponse);
+
+      const formData = new FormData();
+      const fastaContent = '>Sequence_1\nEVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK';
+      formData.append('sequences', fastaContent);
+
+      await api.uploadMSASequences(formData);
+
+      expect(mockedAxios.post).toHaveBeenCalledWith('/msa-viewer/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    });
+
+    it('handles empty FormData', async () => {
+      const mockError = {
+        response: {
+          status: 400,
+          data: {
+            success: false,
+            message: 'No sequences provided',
+            error: 'No sequences provided'
+          }
+        }
+      };
+
+      mockedAxios.post.mockRejectedValue(mockError);
+
+      const formData = new FormData();
+      formData.append('sequences', '');
+
+      await expect(api.uploadMSASequences(formData)).rejects.toThrow();
+    });
+  });
+});

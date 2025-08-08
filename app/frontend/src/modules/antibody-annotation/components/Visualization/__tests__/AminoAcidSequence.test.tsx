@@ -4,10 +4,9 @@
 
 import { render } from '@testing-library/react';
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import '@testing-library/jest-dom';
 import { AminoAcidSequence } from '../AminoAcidSequence';
-import type { Region, ColorScheme } from '../../../types/sequence';
-import { ColorSchemeType } from '../../../types/sequence';
+import type { Region, ColorScheme } from '../../../../../types/sequence';
+import { ColorSchemeType } from '../../../../../types/sequence';
 
 // Mock color scheme
 const mockColorScheme: ColorScheme = {
