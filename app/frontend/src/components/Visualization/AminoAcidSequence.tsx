@@ -49,14 +49,62 @@ export const AminoAcidSequence: React.FC<AminoAcidSequenceProps> = ({
     setFontSize(prev => Math.max(8, Math.min(24, prev + delta)));
   };
 
+  // Format selected positions and regions for display
+  const formatSelections = () => {
+    const selections: string[] = [];
+    
+    // Add selected regions
+    const selectedRegionObjects = regions.filter(r => selectedRegions.includes(r.id));
+    selectedRegionObjects.forEach(region => {
+      selections.push(`${region.name}:${region.start}-${region.stop}`);
+    });
+    
+    // Add selected individual positions
+    const individualSelections = selectedPositions.filter(pos => 
+      !selectedRegionObjects.some(region => pos >= region.start && pos <= region.stop)
+    );
+    
+    if (individualSelections.length > 0) {
+      // Group consecutive positions
+      const groups: number[][] = [];
+      let currentGroup: number[] = [];
+      
+      individualSelections.sort((a, b) => a - b).forEach(pos => {
+        if (currentGroup.length === 0 || pos === currentGroup[currentGroup.length - 1] + 1) {
+          currentGroup.push(pos);
+        } else {
+          if (currentGroup.length > 0) {
+            groups.push([...currentGroup]);
+          }
+          currentGroup = [pos];
+        }
+      });
+      
+      if (currentGroup.length > 0) {
+        groups.push(currentGroup);
+      }
+      
+      groups.forEach(group => {
+        if (group.length === 1) {
+          selections.push(`${sequence[group[0] - 1]}${group[0]}`);
+        } else {
+          selections.push(`${sequence[group[0] - 1]}${group[0]}-${sequence[group[group.length - 1] - 1]}${group[group.length - 1]}`);
+        }
+      });
+    }
+    
+    return selections;
+  };
+
   const renderSequenceLines = () => {
     const aminoAcids = sequence.split('');
     const lines: React.ReactElement[] = [];
-    const charsPerLine = Math.floor(800 / (fontSize * 0.6)); // Approximate chars per line
+    const maxAAsPerLine = 50; // Reduced to 50 amino acids per line for better readability
     
-    for (let i = 0; i < aminoAcids.length; i += charsPerLine) {
-      const lineAAs = aminoAcids.slice(i, i + charsPerLine);
+    for (let i = 0; i < aminoAcids.length; i += maxAAsPerLine) {
+      const lineAAs = aminoAcids.slice(i, i + maxAAsPerLine);
       const startPos = i + 1; // 1-based positioning
+      const endPos = Math.min(i + maxAAsPerLine, aminoAcids.length);
       
       lines.push(
         <Box key={i} sx={{ mb: 1 }}>
@@ -67,19 +115,54 @@ export const AminoAcidSequence: React.FC<AminoAcidSequenceProps> = ({
               fontSize: '10px', 
               color: 'text.secondary',
               mb: 0.5,
-              pl: 1
+              pl: 1,
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'nowrap'
             }}>
-              {Array.from({ length: Math.ceil(lineAAs.length / 10) }, (_, idx) => {
-                const pos = startPos + (idx * 10);
-                return pos <= sequence.length ? (
-                  <span key={idx} style={{ 
-                    display: 'inline-block', 
-                    width: `${fontSize * 6}px`,
-                    textAlign: 'left'
-                  }}>
-                    {pos}
+              {/* Position numbers aligned with amino acids */}
+              {Array.from({ length: lineAAs.length }, (_, idx) => {
+                const position = startPos + idx;
+                const isFirstOrLast = position === startPos || position === endPos;
+                const isEveryTen = position % 10 === 0;
+                const shouldShowNumber = isFirstOrLast || isEveryTen;
+                
+                // Use the exact same width as amino acid blocks
+                const blockWidth = fontSize + 2; // Same as minWidth in amino acid blocks
+                
+                if (!shouldShowNumber) {
+                  // Return exact-width spacer to maintain alignment
+                  return (
+                    <span
+                      key={idx}
+                      style={{
+                        display: 'inline-block',
+                        minWidth: `${blockWidth}px`,
+                        margin: '0 1px',
+                        padding: '2px 1px',
+                        height: '12px' // Match the height of the number text
+                      }}
+                    />
+                  );
+                }
+                
+                return (
+                  <span
+                    key={idx}
+                    style={{
+                      display: 'inline-block',
+                      minWidth: `${blockWidth}px`,
+                      margin: '0 1px',
+                      padding: '2px 1px',
+                      textAlign: 'center',
+                      fontSize: '8px',
+                      color: 'text.primary',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {position}
                   </span>
-                ) : null;
+                );
               })}
             </Box>
           )}
@@ -89,7 +172,9 @@ export const AminoAcidSequence: React.FC<AminoAcidSequenceProps> = ({
             fontFamily: 'monospace', 
             fontSize: `${fontSize}px`,
             lineHeight: 1.2,
-            letterSpacing: '1px'
+            letterSpacing: '1px',
+            display: 'flex',
+            flexWrap: 'nowrap'
           }}>
             {lineAAs.map((aa, idx) => {
               const position = startPos + idx;
@@ -164,7 +249,8 @@ export const AminoAcidSequence: React.FC<AminoAcidSequenceProps> = ({
                       textAlign: 'center',
                       transition: 'all 0.2s ease',
                       opacity: isSelected ? 1 : 0.9,
-                      fontWeight: isRegionSelected ? 'bold' : 'normal'
+                      fontWeight: isRegionSelected ? 'bold' : 'normal',
+                      flexShrink: 0
                     }}
                     onClick={() => onAminoAcidClick(position, aa)}
                     onMouseEnter={(e) => {
@@ -188,6 +274,9 @@ export const AminoAcidSequence: React.FC<AminoAcidSequenceProps> = ({
     
     return lines;
   };
+
+  const selections = formatSelections();
+  const hasSelections = selections.length > 0;
 
   return (
     <Box>
@@ -251,8 +340,46 @@ export const AminoAcidSequence: React.FC<AminoAcidSequenceProps> = ({
       }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           Sequence Length: {sequence.length} amino acids
-          {selectedPositions.length > 0 && ` | Selected: ${selectedPositions.length} positions`}
         </Typography>
+        
+        {/* Selection Summary */}
+        {hasSelections && (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Selected: {selectedPositions.length} positions, {selectedRegions.length} regions
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+              {selections.slice(0, 5).map((selection, index) => (
+                <Chip
+                  key={index}
+                  label={selection}
+                  size="small"
+                  variant="outlined"
+                  color="primary"
+                />
+              ))}
+              {selections.length > 5 && (
+                <Tooltip
+                  title={
+                    <Box>
+                      <Typography variant="caption">
+                        {selections.slice(5).join(', ')}
+                      </Typography>
+                    </Box>
+                  }
+                  arrow
+                >
+                  <Chip
+                    label={`+${selections.length - 5} more`}
+                    size="small"
+                    variant="outlined"
+                    color="secondary"
+                  />
+                </Tooltip>
+              )}
+            </Box>
+          </Box>
+        )}
         
         {renderSequenceLines()}
       </Box>

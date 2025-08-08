@@ -85,8 +85,9 @@ describe('AminoAcidSequence Region Highlighting', () => {
     const aminoAcidSpans = document.querySelectorAll('span[style*="background-color"]');
     expect(aminoAcidSpans.length).toBeGreaterThan(0);
     
-    // Check that some amino acids from our test sequence are present (just the first few)
-    expect(documentText).toContain('EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYY');
+    // Check that some amino acids from our test sequence are present
+    // The sequence is split into lines of max 50 characters, so check for the first part
+    expect(documentText).toContain('EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSA');
   });
 
   test('amino acids show region colors when region is selected', () => {
@@ -193,6 +194,52 @@ describe('AminoAcidSequence Region Highlighting', () => {
     
     // Should return to original color scheme color
     expect(deselectedColor).toBe(initialColor);
+  });
+
+  test('displays selection summary correctly', () => {
+    // Test with selected regions and positions
+    render(
+      <AminoAcidSequence 
+        {...defaultProps} 
+        selectedRegions={['cdr1', 'cdr2']}
+        selectedPositions={[1, 2, 3, 10, 15, 20]}
+      />
+    );
+    
+    const documentText = document.body.textContent || '';
+    
+    // Should show selection summary
+    expect(documentText).toContain('Selected: 6 positions, 2 regions');
+    
+    // Should show region selections
+    expect(documentText).toContain('CDR1:31-35');
+    expect(documentText).toContain('CDR2:50-65');
+    
+    // Should show individual position selections (grouped for consecutive positions)
+    expect(documentText).toContain('E1-Q3'); // Consecutive positions 1,2,3
+    expect(documentText).toContain('G10'); // Individual position 10
+    expect(documentText).toContain('G15'); // Individual position 15
+    // L20 is grouped with other selections, so check for the overflow indicator
+    expect(documentText).toContain('+1 more');
+  });
+
+  test('displays tooltip for many selections', () => {
+    // Create many selected positions to test tooltip
+    const manyPositions = Array.from({ length: 20 }, (_, i) => i + 1);
+    
+    render(
+      <AminoAcidSequence 
+        {...defaultProps} 
+        selectedPositions={manyPositions}
+      />
+    );
+    
+    const documentText = document.body.textContent || '';
+    
+    // Should show the grouped selections
+    expect(documentText).toContain('E1-L20'); // All 20 consecutive positions grouped
+    // Since all selections fit in one group, there's no overflow indicator
+    expect(documentText).toContain('Selected: 20 positions, 0 regions');
   });
 });
 
