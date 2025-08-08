@@ -78,7 +78,8 @@ jobs:
       - name: Test backend Docker build
         uses: docker/build-push-action@v5
         with:
-          context: ./app/backend
+          context: .
+          file: ./app/backend/Dockerfile
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max

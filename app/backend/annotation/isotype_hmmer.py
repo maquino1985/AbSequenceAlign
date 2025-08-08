@@ -1,18 +1,23 @@
 import os
 import subprocess
 from typing import Optional
+from backend.config import ISOTYPE_HMM_DIR
 
 
-def detect_isotype_with_hmmer(sequence: str, hmm_dir: str = "data/isotype_hmms") -> Optional[str]:
+def detect_isotype_with_hmmer(sequence: str, hmm_dir: str = None) -> Optional[str]:
     """
     Detect antibody isotype using HMMER against isotype HMMs.
     Args:
         sequence: Amino acid sequence (FASTA format or raw string)
-        hmm_dir: Directory containing isotype HMMs
+        hmm_dir: Directory containing isotype HMMs (defaults to config ISOTYPE_HMM_DIR)
     Returns:
         Best-matching isotype (e.g., 'IGHG1', 'IGHA1', etc.) or None if no confident match
     """
     import tempfile
+    
+    # Use default HMM directory from config if not specified
+    if hmm_dir is None:
+        hmm_dir = ISOTYPE_HMM_DIR
 
     # Write sequence to temp FASTA
     with tempfile.NamedTemporaryFile("w", delete=False, suffix=".fasta") as fasta:

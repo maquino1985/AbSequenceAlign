@@ -5,6 +5,7 @@ COMPOSE_FILE = docker-compose.yml
 COMPOSE_PROD_FILE = docker-compose.prod.yml
 BACKEND_DIR = app/backend
 FRONTEND_DIR = app/frontend
+PROJECT_ROOT = .
 
 # Colors for output
 GREEN = \033[0;32m

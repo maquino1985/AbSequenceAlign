@@ -74,7 +74,7 @@ export const api = {
   },
 
   // Get datasets (for future use)
-  getDatasets: async (): Promise<APIResponse<{ datasets: any[] }>> => {
+  getDatasets: async (): Promise<APIResponse<{ datasets: Record<string, unknown>[] }>> => {
     const response = await apiClient.get('/datasets');
     return response.data;
   },

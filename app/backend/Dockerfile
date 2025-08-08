@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy environment file
-COPY environment.yml .
+COPY app/backend/environment.yml .
 
 # Create conda environment
 RUN conda env create -f environment.yml && \
@@ -28,8 +28,11 @@ RUN conda env create -f environment.yml && \
 # Activate environment
 SHELL ["conda", "run", "-n", "AbSequenceAlign", "/bin/bash", "-c"]
 
-# Copy source code
-COPY . .
+# Copy backend source code
+COPY app/backend ./
+
+# Copy data directory from project root
+COPY data ./data
 
 # Install additional Python dependencies if needed
 RUN conda run -n AbSequenceAlign pip install --no-cache-dir uvicorn[standard] gunicorn

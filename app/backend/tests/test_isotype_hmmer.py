@@ -3,8 +3,8 @@ from backend.logger import logger
 import pytest
 from backend.annotation.isotype_hmmer import detect_isotype_with_hmmer
 import subprocess
-from backend.config import HMM_MODEL_DIR
-hmm_dir = HMM_MODEL_DIR
+from backend.config import ISOTYPE_HMM_DIR
+hmm_dir = ISOTYPE_HMM_DIR
 # Canonical constant region sequences for each isotype (truncated for test)
 ISOTYPE_SEQS = {
     "IGHG1": "GQPREPQVYTLPPSRDELTKNQVSLTCLVKGFYPSDIAVEWESNGQPENNYKTTPPVLDSDGSFFLYSKLTVDKSRWQQGNVFSCSVMHEALHNHYTQKSLSLSPGK",

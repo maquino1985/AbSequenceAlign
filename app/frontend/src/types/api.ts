@@ -48,7 +48,7 @@ export interface AnnotationResult {
   species: Record<string, number>;
 }
 
-export interface APIResponse<T = any> {
+export interface APIResponse<T = Record<string, unknown>> {
   success: boolean;
   message: string;
   data?: T;
