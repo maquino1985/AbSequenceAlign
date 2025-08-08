@@ -30,7 +30,7 @@ install: ## Install all dependencies
 
 dev-backend: ## Start backend in development mode
 	@echo "$(GREEN)Starting backend in development mode...$(NC)"
-	cd $(BACKEND_DIR) && conda run -n AbSequenceAlign python main.py
+	cd $(BACKEND_DIR) && fastapi run
 
 dev-frontend: ## Start frontend in development mode
 	@echo "$(GREEN)Starting frontend in development mode...$(NC)"
