@@ -25,6 +25,7 @@ import {
   Brightness7,
 } from '@mui/icons-material';
 import { useModuleContext } from '../modules/shared/context/ModuleContext';
+import { ModuleSelector } from '../modules/shared/components/ModuleSelector';
 import { IgGMolecule } from './IgGMolecule';
 
 interface ModernNavigationProps {
@@ -110,27 +111,8 @@ export const ModernNavigation: React.FC<ModernNavigationProps> = ({
 
           {/* Desktop Navigation */}
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 2 }}>
-            {/* Current Module Display */}
-            {currentModuleData && (
-              <Chip
-                label={currentModuleData.name}
-                sx={{
-                  background: darkMode
-                    ? 'rgba(255, 255, 255, 0.1)'
-                    : 'rgba(0, 0, 0, 0.05)',
-                  border: darkMode
-                    ? '1px solid rgba(255, 255, 255, 0.2)'
-                    : '1px solid rgba(0, 0, 0, 0.1)',
-                  color: darkMode ? '#FFFFFF' : '#000000',
-                  fontWeight: 600,
-                  '&:hover': {
-                    background: darkMode
-                      ? 'rgba(255, 255, 255, 0.15)'
-                      : 'rgba(0, 0, 0, 0.08)',
-                  },
-                }}
-              />
-            )}
+            {/* Module Selector */}
+            <ModuleSelector />
 
             {/* Theme Toggle */}
             <FormControlLabel

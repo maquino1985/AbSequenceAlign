@@ -12,6 +12,7 @@ import { ZoomIn, ZoomOut, Visibility, VisibilityOff } from '@mui/icons-material'
 import { getAminoAcidColor } from '../../../../utils/colorUtils';
 import { COLOR_SCHEMES } from '../../../../utils/colorUtils';
 import { ColorSchemeType } from '../../../../types/sequence';
+import { ColorSchemeSelector } from '../../../../components/ColorSchemeSelector';
 
 interface MSAVisualizationProps {
   alignmentMatrix: string[][];
@@ -29,9 +30,11 @@ export const MSAVisualization: React.FC<MSAVisualizationProps> = ({
   const [zoomLevel, setZoomLevel] = useState(1);
   const [showNumbering, setShowNumbering] = useState(true);
   const [showRegions, setShowRegions] = useState(true);
-  const [colorScheme] = useState(COLOR_SCHEMES[ColorSchemeType.HYDROPHOBICITY]);
+  const [colorScheme, setColorScheme] = useState(COLOR_SCHEMES[ColorSchemeType.HYDROPHOBICITY]);
   const [startPosition, setStartPosition] = useState(0);
   const [visibleColumns] = useState(80);
+  const [showRegionOverlay, setShowRegionOverlay] = useState(true);
+  const [showColorScheme, setShowColorScheme] = useState(true);
   
   const handlePositionChange = (_event: Event, newValue: number | number[]) => {
     setStartPosition(newValue as number);
@@ -82,12 +85,15 @@ export const MSAVisualization: React.FC<MSAVisualizationProps> = ({
             if (isGap) {
               backgroundColor = 'grey.100';
               textColor = 'text.disabled';
-            } else if (region && showRegions) {
+            } else if (region && showRegionOverlay) {
               backgroundColor = region.color + '40';
               borderColor = region.color;
-            } else {
+            } else if (showColorScheme) {
               backgroundColor = getAminoAcidColor(aminoAcid, colorScheme);
               textColor = 'white';
+            } else {
+              backgroundColor = 'transparent';
+              textColor = 'text.primary';
             }
 
             return (
@@ -242,6 +248,12 @@ export const MSAVisualization: React.FC<MSAVisualizationProps> = ({
     <Paper sx={{ p: 3 }}>
       {/* Controls */}
       <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+        <ColorSchemeSelector
+          selectedScheme={colorScheme}
+          onSchemeChange={setColorScheme}
+          compact={true}
+        />
+
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="body2">Zoom:</Typography>
           <IconButton size="small" onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.2))}>
@@ -266,15 +278,27 @@ export const MSAVisualization: React.FC<MSAVisualizationProps> = ({
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Tooltip title={showRegions ? "Hide regions" : "Show regions"}>
+          <Tooltip title={showRegionOverlay ? "Hide region overlay" : "Show region overlay"}>
             <IconButton 
               size="small" 
-              onClick={() => setShowRegions(!showRegions)}
+              onClick={() => setShowRegionOverlay(!showRegionOverlay)}
             >
-              {showRegions ? <Visibility /> : <VisibilityOff />}
+              {showRegionOverlay ? <Visibility /> : <VisibilityOff />}
             </IconButton>
           </Tooltip>
-          <Typography variant="body2">Regions</Typography>
+          <Typography variant="body2">Region Overlay</Typography>
+        </Box>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Tooltip title={showColorScheme ? "Hide color scheme" : "Show color scheme"}>
+            <IconButton 
+              size="small" 
+              onClick={() => setShowColorScheme(!showColorScheme)}
+            >
+              {showColorScheme ? <Visibility /> : <VisibilityOff />}
+            </IconButton>
+          </Tooltip>
+          <Typography variant="body2">Color Scheme</Typography>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 200 }}>

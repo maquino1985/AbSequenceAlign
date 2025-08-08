@@ -12,6 +12,7 @@ from Bio.Align.Applications import ClustalwCommandline
 import numpy as np
 
 from ..models.models import MSAResult, MSASequence, AlignmentMethod
+from .pssm_calculator import PSSMCalculator
 
 
 class MSAEngine:
@@ -25,6 +26,7 @@ class MSAEngine:
             AlignmentMethod.PAIRWISE_GLOBAL: self._align_pairwise_global,
             AlignmentMethod.PAIRWISE_LOCAL: self._align_pairwise_local,
         }
+        self.pssm_calculator = PSSMCalculator()
     
     def create_msa(self, sequences: List[Tuple[str, str]], method: AlignmentMethod = AlignmentMethod.MUSCLE) -> MSAResult:
         """
@@ -56,6 +58,9 @@ class MSAEngine:
         # Generate consensus
         consensus = self._generate_consensus(alignment_matrix)
         
+        # Calculate PSSM
+        pssm_data = self.pssm_calculator.calculate_pssm(alignment_matrix)
+        
         # Create MSASequence objects
         msa_sequences = []
         for i, (name, original_seq, aligned_seq) in enumerate(zip(names, seqs, aligned_sequences)):
@@ -81,7 +86,8 @@ class MSAEngine:
             metadata={
                 "num_sequences": len(sequences),
                 "alignment_length": len(aligned_sequences[0]) if aligned_sequences else 0,
-                "method": method.value
+                "method": method.value,
+                "pssm_data": pssm_data
             }
         )
         

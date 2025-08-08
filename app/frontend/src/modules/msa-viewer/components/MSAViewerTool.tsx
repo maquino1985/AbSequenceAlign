@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   Box, 
   Typography, 
-  Paper, 
   Alert,
   CircularProgress,
   Button,
@@ -15,8 +14,13 @@ import {
 import { PlayArrow, Download } from '@mui/icons-material';
 import { MSAInput } from './MSAInput/MSAInput';
 import { MSAVisualization } from './MSAVisualization/MSAVisualization';
+import { ConsensusSequence } from '../../../components/ConsensusSequence';
+import { PSSMVisualization } from '../../../components/PSSMVisualization';
+import { RegionAnnotationTiles } from '../../../components/RegionAnnotationTiles';
+import { CollapsibleCard } from '../../../components/CollapsibleCard';
 import { api } from '../../../services/api';
-import type { AlignmentMethod, NumberingScheme, MSAResult, MSAAnnotationResult, MSAJobStatus } from '../../../types/api';
+import { NUMBERING_SCHEMES } from '../../../utils/numberingSchemes';
+import type { AlignmentMethod, MSAResult, MSAAnnotationResult, MSAJobStatus } from '../../../types/api';
 
 interface MSAState {
   sequences: string[];
@@ -30,6 +34,9 @@ interface MSAState {
   jobStatus: MSAJobStatus | null;
   msaResult: MSAResult | null;
   annotationResult: MSAAnnotationResult | null;
+  consensus: string;
+  pssmData: any;
+  selectedRegions: string[];
 }
 
 export const MSAViewerTool: React.FC = () => {
@@ -44,11 +51,29 @@ export const MSAViewerTool: React.FC = () => {
     jobId: null,
     jobStatus: null,
     msaResult: null,
-    annotationResult: null
+    annotationResult: null,
+    consensus: '',
+    pssmData: null,
+    selectedRegions: []
   });
 
   const [selectedAlgorithm, setSelectedAlgorithm] = useState('muscle');
   const [selectedNumberingScheme, setSelectedNumberingScheme] = useState('imgt');
+
+  // Region selection handlers
+  const handleRegionSelect = (regionId: string) => {
+    setMsaState(prev => ({
+      ...prev,
+      selectedRegions: [...prev.selectedRegions, regionId]
+    }));
+  };
+
+  const handleRegionDeselect = (regionId: string) => {
+    setMsaState(prev => ({
+      ...prev,
+      selectedRegions: prev.selectedRegions.filter(id => id !== regionId)
+    }));
+  };
 
   // Poll job status for background jobs
   useEffect(() => {
@@ -63,12 +88,18 @@ export const MSAViewerTool: React.FC = () => {
 
           if (jobStatus.status === 'completed' && jobStatus.result) {
             // Job completed, update with results
+            const msaResult = jobStatus.result.msa_result || null;
+            const annotationResult = jobStatus.result.annotation_result || null;
+            
             setMsaState(prev => ({
               ...prev,
-              msaResult: jobStatus.result.msa_result || null,
-              annotationResult: jobStatus.result.annotation_result || null,
-              alignmentMatrix: jobStatus.result.msa_result?.alignment_matrix || [],
-              sequenceNames: jobStatus.result.msa_result?.sequences?.map((s: any) => s.name) || [],
+              msaResult,
+              annotationResult,
+              alignmentMatrix: msaResult?.alignment_matrix || [],
+              sequenceNames: msaResult?.sequences?.map((s: any) => s.name) || [],
+              consensus: msaResult?.consensus || '',
+              pssmData: msaResult?.metadata?.pssm_data || null,
+              regions: annotationResult?.annotated_sequences?.flatMap((seq: any) => seq.annotations || []) || [],
               isLoading: false
             }));
           } else if (jobStatus.status === 'failed') {
@@ -132,7 +163,7 @@ export const MSAViewerTool: React.FC = () => {
       const request = {
         sequences: sequenceInputs,
         alignment_method: selectedAlgorithm as AlignmentMethod,
-        numbering_scheme: selectedNumberingScheme as NumberingScheme
+        numbering_scheme: selectedNumberingScheme as any
       };
       
       const response = await api.createMSA(request);
@@ -154,7 +185,10 @@ export const MSAViewerTool: React.FC = () => {
             msaResult: data.msa_result || null,
             annotationResult: data.annotation_result || null,
             alignmentMatrix: data.msa_result?.alignment_matrix || [],
-            sequenceNames: data.msa_result?.sequences?.map((s: any) => s.name) || []
+            sequenceNames: data.msa_result?.sequences?.map((s: any) => s.name) || [],
+            consensus: data.consensus || '',
+            pssmData: data.pssm_data || null,
+            regions: data.annotation_result?.annotated_sequences?.flatMap((seq: any) => seq.annotations || []) || []
           }));
         }
       } else {
@@ -169,39 +203,7 @@ export const MSAViewerTool: React.FC = () => {
     }
   };
 
-  const handleAnnotateMSA = async () => {
-    if (!msaState.msaId) return;
-    
-    setMsaState(prev => ({ ...prev, isLoading: true, error: null }));
-    
-    try {
-      // TODO: Implement MSA annotation API call
-      console.log('Annotating MSA with scheme:', selectedNumberingScheme);
-      
-      // Mock response for now
-      setTimeout(() => {
-        setMsaState(prev => ({ 
-          ...prev, 
-          isLoading: false,
-          regions: [
-            { id: 'fr1', name: 'FR1', start: 1, stop: 26, color: '#ff6b6b' },
-            { id: 'cdr1', name: 'CDR1', start: 27, stop: 38, color: '#4ecdc4' },
-            { id: 'fr2', name: 'FR2', start: 39, stop: 55, color: '#45b7d1' },
-            { id: 'cdr2', name: 'CDR2', start: 56, stop: 65, color: '#96ceb4' },
-            { id: 'fr3', name: 'FR3', start: 66, stop: 104, color: '#feca57' },
-            { id: 'cdr3', name: 'CDR3', start: 105, stop: 117, color: '#ff9ff3' },
-            { id: 'fr4', name: 'FR4', start: 118, stop: 128, color: '#54a0ff' }
-          ]
-        }));
-      }, 2000);
-    } catch (error) {
-      setMsaState(prev => ({ 
-        ...prev, 
-        isLoading: false, 
-        error: error instanceof Error ? error.message : 'MSA annotation failed' 
-      }));
-    }
-  };
+
 
   if (msaState.error) {
     return (
@@ -220,12 +222,9 @@ export const MSAViewerTool: React.FC = () => {
         Upload multiple sequences to create and visualize alignments with region annotations.
       </Typography>
 
-      <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
-        <Box sx={{ flex: { xs: 'none', md: '0 0 33%' } }}>
-          <Paper sx={{ p: 3, height: 'fit-content' }}>
-            <Typography variant="h6" gutterBottom>
-              Sequence Upload
-            </Typography>
+      <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', lg: 'row' } }}>
+        <Box sx={{ flex: { xs: 'none', lg: '0 0 400px' } }}>
+          <CollapsibleCard title="Sequence Upload" defaultExpanded={true}>
             <MSAInput 
               onUpload={handleSequencesUpload}
               isLoading={msaState.isLoading}
@@ -257,9 +256,11 @@ export const MSAViewerTool: React.FC = () => {
                     label="Numbering Scheme"
                     onChange={(e) => setSelectedNumberingScheme(e.target.value)}
                   >
-                    <MenuItem value="imgt">IMGT</MenuItem>
-                    <MenuItem value="kabat">Kabat</MenuItem>
-                    <MenuItem value="chothia">Chothia</MenuItem>
+                    {NUMBERING_SCHEMES.map((scheme) => (
+                      <MenuItem key={scheme.id} value={scheme.id}>
+                        {scheme.name}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
 
@@ -274,34 +275,21 @@ export const MSAViewerTool: React.FC = () => {
                     Create MSA
                   </Button>
                   
-                  {msaState.alignmentMatrix.length > 0 && (
-                    <Button
-                      variant="outlined"
-                      startIcon={<Download />}
-                      onClick={handleAnnotateMSA}
-                      disabled={msaState.isLoading}
-                      size="small"
-                    >
-                      Annotate
-                    </Button>
-                  )}
+
                 </Box>
               </Box>
             )}
-          </Paper>
+          </CollapsibleCard>
         </Box>
 
-        <Box sx={{ flex: { xs: 'none', md: '1' } }}>
+        <Box sx={{ flex: 1 }}>
           {msaState.isLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
               <CircularProgress />
             </Box>
           ) : msaState.alignmentMatrix.length > 0 ? (
-            <Box>
-              <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Typography variant="h6">
-                  Alignment Results
-                </Typography>
+            <CollapsibleCard title="Alignment Results" defaultExpanded={true}>
+              <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
                 <Chip 
                   label={`${msaState.sequenceNames.length} sequences`} 
                   size="small" 
@@ -312,6 +300,18 @@ export const MSAViewerTool: React.FC = () => {
                   size="small" 
                   color="secondary" 
                 />
+                <Chip 
+                  label={`${selectedNumberingScheme.toUpperCase()} numbering`} 
+                  size="small" 
+                  variant="outlined" 
+                />
+                {msaState.regions.length > 0 && (
+                  <Chip 
+                    label={`${msaState.regions.length} regions`} 
+                    size="small" 
+                    variant="outlined" 
+                  />
+                )}
               </Box>
               
               <MSAVisualization
@@ -320,16 +320,51 @@ export const MSAViewerTool: React.FC = () => {
                 regions={msaState.regions}
                 numberingScheme={selectedNumberingScheme}
               />
-            </Box>
+
+              {/* Consensus Sequence */}
+              {msaState.consensus && (
+                <Box sx={{ mt: 2 }}>
+                  <ConsensusSequence
+                    consensus={msaState.consensus}
+                    conservationScores={msaState.pssmData?.conservation_scores || []}
+                    qualityScores={msaState.pssmData?.quality_scores || []}
+                  />
+                </Box>
+              )}
+
+              {/* PSSM Visualization */}
+              {msaState.pssmData && (
+                <Box sx={{ mt: 2 }}>
+                  <PSSMVisualization
+                    pssmData={msaState.pssmData}
+                    maxHeight="400px"
+                  />
+                </Box>
+              )}
+
+              {/* Region Annotation Tiles */}
+              {msaState.regions.length > 0 && (
+                <Box sx={{ mt: 2 }}>
+                  <RegionAnnotationTiles
+                    regions={msaState.regions}
+                    selectedRegions={msaState.selectedRegions}
+                    onRegionSelect={handleRegionSelect}
+                    onRegionDeselect={handleRegionDeselect}
+                  />
+                </Box>
+              )}
+            </CollapsibleCard>
           ) : (
-            <Paper sx={{ p: 4, textAlign: 'center' }}>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No sequences uploaded
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Upload FASTA sequences to create a multiple sequence alignment
-              </Typography>
-            </Paper>
+            <CollapsibleCard title="No Data" defaultExpanded={true}>
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No sequences uploaded
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Upload FASTA sequences to create a multiple sequence alignment
+                </Typography>
+              </Box>
+            </CollapsibleCard>
           )}
         </Box>
       </Box>

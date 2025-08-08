@@ -329,12 +329,19 @@ async def create_msa(request: MSACreationRequest):
                 numbering_scheme=request.numbering_scheme
             )
             
+            # Extract PSSM data from metadata
+            pssm_data = msa_result.metadata.get('pssm_data', {})
+            
             return APIResponse(
                 success=True,
-                message=f"Successfully created MSA for {len(sequences)} sequences",
+                message=f"Successfully created MSA for {len(sequences)} sequences with enhanced features",
                 data={
                     "msa_result": msa_result.model_dump(),
                     "annotation_result": annotation_result.model_dump(),
+                    "pssm_data": pssm_data,
+                    "consensus": msa_result.consensus,
+                    "conservation_scores": pssm_data.get('conservation_scores', []),
+                    "quality_scores": pssm_data.get('quality_scores', []),
                     "use_background": False
                 }
             )
