@@ -1,0 +1,92 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  # Quick backend tests
+  backend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Microconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          activate-environment: AbSequenceAlign
+          environment-file: environment.yml
+          python-version: 3.11
+          auto-activate-base: false
+
+      - name: Install ANARCI from source
+        shell: bash -l {0}
+        run: |
+          conda activate AbSequenceAlign
+          pip install git+https://github.com/oxpig/ANARCI.git
+
+      - name: Run quick backend tests
+        shell: bash -l {0}
+        run: |
+          conda activate AbSequenceAlign
+          cd app/backend
+          python -m pytest tests/ -v -x --ff
+
+  # Quick frontend tests
+  frontend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: app/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd app/frontend
+          npm ci
+
+      - name: Run type checking
+        run: |
+          cd app/frontend
+          npm run type-check
+
+      - name: Run tests
+        run: |
+          cd app/frontend
+          npm run test
+
+  # Docker build test
+  docker-build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Test backend Docker build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app/backend
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test frontend Docker build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app/frontend
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -22,6 +22,11 @@ app.add_middleware(
 # Register v1 API router
 app.include_router(api_v1_router, prefix="/api/v1")
 
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "message": "API is running"}
+
 
 if __name__ == "__main__":
     import uvicorn

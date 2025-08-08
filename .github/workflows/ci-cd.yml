@@ -1,0 +1,228 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types: [ published ]
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE_NAME: absequencealign-backend
+  FRONTEND_IMAGE_NAME: absequencealign-frontend
+
+jobs:
+  # Backend Tests
+  backend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Microconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          activate-environment: AbSequenceAlign
+          environment-file: environment.yml
+          python-version: 3.11
+          auto-activate-base: false
+
+      - name: Install ANARCI from source
+        shell: bash -l {0}
+        run: |
+          conda activate AbSequenceAlign
+          pip install git+https://github.com/oxpig/ANARCI.git
+
+      - name: Run backend tests
+        shell: bash -l {0}
+        run: |
+          conda activate AbSequenceAlign
+          cd app/backend
+          python -m pytest tests/ -v --cov=backend --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./app/backend/coverage.xml
+          flags: backend
+          name: backend-coverage
+
+  # Frontend Tests
+  frontend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: app/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd app/frontend
+          npm ci
+
+      - name: Run linting
+        run: |
+          cd app/frontend
+          npm run lint
+
+      - name: Run type checking
+        run: |
+          cd app/frontend
+          npm run type-check
+
+      - name: Run tests
+        run: |
+          cd app/frontend
+          npm run test
+
+      - name: Build frontend
+        run: |
+          cd app/frontend
+          npm run build
+
+  # Security Scanning
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Build and Push Docker Images
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests, security-scan]
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for backend
+        id: backend-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.BACKEND_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+
+      - name: Extract metadata for frontend
+        id: frontend-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.FRONTEND_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app/backend
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.backend-meta.outputs.tags }}
+          labels: ${{ steps.backend-meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app/frontend
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.frontend-meta.outputs.tags }}
+          labels: ${{ steps.frontend-meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Deploy to Production (on release)
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: github.event_name == 'release' && github.event.action == 'published'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup deployment environment
+        run: |
+          echo "BACKEND_IMAGE=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+          echo "FRONTEND_IMAGE=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+
+      # Add your deployment steps here
+      # Example for deploying to a server via SSH:
+      - name: Deploy to production server
+        run: |
+          echo "🚀 Deployment would happen here"
+          echo "Backend Image: ${{ env.BACKEND_IMAGE }}"
+          echo "Frontend Image: ${{ env.FRONTEND_IMAGE }}"
+          # Example deployment commands:
+          # ssh user@server "docker-compose -f docker-compose.prod.yml pull"
+          # ssh user@server "docker-compose -f docker-compose.prod.yml up -d"
+
+      # Alternative: Deploy to cloud platforms
+      # - name: Deploy to AWS ECS
+      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      #   with:
+      #     task-definition: task-definition.json
+      #     service: absequencealign-service
+      #     cluster: absequencealign-cluster
+
+  # Notification
+  notify:
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: always()
+    steps:
+      - name: Notify deployment status
+        run: |
+          if [ "${{ needs.deploy.result }}" == "success" ]; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Deployment failed!"
+          fi

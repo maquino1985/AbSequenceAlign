@@ -1,0 +1,42 @@
+name: AbSequenceAlign
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.11
+  # Bioinformatics tools
+  - muscle
+  - mafft
+  - hmmer
+  - anarci
+  # Python packages
+  - biopython
+  - scipy
+  - pandas
+  - fastapi
+  - uvicorn
+  - pydantic
+  - python-multipart
+  - python-jose
+  - passlib
+  - python-dotenv
+  - httpx
+  - requests
+  # Development tools
+  - pytest
+  - pytest-asyncio
+  - pytest-cov
+  - black
+  - flake8
+  - mypy
+  - isort
+  # System tools
+  - git
+  - curl
+  # Additional production dependencies
+  - gunicorn
+  # Pip packages (not available in conda)
+  - pip
+  - pip:
+    - git+https://github.com/oxpig/ANARCI.git

@@ -1,88 +1,125 @@
-.PHONY: help setup dev test docker-build docker-run docker-stop clean
+# AbSequenceAlign Development Makefile
 
+# Variables
+COMPOSE_FILE = docker-compose.yml
+COMPOSE_PROD_FILE = docker-compose.prod.yml
+BACKEND_DIR = app/backend
+FRONTEND_DIR = app/frontend
+
+# Colors for output
+GREEN = \033[0;32m
+YELLOW = \033[1;33m
+RED = \033[0;31m
+NC = \033[0m # No Color
+
+.PHONY: help build up down logs test clean install dev prod
+
+# Default target
 help: ## Show this help message
-	@echo "AbSequenceAlign Development Commands"
-	@echo "=================================="
+	@echo "$(GREEN)AbSequenceAlign Development Commands$(NC)"
 	@echo ""
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(YELLOW)%-20s$(NC) %s\n", $$1, $$2}'
 
-setup: ## Set up development environment
-	@echo "Setting up development environment..."
-	@./scripts/setup.sh
+# Development commands
+install: ## Install all dependencies
+	@echo "$(GREEN)Installing backend dependencies...$(NC)"
+	cd $(BACKEND_DIR) && conda env create -f environment.yml || conda env update -f environment.yml
+	@echo "$(GREEN)Installing frontend dependencies...$(NC)"
+	cd $(FRONTEND_DIR) && npm install
 
-conda-setup: ## Set up conda environment
-	@echo "Setting up conda environment..."
-	@conda env create -f environment.yml
+dev-backend: ## Start backend in development mode
+	@echo "$(GREEN)Starting backend in development mode...$(NC)"
+	cd $(BACKEND_DIR) && conda run -n AbSequenceAlign python main.py
 
-conda-activate: ## Activate conda environment
-	@echo "Activating conda environment..."
-	@conda activate absequencealign
+dev-frontend: ## Start frontend in development mode
+	@echo "$(GREEN)Starting frontend in development mode...$(NC)"
+	cd $(FRONTEND_DIR) && npm run dev
 
-dev: ## Start development server
-	@echo "Starting development server..."
-	@./scripts/dev.sh
+dev: ## Start both frontend and backend in development mode
+	@echo "$(GREEN)Starting development environment...$(NC)"
+	@make -j2 dev-backend dev-frontend
 
-test: ## Run tests
-	@echo "Running tests..."
-	@./scripts/test.sh
+# Testing commands
+test: ## Run all tests
+	@echo "$(GREEN)Running backend tests...$(NC)"
+	cd $(BACKEND_DIR) && conda run -n AbSequenceAlign python -m pytest tests/ -v
+	@echo "$(GREEN)Running frontend tests...$(NC)"
+	cd $(FRONTEND_DIR) && npm run test
 
-docker-build: ## Build Docker image
-	@echo "Building Docker image..."
-	docker-compose build
+test-backend: ## Run backend tests only
+	@echo "$(GREEN)Running backend tests...$(NC)"
+	cd $(BACKEND_DIR) && conda run -n AbSequenceAlign python -m pytest tests/ -v
 
-docker-run: ## Run with Docker
-	@echo "Starting with Docker..."
-	docker-compose up
+test-frontend: ## Run frontend tests only
+	@echo "$(GREEN)Running frontend tests...$(NC)"
+	cd $(FRONTEND_DIR) && npm run test
 
-docker-stop: ## Stop Docker containers
-	@echo "Stopping Docker containers..."
-	docker-compose down
+lint: ## Run linting for both frontend and backend
+	@echo "$(GREEN)Running backend linting...$(NC)"
+	cd $(BACKEND_DIR) && conda run -n AbSequenceAlign black . && conda run -n AbSequenceAlign flake8 . && conda run -n AbSequenceAlign mypy .
+	@echo "$(GREEN)Running frontend linting...$(NC)"
+	cd $(FRONTEND_DIR) && npm run lint
 
-docker-logs: ## Show Docker logs
-	@echo "Showing Docker logs..."
-	docker-compose logs -f
+# Docker commands
+build: ## Build Docker images
+	@echo "$(GREEN)Building Docker images...$(NC)"
+	docker-compose -f $(COMPOSE_FILE) build
 
-docker-test: ## Run comprehensive Docker tests
-	@echo "Running comprehensive Docker tests..."
-	@./scripts/test_docker.sh
+up: ## Start application with Docker
+	@echo "$(GREEN)Starting application...$(NC)"
+	docker-compose -f $(COMPOSE_FILE) up -d
 
-docker-test-internal: ## Run internal Docker tests
-	@echo "Running internal Docker tests..."
-	@docker-compose up -d
-	@sleep 10
-	@docker-compose exec -T absequencealign python test_docker_internal.py
-	@docker-compose down
+down: ## Stop application
+	@echo "$(GREEN)Stopping application...$(NC)"
+	docker-compose -f $(COMPOSE_FILE) down
 
-clean: ## Clean up development files
-	@echo "Cleaning up..."
-	rm -rf __pycache__
-	rm -rf app/__pycache__
-	rm -rf .pytest_cache
-	rm -rf .mypy_cache
-	find . -name "*.pyc" -delete
-	find . -name "*.pyo" -delete
-	find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+logs: ## View application logs
+	docker-compose -f $(COMPOSE_FILE) logs -f
 
-install-deps: ## Install system dependencies (Ubuntu/Debian)
-	@echo "Installing system dependencies..."
-	sudo apt-get update
-	sudo apt-get install -y python3-venv python3-pip
-	sudo apt-get install -y muscle mafft clustalo curl
+logs-backend: ## View backend logs
+	docker-compose -f $(COMPOSE_FILE) logs -f backend
 
-install-deps-mac: ## Install system dependencies (macOS)
-	@echo "Installing system dependencies..."
-	brew install muscle mafft clustalo curl
+logs-frontend: ## View frontend logs
+	docker-compose -f $(COMPOSE_FILE) logs -f frontend
 
-format: ## Format code with black
-	@echo "Formatting code..."
-	python -m black app/ test_*.py
+# Production commands
+prod-build: ## Build production Docker images
+	@echo "$(GREEN)Building production Docker images...$(NC)"
+	docker-compose -f $(COMPOSE_PROD_FILE) build
 
-lint: ## Lint code with flake8
-	@echo "Linting code..."
-	python -m flake8 app/ test_*.py
+prod-up: ## Start production application
+	@echo "$(GREEN)Starting production application...$(NC)"
+	docker-compose -f $(COMPOSE_PROD_FILE) up -d
 
-type-check: ## Type check with mypy
-	@echo "Type checking..."
-	python -m mypy app/
+prod-down: ## Stop production application
+	@echo "$(GREEN)Stopping production application...$(NC)"
+	docker-compose -f $(COMPOSE_PROD_FILE) down
 
-check: format lint type-check ## Run all code quality checks 
+prod-logs: ## View production logs
+	docker-compose -f $(COMPOSE_PROD_FILE) logs -f
+
+# Utility commands
+clean: ## Clean up Docker images and containers
+	@echo "$(GREEN)Cleaning up Docker resources...$(NC)"
+	docker-compose -f $(COMPOSE_FILE) down -v --remove-orphans
+	docker-compose -f $(COMPOSE_PROD_FILE) down -v --remove-orphans
+	docker system prune -f
+
+restart: down up ## Restart the application
+
+status: ## Show application status
+	@echo "$(GREEN)Application Status:$(NC)"
+	docker-compose -f $(COMPOSE_FILE) ps
+
+health: ## Check application health
+	@echo "$(GREEN)Checking application health...$(NC)"
+	@curl -f http://localhost/health && echo "$(GREEN)Frontend: OK$(NC)" || echo "$(RED)Frontend: FAIL$(NC)"
+	@curl -f http://localhost/api/v1/health && echo "$(GREEN)Backend: OK$(NC)" || echo "$(RED)Backend: FAIL$(NC)"
+
+# Database commands (for future use)
+# db-migrate: ## Run database migrations
+# 	docker-compose exec backend alembic upgrade head
+
+# db-reset: ## Reset database
+# 	docker-compose exec backend alembic downgrade base
+# 	docker-compose exec backend alembic upgrade head
