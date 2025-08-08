@@ -36,9 +36,13 @@ def annotate_sequences_with_processor(
     for result_obj in processor.results:
         for chain in result_obj.chains:
             for domain in chain.domains:
+                # Always use the original FASTA header (biologic_name) as the sequence name
+                # This preserves the user's original sequence identifiers
+                sequence_name = result_obj.biologic_name
+                
                 info = SequenceInfo(
                     sequence=domain.sequence,
-                    name=chain.name,
+                    name=sequence_name,
                     chain_type=domain.isotype,
                     isotype=domain.isotype,
                     species=domain.species,
