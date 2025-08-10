@@ -19,9 +19,7 @@ COPY data ./data
 # Install additional Python dependencies if needed
 RUN conda run -n AbSequenceAlign pip install --no-cache-dir uvicorn[standard] gunicorn
 
-# Create non-root user
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-RUN chown -R appuser:appuser /app
+# Switch to appuser (user already exists in base image)
 USER appuser
 
 # Expose port
