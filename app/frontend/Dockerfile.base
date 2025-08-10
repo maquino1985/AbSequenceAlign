@@ -21,6 +21,9 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
+# Fix Rollup architecture issues
+RUN npm rebuild rollup
+
 # Create a non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nextjs -u 1001

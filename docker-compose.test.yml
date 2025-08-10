@@ -43,6 +43,46 @@ services:
     networks:
       - test-network
 
+  # Frontend Server for E2E Tests
+  frontend-server:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile.base
+    container_name: absequencealign-frontend-server
+    environment:
+      - CI=true
+      - VITE_PORT=5679
+      - VITE_BACKEND_URL=http://backend-server:8000
+    ports:
+      - "5679:5679"
+    volumes:
+      - ./app/frontend:/app:ro
+    command: npm run dev:port
+    networks:
+      - test-network
+
+  # Backend Server for E2E Tests
+  backend-server:
+    build:
+      context: .
+      dockerfile: ./app/backend/Dockerfile
+    container_name: absequencealign-backend-server
+    environment:
+      - PYTHONPATH=/app
+      - ENVIRONMENT=test
+      - DATA_DIR=/app/data
+    volumes:
+      - ./app/backend:/app/backend:ro
+      - ./data:/app/data:ro
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "
+        conda run -n AbSequenceAlign python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+      "
+    networks:
+      - test-network
+
   # E2E Test Environment
   e2e-test:
     build:
@@ -51,19 +91,14 @@ services:
     container_name: absequencealign-e2e-test
     environment:
       - CI=true
-      - CYPRESS_baseUrl=http://frontend:5679
+      - CYPRESS_baseUrl=http://frontend-server:5679
       - CYPRESS_backendPort=8000
     volumes:
-      - ./app/frontend:/app:ro
       - /tmp/cypress:/tmp/cypress
     depends_on:
-      - backend-test
-      - frontend-test
-    command: >
-      sh -c "
-        npm ci &&
-        npm run cypress:run
-      "
+      - backend-server
+      - frontend-server
+    command: ./scripts/run-cypress.sh
     networks:
       - test-network
 
