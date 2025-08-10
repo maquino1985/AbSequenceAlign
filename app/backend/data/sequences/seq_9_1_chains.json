@@ -1,0 +1,14 @@
+{
+  "id": "seq_9_1_chains",
+  "name": "seq_9",
+  "chains": [
+    {
+      "name": "chain_9",
+      "chain_type": "H",
+      "sequence": "ACDEFGHIKLMNPQRSTVWY",
+      "domains": []
+    }
+  ],
+  "metadata": {},
+  "created_at": "2025-08-10T18:08:02.761759"
+}

@@ -215,7 +215,9 @@ def configure_default_services(container: DependencyContainer) -> None:
     
     # Register repositories
     from backend.infrastructure.repositories.sequence_repository import SequenceRepository
-    container.register_factory("sequence_repository", lambda: SequenceRepository())
+    container.register_factory("sequence_repository", lambda: SequenceRepository(
+        storage_path=container.get_config("storage_path", "data/sequences")
+    ))
     
     # Register adapters
     from backend.infrastructure.adapters.anarci_adapter import AnarciAdapter
@@ -250,8 +252,9 @@ def configure_development_services(container: DependencyContainer) -> None:
     container.register_config("debug", True)
     container.register_config("log_level", "DEBUG")
     
-    # Use in-memory storage for development
-    container.register_config("storage_path", "data/dev/sequences")
+    # Use in-memory storage for development (only if not already set)
+    if not container.has_config("storage_path"):
+        container.register_config("storage_path", "data/dev/sequences")
     
     logger.info("Development services configured in dependency container")
 
