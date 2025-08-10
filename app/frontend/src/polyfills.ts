@@ -4,8 +4,8 @@ import crypto from 'crypto-browserify'
 
 // Make crypto available globally
 if (typeof window !== 'undefined') {
-  (window as any).crypto = crypto
-  (window as any).Buffer = Buffer
+  (window as Record<string, unknown>).crypto = crypto
+  ;(window as Record<string, unknown>).Buffer = Buffer
 }
 
 // Export for use in other files
