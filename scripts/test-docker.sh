@@ -137,7 +137,7 @@ cleanup
 # Build base images first
 print_header "Building Base Images"
 print_status "Building backend and frontend base images..."
-if ! docker compose -f docker-compose.test.yml --profile build up --build backend-base frontend-base; then
+if ! ./scripts/build-base-images.sh; then
     print_error "Failed to build base images!"
     cleanup
     exit 1
