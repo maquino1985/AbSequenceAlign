@@ -6,7 +6,8 @@ load_dotenv()
 
 # HMM model directory and file
 # Path relative to project root (two levels up from backend directory)
-PROJECT_ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
+# In Docker, backend is at /app/backend/, so we need to go up one level to /app/
+PROJECT_ROOT = os.path.join(os.path.dirname(__file__), "..")
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 
 # Concatenated HMM for all germlines
