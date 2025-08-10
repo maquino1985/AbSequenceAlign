@@ -2,9 +2,7 @@
 
 import axios from 'axios';
 import type { 
-  AnnotationRequest, 
-  APIResponse, 
-  AnnotationResult,
+  APIResponse,
   MSACreationRequest,
   MSAAnnotationRequest
 } from '../types/api';
@@ -13,20 +11,14 @@ import type {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const apiClient = axios.create({
-  baseURL: `${API_BASE_URL}/api/v1`,
-  timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-const apiClientV2 = axios.create({
   baseURL: `${API_BASE_URL}/api/v2`,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+
 
 // Request interceptor for logging
 apiClient.interceptors.request.use(
@@ -60,44 +52,15 @@ export const api = {
     return response.data;
   },
 
-  // Annotate sequences
-  annotateSequences: async (
-    request: AnnotationRequest
-  ): Promise<APIResponse<{ annotation_result: AnnotationResult }>> => {
-    const response = await apiClient.post('/annotate', request);
-    return response.data;
-  },
-
   // V2 Annotate sequences (structured)
   annotateSequencesV2: async (
     request: import('../types/apiV2').AnnotationRequestV2
   ): Promise<import('../types/apiV2').AnnotationResultV2> => {
-    const response = await apiClientV2.post('/annotate', request);
+    const response = await apiClient.post('/annotate', request);
     return response.data;
   },
 
-  // Upload sequences (for future use)
-  uploadSequences: async (
-    file: File
-  ): Promise<APIResponse<{ dataset_id: string }>> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const response = await apiClient.post('/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  },
-
-  // Get datasets (for future use)
-  getDatasets: async (): Promise<APIResponse<{ datasets: Record<string, unknown>[] }>> => {
-    const response = await apiClient.get('/datasets');
-    return response.data;
-  },
-
-  // MSA Methods
+  // MSA Methods (using v2 API)
   uploadMSASequences: async (
     data: FormData
   ): Promise<APIResponse<{ sequences: any[]; validation_errors: string[] }>> => {

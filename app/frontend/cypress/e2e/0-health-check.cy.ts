@@ -2,7 +2,7 @@ describe('Health Check', () => {
   it('should connect to backend and frontend', () => {
     // Quick backend health check
     cy.request({
-      url: '/api/v1/health',
+      url: '/api/v2/health',
       timeout: 5000,
       failOnStatusCode: false
     }).then((response) => {

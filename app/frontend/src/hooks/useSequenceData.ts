@@ -60,7 +60,7 @@ export const useSequenceData = () => {
             regionType = 'CDR';
           } else if (regionData.domain_type === 'C') {
             regionType = 'CONSTANT';
-          } else if (baseRegionName === 'LINKER') {
+          } else if (baseRegionName.startsWith('LINKER')) {
             regionType = 'LINKER';
           }
 
