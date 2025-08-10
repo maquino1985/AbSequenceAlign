@@ -8,15 +8,10 @@ import logging
 
 from ...core.base_classes import AbstractProcessingSubject
 from ...core.interfaces import PipelineContext, ProcessingResult
-from ...core.exceptions import PipelineError, ValidationError
+from ...core.exceptions import PipelineError
 from ...domain.models import (
     AntibodySequence,
-    AntibodyChain,
-    AntibodyDomain,
-    AntibodyRegion,
-    DomainType,
     RegionType,
-    NumberingScheme,
 )
 from .steps.validation_step import SequenceValidationStep
 

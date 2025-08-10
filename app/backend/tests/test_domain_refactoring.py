@@ -4,7 +4,6 @@ Verifies that value objects, entities, and domain services work correctly.
 """
 
 import pytest
-from datetime import datetime
 
 from backend.domain.value_objects import (
     AminoAcidSequence,

@@ -4,11 +4,9 @@ This file contains enums and domain services.
 Value objects and entities are in separate files.
 """
 
-from typing import Dict, List, Optional, Any
 from enum import Enum
 
 from backend.domain.value_objects import RegionBoundary
-from backend.core.exceptions import ValidationError, SequenceValidationError
 
 
 # =============================================================================

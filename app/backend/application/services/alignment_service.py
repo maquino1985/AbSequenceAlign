@@ -3,17 +3,14 @@ Alignment service for orchestrating sequence alignment.
 Implements the Strategy pattern for different alignment approaches.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 
 from ...core.base_classes import AbstractProcessingSubject
-from ...core.interfaces import ProcessingContext, ProcessingResult
+from ...core.interfaces import ProcessingResult
 from ...core.exceptions import AlignmentError, ValidationError
-from ...domain.models import DomainType, RegionType, NumberingScheme
+from ...domain.models import RegionType
 from ...domain.entities import (
     AntibodySequence,
-    AntibodyChain,
-    AntibodyDomain,
-    AntibodyRegion,
 )
 from ...logger import logger
 

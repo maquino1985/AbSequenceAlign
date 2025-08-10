@@ -3,7 +3,7 @@ Processing service for orchestrating different types of sequence processing.
 Implements the Strategy pattern and Observer pattern for flexible processing workflows.
 """
 
-from typing import Dict, Any, List, Optional, Type
+from typing import Dict, Any, List, Type
 from datetime import datetime
 
 from backend.core.base_classes import AbstractProcessingSubject
@@ -13,11 +13,8 @@ from backend.core.interfaces import (
     ProcessingObserver,
 )
 from backend.core.exceptions import ProcessingError, ValidationError
-from backend.domain.models import NumberingScheme
 from backend.domain.entities import AntibodySequence
-from backend.domain.value_objects import AnnotationMetadata, ConfidenceScore
 from backend.application.pipelines.pipeline_builder import (
-    PipelineBuilder,
     ProcessingPipeline,
     create_annotation_pipeline,
     create_alignment_pipeline,

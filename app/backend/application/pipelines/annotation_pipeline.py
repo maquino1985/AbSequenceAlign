@@ -8,24 +8,14 @@ import logging
 
 from ...core.base_classes import AbstractProcessingSubject
 from ...core.interfaces import PipelineContext, ProcessingResult
-from ...core.exceptions import PipelineError, ValidationError
+from ...core.exceptions import PipelineError
 from ...domain.models import (
     AntibodySequence,
-    AntibodyChain,
-    AntibodyDomain,
-    AntibodyRegion,
-    DomainType,
-    RegionType,
     NumberingScheme,
-    ChainType,
 )
 from .steps.validation_step import (
     SequenceValidationStep,
-    AntibodySequenceValidationStep,
 )
-from .steps.numbering_step import NumberingStep
-from .steps.region_annotation_step import RegionAnnotationStep
-from .steps.isotype_detection_step import IsotypeDetectionStep
 
 
 class AnnotationPipeline(AbstractProcessingSubject):

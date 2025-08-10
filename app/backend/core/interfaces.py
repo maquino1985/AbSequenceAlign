@@ -152,6 +152,25 @@ class ExternalToolAdapter(ABC):
         pass
 
 
+class AbstractExternalToolAdapter(ABC):
+    """Abstract base class for external tool adapters"""
+    
+    @abstractmethod
+    def execute(self, **kwargs) -> Dict[str, Any]:
+        """Execute the external tool"""
+        pass
+    
+    @abstractmethod
+    def is_available(self) -> bool:
+        """Check if the external tool is available"""
+        pass
+    
+    @abstractmethod
+    def get_version(self) -> Optional[str]:
+        """Get the version of the external tool"""
+        pass
+
+
 class ToolResult(Protocol):
     """Protocol for tool execution results"""
 

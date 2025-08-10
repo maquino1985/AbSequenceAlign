@@ -4,7 +4,6 @@ Verifies pipeline pattern, application services, and observer pattern functional
 """
 
 import pytest
-from datetime import datetime
 
 from backend.application.pipelines.pipeline_builder import (
     PipelineBuilder,

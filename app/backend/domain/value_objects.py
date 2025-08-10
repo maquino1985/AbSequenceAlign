@@ -5,7 +5,6 @@ Value objects are immutable and represent concepts that are defined by their att
 
 from dataclasses import dataclass
 from typing import Optional
-from enum import Enum
 
 from ..core.exceptions import ValidationError, SequenceValidationError
 

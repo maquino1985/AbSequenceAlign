@@ -6,11 +6,9 @@ Implements the Strategy pattern for different annotation approaches.
 from typing import Dict, Any, List, Optional
 
 from backend.core.base_classes import AbstractProcessingSubject
-from backend.core.interfaces import ProcessingContext, ProcessingResult
+from backend.core.interfaces import ProcessingResult
 from backend.core.exceptions import AnnotationError, ValidationError
 from backend.domain.models import (
-    DomainType,
-    RegionType,
     NumberingScheme,
     ChainType,
 )
@@ -21,10 +19,7 @@ from backend.domain.entities import (
     AntibodyRegion,
 )
 from backend.domain.value_objects import (
-    AminoAcidSequence,
     RegionBoundary,
-    ConfidenceScore,
-    AnnotationMetadata,
 )
 from backend.infrastructure.adapters.anarci_adapter import AnarciAdapter
 from backend.infrastructure.adapters.hmmer_adapter import HmmerAdapter
