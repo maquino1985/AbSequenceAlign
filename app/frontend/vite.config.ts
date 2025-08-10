@@ -13,9 +13,11 @@ export default defineConfig({
   // Fix for crypto.hash issue in CI environment
   define: {
     global: 'globalThis',
+    'process.env': {},
   },
   optimizeDeps: {
     include: ['react', 'react-dom'],
+    exclude: ['crypto'],
   },
   server: {
     // Ensure proper host binding for CI
@@ -27,6 +29,8 @@ export default defineConfig({
   resolve: {
     alias: {
       crypto: 'crypto-browserify',
+      stream: 'stream-browserify',
+      buffer: 'buffer',
     },
   },
 })

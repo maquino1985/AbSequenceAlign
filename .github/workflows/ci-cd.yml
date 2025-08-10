@@ -36,13 +36,8 @@ jobs:
           conda activate AbSequenceAlign
           pip install git+https://github.com/oxpig/ANARCI.git
 
-      - name: Build base Docker images
-        run: |
-          # Build base images locally for testing
-          ./scripts/build-base-images.sh
-          
-          # Note: Base images are built locally but not pushed to registry
-          # For production, we should push base images to registry
+      # Note: Docker base images are not needed for backend tests
+      # They are only needed for Docker tests and E2E tests
 
       - name: Run backend tests
         shell: bash -l {0}
@@ -146,47 +141,32 @@ jobs:
           # docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
 
       - name: Test backend Docker build
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./app/backend/Dockerfile
-          push: false
-          build-args: |
-            BASE_IMAGE=absequencealign-backend-base:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        run: |
+          docker build \
+            --build-arg BASE_IMAGE=absequencealign-backend-base:latest \
+            -f ./app/backend/Dockerfile \
+            -t test-backend .
 
       - name: Test frontend Docker build
-        uses: docker/build-push-action@v5
-        with:
-          context: ./app/frontend
-          push: false
-          build-args: |
-            BASE_IMAGE=absequencealign-frontend-base:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        run: |
+          docker build \
+            --build-arg BASE_IMAGE=absequencealign-frontend-base:latest \
+            -f ./app/frontend/Dockerfile \
+            -t test-frontend ./app/frontend
 
       - name: Test frontend test Docker build
-        uses: docker/build-push-action@v5
-        with:
-          context: ./app/frontend
-          file: ./app/frontend/Dockerfile.test
-          push: false
-          build-args: |
-            BASE_IMAGE=absequencealign-frontend-base:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        run: |
+          docker build \
+            --build-arg BASE_IMAGE=absequencealign-frontend-base:latest \
+            -f ./app/frontend/Dockerfile.test \
+            -t test-frontend-test ./app/frontend
 
       - name: Test frontend E2E Docker build
-        uses: docker/build-push-action@v5
-        with:
-          context: ./app/frontend
-          file: ./app/frontend/Dockerfile.e2e
-          push: false
-          build-args: |
-            BASE_IMAGE=absequencealign-frontend-base:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        run: |
+          docker build \
+            --build-arg BASE_IMAGE=absequencealign-frontend-base:latest \
+            -f ./app/frontend/Dockerfile.e2e \
+            -t test-frontend-e2e ./app/frontend
 
   # E2E Tests - Parallel
   e2e-tests:
