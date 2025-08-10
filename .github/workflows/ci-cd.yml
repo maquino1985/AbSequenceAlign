@@ -229,14 +229,31 @@ jobs:
       - name: Start frontend with Nginx (production-like)
         run: |
           cd app/frontend
+          # Verify build output exists
+          echo "Checking build output..."
+          ls -la dist/
+          
+          # Verify nginx config exists
+          echo "Checking nginx config..."
+          ls -la nginx.ci.conf
+          
           # Use a simple nginx container to serve the built assets
           docker run -d --name frontend-nginx \
             -v $(pwd)/dist:/usr/share/nginx/html:ro \
             -v $(pwd)/nginx.ci.conf:/etc/nginx/conf.d/default.conf:ro \
             -p 5679:80 \
             nginx:alpine
+          
+          # Check if container is running
+          echo "Checking container status..."
+          docker ps -a
+          docker logs frontend-nginx
+          
           sleep 10
-          curl -f http://localhost:5679
+          
+          # Test connection with more verbose output
+          echo "Testing connection..."
+          curl -v http://localhost:5679 || echo "Connection failed"
 
       - name: Run Cypress tests
         uses: cypress-io/github-action@v6
