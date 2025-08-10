@@ -4,11 +4,20 @@ FROM absequencealign-frontend-base:latest
 # Set working directory
 WORKDIR /app
 
-# Copy source code
-COPY . .
+# Copy source code (excluding node_modules which are already in base image)
+COPY package*.json ./
+COPY src/ ./src/
+COPY public/ ./public/
+COPY tsconfig*.json ./
+COPY vite.config.ts ./
+COPY index.html ./
+COPY eslint.config.js ./
+COPY cypress.config.mjs ./
+COPY cypress/ ./cypress/
+COPY scripts/ ./scripts/
 
 # Expose port
 EXPOSE 5679
 
-# Default command
-CMD ["npm", "run", "test"]
+# Default command - run tests without npm to avoid EROFS issues
+CMD ["npx", "vitest", "run"]
