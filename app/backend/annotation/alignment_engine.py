@@ -120,13 +120,16 @@ class AlignmentEngine:
         # Calculate statistics
         score = best_alignment.score
         identity = self._calculate_identity(seq_a, seq_b)
+        
+        # Calculate length without gaps
+        length_without_gaps = len(seq_a.replace("-", ""))
 
         return {
             "method": "pairwise_global",
             "alignment": str(best_alignment),
             "score": score,
             "identity": identity,
-            "length": len(seq_a),
+            "length": length_without_gaps,
             "gaps": seq_a.count("-") + seq_b.count("-"),
         }
 
@@ -163,13 +166,16 @@ class AlignmentEngine:
         # Calculate statistics
         score = best_alignment.score
         identity = self._calculate_identity(seq_a, seq_b)
+        
+        # Calculate length without gaps
+        length_without_gaps = len(seq_a.replace("-", ""))
 
         return {
             "method": "pairwise_local",
             "alignment": str(best_alignment),
             "score": score,
             "identity": identity,
-            "length": len(seq_a),
+            "length": length_without_gaps,
             "gaps": seq_a.count("-") + seq_b.count("-"),
         }
 

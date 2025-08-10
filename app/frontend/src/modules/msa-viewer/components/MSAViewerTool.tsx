@@ -140,7 +140,7 @@ export const MSAViewerTool: React.FC = () => {
               alignmentMatrix: msaResult?.alignment_matrix || [],
               sequenceNames: msaResult?.sequences?.map((s: { name: string }) => s.name) || [],
               consensus: msaResult?.consensus || '',
-              pssmData: null,
+              pssmData: msaResult?.metadata?.pssm_data as PSSMData | null || null,
               regions: annotationResult?.annotated_sequences?.flatMap((seq: { name: string; annotations?: Array<{ name: string; start: number; stop: number; sequence: string; color: string }> }) => 
                 seq.annotations?.map(ann => ({
                   id: `${seq.name}_${ann.name}`,
@@ -248,7 +248,7 @@ export const MSAViewerTool: React.FC = () => {
             alignmentMatrix: data.msa_result?.alignment_matrix || [],
             sequenceNames: data.msa_result?.sequences?.map((s: { name: string }) => s.name) || [],
             consensus: data.msa_result?.consensus || '',
-            pssmData: null,
+            pssmData: data.msa_result?.metadata?.pssm_data as PSSMData | null || null,
             regions: data.annotation_result?.annotated_sequences?.flatMap((seq: { name?: string; annotations?: Array<{ name: string; start: number; stop: number; sequence: string; color: string }> }) => 
               seq.annotations?.map(ann => ({
                 id: `${seq.name || 'seq'}_${ann.name}`,

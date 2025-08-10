@@ -127,6 +127,16 @@ export interface MSAMetadataV2 {
   };
   processing_time?: number;
   warnings?: string[];
+  pssm_data?: {
+    position_frequencies: Array<Record<string, number>>;
+    position_scores: Array<Record<string, number>>;
+    conservation_scores: number[];
+    quality_scores: number[];
+    consensus: string;
+    amino_acids: string[];
+    alignment_length: number;
+    num_sequences: number;
+  };
 }
 
 export interface MSAResultV2 {
