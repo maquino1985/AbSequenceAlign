@@ -11,6 +11,7 @@ services:
       - PYTHONPATH=/app
       - ENVIRONMENT=test
       - PYTEST_ADDOPTS=-v --tb=short
+      - DATA_DIR=/app/data
     volumes:
       - ./app/backend:/app/backend:ro
       - ./data:/app/data:ro
@@ -76,6 +77,7 @@ services:
       - PYTHONPATH=/app
       - ENVIRONMENT=test
       - PYTEST_ADDOPTS=-v
+      - DATA_DIR=/app/data
     volumes:
       - ./app/backend:/app/backend:ro
       - ./data:/app/data:ro
