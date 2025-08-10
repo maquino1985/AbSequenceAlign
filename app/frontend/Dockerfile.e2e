@@ -1,0 +1,18 @@
+# E2E Test Dockerfile with Official Cypress Image
+FROM cypress/included:14.5.4
+
+# Set working directory
+WORKDIR /e2e
+
+# Copy only Cypress test files and configuration
+COPY cypress/ ./cypress/
+COPY cypress.config.cjs ./
+COPY package.json ./
+COPY scripts/ ./scripts/
+
+# Set environment variables
+ENV CI=true
+ENV CYPRESS_baseUrl=http://frontend-server:5679
+ENV CYPRESS_backendPort=8000
+
+# No default command - will be specified in docker-compose

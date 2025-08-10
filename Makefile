@@ -30,7 +30,7 @@ install: ## Install all dependencies
 
 dev-backend: ## Start backend in development mode
 	@echo "$(GREEN)Starting backend in development mode...$(NC)"
-	cd $(BACKEND_DIR) && conda run -n AbSequenceAlign python main.py
+	cd $(BACKEND_DIR) && PYTHONPATH=$(shell pwd)/app conda run -n AbSequenceAlign python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 
 dev-frontend: ## Start frontend in development mode
 	@echo "$(GREEN)Starting frontend in development mode...$(NC)"
@@ -38,22 +38,60 @@ dev-frontend: ## Start frontend in development mode
 
 dev: ## Start both frontend and backend in development mode
 	@echo "$(GREEN)Starting development environment...$(NC)"
-	@make -j2 dev-backend dev-frontend
+	./scripts/dev.sh
 
 # Testing commands
 test: ## Run all tests
-	@echo "$(GREEN)Running backend tests...$(NC)"
-	cd $(BACKEND_DIR) && conda run -n AbSequenceAlign python -m pytest tests/ -v
-	@echo "$(GREEN)Running frontend tests...$(NC)"
-	cd $(FRONTEND_DIR) && npm run test
+	@echo "$(GREEN)Running all tests...$(NC)"
+	./scripts/test.sh
 
 test-backend: ## Run backend tests only
 	@echo "$(GREEN)Running backend tests...$(NC)"
-	cd $(BACKEND_DIR) && conda run -n AbSequenceAlign python -m pytest tests/ -v
+	./scripts/test.sh --backend
 
 test-frontend: ## Run frontend tests only
 	@echo "$(GREEN)Running frontend tests...$(NC)"
-	cd $(FRONTEND_DIR) && npm run test
+	./scripts/test.sh --frontend
+
+test-e2e: ## Run E2E tests only
+	@echo "$(GREEN)Running E2E tests...$(NC)"
+	./scripts/test.sh --e2e
+
+test-quick: ## Run quick UI tests only
+	@echo "$(GREEN)Running quick UI tests...$(NC)"
+	./scripts/test.sh --quick
+
+test-parallel: ## Run E2E tests in parallel
+	@echo "$(GREEN)Running E2E tests in parallel...$(NC)"
+	./scripts/test.sh --parallel
+
+test-coverage: ## Run all tests with coverage
+	@echo "$(GREEN)Running tests with coverage...$(NC)"
+	./scripts/test.sh --coverage
+
+build-base-images: ## Build base Docker images with dependencies
+	@echo "$(GREEN)Building base Docker images...$(NC)"
+	./scripts/build-base-images.sh
+
+test-docker: build-base-images ## Run all tests in Docker containers
+	@echo "$(GREEN)Running tests in Docker containers...$(NC)"
+	./scripts/test-docker.sh
+
+test-docker-backend: ## Run backend tests in Docker
+	@echo "$(GREEN)Running backend tests in Docker...$(NC)"
+	./scripts/test-docker.sh --backend
+
+test-docker-frontend: ## Run frontend tests in Docker
+	@echo "$(GREEN)Running frontend tests in Docker...$(NC)"
+	./scripts/test-docker.sh --frontend
+
+test-docker-e2e: ## Run E2E tests in Docker
+	@echo "$(GREEN)Running E2E tests in Docker...$(NC)"
+	./scripts/test-docker.sh --e2e
+
+test-docker-cleanup: ## Clean up Docker test resources
+	@echo "$(GREEN)Cleaning up Docker test resources...$(NC)"
+	./scripts/test-docker.sh --cleanup
 
 lint: ## Run linting for both frontend and backend
 	@echo "$(GREEN)Running backend linting...$(NC)"
@@ -115,7 +153,7 @@ status: ## Show application status
 health: ## Check application health
 	@echo "$(GREEN)Checking application health...$(NC)"
 	@curl -f http://localhost/health && echo "$(GREEN)Frontend: OK$(NC)" || echo "$(RED)Frontend: FAIL$(NC)"
-	@curl -f http://localhost/api/v1/health && echo "$(GREEN)Backend: OK$(NC)" || echo "$(RED)Backend: FAIL$(NC)"
+	@curl -f http://localhost/api/v2/health && echo "$(GREEN)Backend: OK$(NC)" || echo "$(RED)Backend: FAIL$(NC)"
 
 # Database commands (for future use)
 # db-migrate: ## Run database migrations

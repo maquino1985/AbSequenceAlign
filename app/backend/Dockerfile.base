@@ -1,0 +1,36 @@
+# Backend Base Dockerfile
+# This image contains all dependencies and is used as a base for other backend images
+FROM continuumio/miniconda3:latest
+
+# Set environment variables
+ENV CONDA_ENV=AbSequenceAlign
+ENV PYTHONPATH=/app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    wget \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy dependency files
+COPY environment.yml ./
+
+# Create conda environment and install dependencies
+RUN conda env create -f environment.yml && \
+    conda clean -afy
+
+# Install ANARCI
+RUN conda run -n ${CONDA_ENV} pip install anarci
+
+# Set working directory
+WORKDIR /app
+
+# Create a non-root user
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
+USER appuser
+
+# Activate conda environment by default
+SHELL ["conda", "run", "-n", "AbSequenceAlign", "/bin/bash", "-c"]

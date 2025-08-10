@@ -33,30 +33,110 @@ source venv/bin/activate
 echo "⬆️  Upgrading pip..."
 pip install --upgrade pip
 
-# Check if conda is available
-if command -v conda &> /dev/null; then
-    echo "🐍 Conda detected! Using conda environment..."
+# Function to check for conda in common locations
+find_conda() {
+    local conda_locations=(
+        "$HOME/miniconda3/bin/conda"
+        "$HOME/anaconda3/bin/conda"
+        "$HOME/opt/miniconda3/bin/conda"
+        "$HOME/opt/anaconda3/bin/conda"
+        "/usr/local/miniconda3/bin/conda"
+        "/usr/local/anaconda3/bin/conda"
+        "/opt/miniconda3/bin/conda"
+        "/opt/anaconda3/bin/conda"
+    )
+
+    for loc in "${conda_locations[@]}"; do
+        if [ -x "$loc" ]; then
+            echo "$loc"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Check if conda is available in PATH
+if ! command -v conda &> /dev/null; then
+    echo "🔍 Conda not found in PATH, checking common locations..."
+    CONDA_PATH=$(find_conda)
     
-    # Create conda environment
-    if conda env list | grep -q "absequencealign"; then
-        echo "✅ Conda environment 'absequencealign' already exists"
+    if [ -n "$CONDA_PATH" ]; then
+        echo "✅ Found conda at: $CONDA_PATH"
+        # Add conda to PATH for this session
+        export PATH="$(dirname "$CONDA_PATH"):$PATH"
+        # Initialize conda for shell
+        eval "$("$CONDA_PATH" 'shell.bash' 'hook')"
     else
-        echo "📦 Creating conda environment..."
-        conda env create -f environment.yml
+        echo "❌ Conda not found. Would you like to:"
+        echo "1) Install Miniconda"
+        echo "2) Specify conda location manually"
+        echo "3) Exit"
+        read -p "Choose an option (1-3): " choice
+        
+        case $choice in
+            1)
+                echo "📥 Downloading Miniconda installer..."
+                if [[ "$OSTYPE" == "darwin"* ]]; then
+                    MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh"
+                else
+                    MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
+                fi
+                
+                curl -o miniconda.sh $MINICONDA_URL
+                bash miniconda.sh -b -p "$HOME/miniconda3"
+                rm miniconda.sh
+                
+                export PATH="$HOME/miniconda3/bin:$PATH"
+                eval "$("$HOME/miniconda3/bin/conda" 'shell.bash' 'hook')"
+                ;;
+            2)
+                read -p "Enter the full path to conda: " custom_conda
+                if [ -x "$custom_conda" ]; then
+                    export PATH="$(dirname "$custom_conda"):$PATH"
+                    eval "$("$custom_conda" 'shell.bash' 'hook')"
+                else
+                    echo "❌ Invalid conda path. Exiting."
+                    exit 1
+                fi
+                ;;
+            3)
+                echo "Exiting setup."
+                exit 1
+                ;;
+            *)
+                echo "Invalid choice. Exiting."
+                exit 1
+                ;;
+        esac
     fi
-    
-    echo "🔧 Activating conda environment..."
-    eval "$(conda shell.bash hook)"
-    conda activate absequencealign
-    
-    echo "✅ Conda environment setup complete!"
-    echo ""
-    echo "To activate the environment manually:"
-    echo "  conda activate absequencealign"
-    echo ""
-    echo "To start development:"
-    echo "  conda activate absequencealign"
-    echo "  python -m app.main"
+fi
+
+echo "🐍 Using conda from: $(which conda)"
+
+# Create/update conda environment
+echo "🔧 Setting up conda environment..."
+
+# Check if environment exists
+if conda env list | grep -q "^AbSequenceAlign "; then
+    echo "✅ Conda environment 'AbSequenceAlign' exists, updating..."
+    conda env update -f environment.yml
+else
+    echo "📦 Creating new conda environment 'AbSequenceAlign'..."
+    conda env create -f environment.yml
+fi
+
+# Activate the environment
+echo "🔧 Activating conda environment..."
+conda activate AbSequenceAlign
+
+echo "✅ Conda environment setup complete!"
+echo ""
+echo "To activate the environment manually:"
+echo "  conda activate AbSequenceAlign"
+echo ""
+echo "To start development:"
+echo "  conda activate AbSequenceAlign"
+echo "  python -m app.main"
     
 else
     echo "📚 Installing Python dependencies with pip..."

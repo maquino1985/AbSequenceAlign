@@ -20,9 +20,18 @@ export interface Region {
   start: number;
   stop: number;
   sequence: string;
-  type: 'CDR' | 'FR' | 'LIABILITY' | 'MUTATION';
+  type: 'CDR' | 'FR' | 'LIABILITY' | 'MUTATION' | 'LINKER' | 'CONSTANT';
   color: string;
   features: Feature[];
+  details?: {
+    isotype?: string;
+    domain_type?: string;
+    preceding_linker?: {
+      sequence: string;
+      start: number;
+      end: number;
+    };
+  };
 }
 
 export interface Feature {
@@ -43,7 +52,9 @@ export const FeatureType = {
   MUTATION: 'MUTATION',
   GLYCOSYLATION: 'GLYCOSYLATION',
   DISULFIDE: 'DISULFIDE',
-  PTM: 'PTM'
+  PTM: 'PTM',
+  LINKER: 'LINKER',
+  CONSTANT: 'CONSTANT'
 } as const;
 
 export type FeatureType = typeof FeatureType[keyof typeof FeatureType];

@@ -2,9 +2,11 @@
 import pytest
 from backend.data_store import DataStore
 
+
 @pytest.fixture
 def store():
     return DataStore()
+
 
 def test_create_and_get_dataset(store):
     seqs = [
@@ -17,6 +19,7 @@ def test_create_and_get_dataset(store):
     assert dataset["dataset_id"] == dataset_id
     assert dataset["sequence_count"] == 1
 
+
 def test_get_dataset_info(store):
     seqs = [
         # Human IGKV1-39*01 kappa light chain variable region (canonical, truncated for test)
@@ -28,6 +31,7 @@ def test_get_dataset_info(store):
     assert info.dataset_id == dataset_id
     assert info.sequence_count == 1
 
+
 def test_update_dataset_status(store):
     seqs = [
         # Human IGHV3-23*01 heavy chain variable region (canonical, truncated for test)
@@ -38,6 +42,7 @@ def test_update_dataset_status(store):
     dataset = store.get_dataset(dataset_id)
     assert dataset["status"] == "processed"
 
+
 def test_delete_dataset(store):
     seqs = [
         # Human IGKV3-20*01 kappa light chain variable region (canonical, truncated for test)
@@ -47,6 +52,7 @@ def test_delete_dataset(store):
     assert store.delete_dataset(dataset_id)
     assert store.get_dataset(dataset_id) is None
 
+
 def test_list_datasets(store):
     seqs = [
         # Human IGHV1-2*02 heavy chain variable region (canonical, truncated for test)
@@ -55,6 +61,7 @@ def test_list_datasets(store):
     store.create_dataset(seqs)
     datasets = store.list_datasets()
     assert len(datasets) == 1
+
 
 def test_get_dataset_statistics(store):
     seqs = [

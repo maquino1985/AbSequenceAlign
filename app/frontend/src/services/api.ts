@@ -2,21 +2,28 @@
 
 import axios from 'axios';
 import type { 
-  AnnotationRequest, 
-  APIResponse, 
-  AnnotationResult
+  APIResponse
 } from '../types/api';
+import type {
+  MSACreationRequestV2,
+  MSAAnnotationRequestV2,
+  MSAResultV2,
+  MSAAnnotationResultV2,
+  MSAJobStatusV2
+} from '../types/apiV2';
 
 // Configure axios defaults
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const apiClient = axios.create({
-  baseURL: `${API_BASE_URL}/api/v1`,
+  baseURL: `${API_BASE_URL}/api/v2`,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+
 
 // Request interceptor for logging
 apiClient.interceptors.request.use(
@@ -50,22 +57,19 @@ export const api = {
     return response.data;
   },
 
-  // Annotate sequences
-  annotateSequences: async (
-    request: AnnotationRequest
-  ): Promise<APIResponse<{ annotation_result: AnnotationResult }>> => {
+  // V2 Annotate sequences (structured)
+  annotateSequencesV2: async (
+    request: import('../types/apiV2').AnnotationRequestV2
+  ): Promise<import('../types/apiV2').AnnotationResultV2> => {
     const response = await apiClient.post('/annotate', request);
     return response.data;
   },
 
-  // Upload sequences (for future use)
-  uploadSequences: async (
-    file: File
-  ): Promise<APIResponse<{ dataset_id: string }>> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const response = await apiClient.post('/upload', formData, {
+  // MSA Methods (using v2 API)
+  uploadMSASequences: async (
+    data: FormData
+  ): Promise<APIResponse<{ sequences: Array<{ name: string; sequence: string }>; validation_errors: string[] }>> => {
+    const response = await apiClient.post('/msa-viewer/upload', data, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -73,9 +77,29 @@ export const api = {
     return response.data;
   },
 
-  // Get datasets (for future use)
-  getDatasets: async (): Promise<APIResponse<{ datasets: Record<string, unknown>[] }>> => {
-    const response = await apiClient.get('/datasets');
+  createMSA: async (
+    request: MSACreationRequestV2
+  ): Promise<APIResponse<{ job_id?: string; msa_result?: MSAResultV2; annotation_result?: MSAAnnotationResultV2; use_background: boolean }>> => {
+    const response = await apiClient.post('/msa-viewer/create-msa', request);
+    return response.data;
+  },
+
+  annotateMSA: async (
+    request: MSAAnnotationRequestV2
+  ): Promise<APIResponse<{ job_id: string; status: string }>> => {
+    const response = await apiClient.post('/msa-viewer/annotate-msa', request);
+    return response.data;
+  },
+
+  getJobStatus: async (
+    jobId: string
+  ): Promise<APIResponse<MSAJobStatusV2>> => {
+    const response = await apiClient.get(`/msa-viewer/job/${jobId}`);
+    return response.data;
+  },
+
+  listJobs: async (): Promise<APIResponse<{ jobs: MSAJobStatusV2[] }>> => {
+    const response = await apiClient.get('/msa-viewer/jobs');
     return response.data;
   },
 };

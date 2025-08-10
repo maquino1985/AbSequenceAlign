@@ -1,9 +1,11 @@
 import os
-from backend.logger import logger
+import subprocess
+
 import pytest
 from backend.annotation.isotype_hmmer import detect_isotype_with_hmmer
-import subprocess
 from backend.config import ISOTYPE_HMM_DIR
+from backend.logger import logger
+
 hmm_dir = ISOTYPE_HMM_DIR
 # Canonical constant region sequences for each isotype (truncated for test)
 ISOTYPE_SEQS = {
@@ -15,15 +17,19 @@ ISOTYPE_SEQS = {
     "IGHA2": "VPPPPPCCHPRLSLHRPALEDLLLGSEANLTCTLTGLRDASGATFTWTPSSGKSAVQGPPERDLCGCYSVSSVLPGCAQPWNHGETFTCTAAHPELKTPLTANITKS",
     "IGHM": "GSASAPTLFPLVSCENSPSDTSSVAVGCLAQDFLPDSITLSWKYKNNSDISSTRGFPSVLRGGKYAATSQVLLPSKDVMQGTDEHVVCKVQHPNGNKEKNVPLP",
     "IGHD": "AAQAPVKLSLNLLASSDPPEAASWLLCEVSGFSPPNILLMWLEDQREVNTSGFAPARPPPQPGSTTFWAWSVLRVPAPPSPQPATYTCVVSHEDSRTLLNASRSLEVS",
-    "IGHE": "GPRAAPEVYAFATPEGPGSRDKRTLACLIQNFMPEDISVQWLHNEVQLPDARHSTTQPRKTKGSGFFVFSRLEVTRAEWEQKDEFICRAVHEAASPSQTVQRAVSVNPGK"
+    "IGHE": "GPRAAPEVYAFATPEGPGSRDKRTLACLIQNFMPEDISVQWLHNEVQLPDARHSTTQPRKTKGSGFFVFSRLEVTRAEWEQKDEFICRAVHEAASPSQTVQRAVSVNPGK",
 }
+
 
 @pytest.mark.parametrize("isotype,seq", ISOTYPE_SEQS.items())
 def test_hmmer_isotype_detection(isotype, seq):
     # hmm_dir = os.path.join(os.path.dirname(__file__), "..", "data", "isotype_hmms")
     detected = detect_isotype_with_hmmer(seq, hmm_dir=hmm_dir)
     assert detected is not None, f"No isotype detected for {isotype}"
-    assert detected.upper() == isotype.upper(), f"Expected {isotype}, got {detected}"
+    assert (
+        detected.upper() == isotype.upper()
+    ), f"Expected {isotype}, got {detected}"
+
 
 def test_hmmer_isotype_detection_debug():
     # Use a canonical IgG1 constant region sequence
@@ -33,7 +39,10 @@ def test_hmmer_isotype_detection_debug():
     # hmm_dir = os.path.join(os.path.dirname(__file__), "..", "data", "concatenated")
     # Run HMMER manually and log output
     import tempfile
-    with tempfile.NamedTemporaryFile("w", delete=False, suffix=".fasta") as fasta:
+
+    with tempfile.NamedTemporaryFile(
+        "w", delete=False, suffix=".fasta"
+    ) as fasta:
         fasta.write(">query\n" + KIH_SEQ + "\n")
         fasta_path = fasta.name
     try:
@@ -45,7 +54,7 @@ def test_hmmer_isotype_detection_debug():
                     "--noali",
                     # "--tblout=-",
                     hmm_path,
-                    fasta_path
+                    fasta_path,
                 ]
                 result = subprocess.run(cmd, capture_output=True, text=True)
                 logger.debug(f"\nHMM: {hmmfile}")

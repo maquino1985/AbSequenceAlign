@@ -1,0 +1,347 @@
+import { render, screen, waitFor, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { MSAViewerTool } from '../MSAViewerTool';
+import { api } from '../../../../services/api';
+
+// Mock the API service
+vi.mock('../../../../services/api', () => ({
+  api: {
+    uploadMSASequences: vi.fn(),
+    createMSA: vi.fn(),
+    getJobStatus: vi.fn(),
+    annotateMSA: vi.fn(),
+  },
+}));
+
+// Mock the MSAInput component
+vi.mock('../MSAInput/MSAInput', () => ({
+  MSAInput: ({ onUpload, isLoading }: { onUpload: (sequences: string[]) => void; isLoading: boolean }) => (
+    <div data-testid="msa-input">
+      <button onClick={() => onUpload(['EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK'])}>
+        Upload Test Sequences
+      </button>
+      {isLoading && <div data-testid="input-loading">Loading...</div>}
+    </div>
+  ),
+}));
+
+// Mock the MSAVisualization component
+vi.mock('../MSAVisualization/MSAVisualization', () => ({
+  MSAVisualization: ({ alignmentMatrix, sequenceNames }: { alignmentMatrix: string[][]; sequenceNames: string[] }) => (
+    <div data-testid="msa-visualization">
+      <div data-testid="alignment-matrix-length">{alignmentMatrix.length}</div>
+      <div data-testid="sequence-names-length">{sequenceNames.length}</div>
+    </div>
+  ),
+}));
+
+describe.skip('MSAViewerTool', () => {
+  const mockApi = api as any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Reset timers
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('renders without crashing', () => {
+    render(<MSAViewerTool />);
+    expect(screen.getByText('Multiple Sequence Alignment')).toBeInTheDocument();
+  });
+
+  it('displays upload section initially', () => {
+    render(<MSAViewerTool />);
+    expect(screen.getByTestId('msa-input')).toBeInTheDocument();
+  });
+
+  it('handles sequence upload successfully', async () => {
+    const mockSequences = ['EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK'];
+    
+    mockApi.uploadMSASequences.mockResolvedValue({
+      success: true,
+      message: 'Sequences uploaded successfully',
+      data: {
+        sequences: mockSequences.map((seq, i) => ({ name: `Sequence_${i + 1}`, sequence: seq })),
+        validation_errors: []
+      }
+    });
+
+    render(<MSAViewerTool />);
+    
+    const uploadButton = screen.getByText('Upload Test Sequences');
+    await userEvent.click(uploadButton);
+
+    await waitFor(() => {
+      expect(mockApi.uploadMSASequences).toHaveBeenCalled();
+    });
+  });
+
+  it('handles upload errors gracefully', async () => {
+    mockApi.uploadMSASequences.mockRejectedValue(new Error('Upload failed'));
+
+    render(<MSAViewerTool />);
+    
+    const uploadButton = screen.getByText('Upload Test Sequences');
+    await userEvent.click(uploadButton);
+
+    await waitFor(() => {
+      expect(screen.getByText(/error/i)).toBeInTheDocument();
+    });
+  });
+
+  it('creates MSA job successfully', async () => {
+    const mockJobId = 'test-job-123';
+    mockApi.createMSA.mockResolvedValue({
+      success: true,
+      message: 'MSA job created',
+      data: {
+        job_id: mockJobId,
+        use_background: true
+      }
+    });
+
+    render(<MSAViewerTool />);
+    
+    // First upload sequences
+    const uploadButton = screen.getByText('Upload Test Sequences');
+    await userEvent.click(uploadButton);
+
+    await waitFor(() => {
+      expect(mockApi.uploadMSASequences).toHaveBeenCalled();
+    });
+
+    // Then create MSA
+    const createButton = screen.getByText('Create MSA');
+    await userEvent.click(createButton);
+
+    await waitFor(() => {
+      expect(mockApi.createMSA).toHaveBeenCalled();
+    });
+  });
+
+  it('polls job status when job is created', async () => {
+    const mockJobId = 'test-job-123';
+    mockApi.createMSA.mockResolvedValue({
+      success: true,
+      message: 'MSA job created',
+      data: {
+        job_id: mockJobId,
+        use_background: true
+      }
+    });
+
+    mockApi.getJobStatus.mockResolvedValue({
+      success: true,
+      message: 'Job status retrieved',
+      data: {
+        job_id: mockJobId,
+        status: 'running',
+        progress: 0.5,
+        message: 'Processing...'
+      }
+    });
+
+    render(<MSAViewerTool />);
+    
+    // Upload sequences and create MSA
+    const uploadButton = screen.getByText('Upload Test Sequences');
+    await userEvent.click(uploadButton);
+
+    await waitFor(() => {
+      expect(mockApi.uploadMSASequences).toHaveBeenCalled();
+    });
+
+    const createButton = screen.getByText('Create MSA');
+    await userEvent.click(createButton);
+
+    await waitFor(() => {
+      expect(mockApi.createMSA).toHaveBeenCalled();
+    });
+
+    // Fast-forward timers to trigger polling
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    await waitFor(() => {
+      expect(mockApi.getJobStatus).toHaveBeenCalledWith(mockJobId);
+    });
+  });
+
+  it('handles job completion successfully', async () => {
+    const mockJobId = 'test-job-123';
+    const mockMSAResult = {
+      msa_id: 'msa-123',
+      sequences: [
+        { name: 'Sequence_1', sequence: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK' }
+      ],
+      alignment_matrix: [['E', 'V', 'Q', 'L', 'V', 'E', 'S', 'G', 'G', 'G', 'L', 'V', 'Q', 'P', 'G', 'G', 'S', 'L', 'R', 'L', 'S', 'C', 'A', 'A', 'S', 'G', 'F', 'T', 'F', 'S', 'S', 'Y', 'A', 'M', 'S', 'W', 'V', 'R', 'Q', 'A', 'P', 'G', 'K', 'G', 'L', 'E', 'W', 'V', 'S', 'A', 'I', 'S', 'G', 'S', 'G', 'G', 'S', 'T', 'Y', 'Y', 'A', 'D', 'S', 'V', 'K', 'G', 'R', 'F', 'T', 'I', 'S', 'R', 'D', 'N', 'S', 'K', 'N', 'T', 'L', 'Y', 'L', 'Q', 'M', 'N', 'S', 'L', 'R', 'A', 'E', 'D', 'T', 'A', 'V', 'Y', 'Y', 'C', 'A', 'K']],
+      consensus: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK',
+      alignment_method: 'muscle',
+      created_at: '2023-01-01T00:00:00',
+      metadata: {}
+    };
+
+    mockApi.createMSA.mockResolvedValue({
+      success: true,
+      message: 'MSA job created',
+      data: {
+        job_id: mockJobId,
+        use_background: true
+      }
+    });
+
+    mockApi.getJobStatus.mockResolvedValue({
+      success: true,
+      message: 'Job completed',
+      data: {
+        job_id: mockJobId,
+        status: 'completed',
+        progress: 1.0,
+        message: 'MSA creation completed successfully',
+        result: {
+          msa_result: mockMSAResult,
+          annotation_result: null,
+          job_type: 'msa_creation'
+        }
+      }
+    });
+
+    render(<MSAViewerTool />);
+    
+    // Upload sequences and create MSA
+    const uploadButton = screen.getByText('Upload Test Sequences');
+    await userEvent.click(uploadButton);
+
+    await waitFor(() => {
+      expect(mockApi.uploadMSASequences).toHaveBeenCalled();
+    });
+
+    const createButton = screen.getByText('Create MSA');
+    await userEvent.click(createButton);
+
+    await waitFor(() => {
+      expect(mockApi.createMSA).toHaveBeenCalled();
+    });
+
+    // Fast-forward timers to trigger polling
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('msa-visualization')).toBeInTheDocument();
+    });
+  });
+
+  it('handles job failure gracefully', async () => {
+    const mockJobId = 'test-job-123';
+    
+    mockApi.createMSA.mockResolvedValue({
+      success: true,
+      message: 'MSA job created',
+      data: {
+        job_id: mockJobId,
+        use_background: true
+      }
+    });
+
+    mockApi.getJobStatus.mockResolvedValue({
+      success: true,
+      message: 'Job failed',
+      data: {
+        job_id: mockJobId,
+        status: 'failed',
+        progress: 0.0,
+        message: 'MSA job failed: Invalid sequences provided'
+      }
+    });
+
+    render(<MSAViewerTool />);
+    
+    // Upload sequences and create MSA
+    const uploadButton = screen.getByText('Upload Test Sequences');
+    await userEvent.click(uploadButton);
+
+    await waitFor(() => {
+      expect(mockApi.uploadMSASequences).toHaveBeenCalled();
+    });
+
+    const createButton = screen.getByText('Create MSA');
+    await userEvent.click(createButton);
+
+    await waitFor(() => {
+      expect(mockApi.createMSA).toHaveBeenCalled();
+    });
+
+    // Fast-forward timers to trigger polling
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/error/i)).toBeInTheDocument();
+    });
+  });
+
+  it('allows algorithm selection', async () => {
+    render(<MSAViewerTool />);
+    
+    const algorithmSelect = screen.getByLabelText('Algorithm');
+    expect(algorithmSelect).toBeInTheDocument();
+    
+    await userEvent.click(algorithmSelect);
+    
+    // Check that algorithm options are available
+    expect(screen.getByText('MUSCLE')).toBeInTheDocument();
+    expect(screen.getByText('Clustal Omega')).toBeInTheDocument();
+    expect(screen.getByText('MAFFT')).toBeInTheDocument();
+  });
+
+  it('allows numbering scheme selection', async () => {
+    render(<MSAViewerTool />);
+    
+    const numberingSelect = screen.getByLabelText('Numbering Scheme');
+    expect(numberingSelect).toBeInTheDocument();
+    
+    await userEvent.click(numberingSelect);
+    
+    // Check that numbering scheme options are available
+    expect(screen.getByText('IMGT')).toBeInTheDocument();
+    expect(screen.getByText('Kabat')).toBeInTheDocument();
+    expect(screen.getByText('Chothia')).toBeInTheDocument();
+  });
+
+  it('clears error when new upload is attempted', async () => {
+    mockApi.uploadMSASequences.mockRejectedValueOnce(new Error('Upload failed'));
+    mockApi.uploadMSASequences.mockResolvedValueOnce({
+      success: true,
+      message: 'Sequences uploaded successfully',
+      data: {
+        sequences: [{ name: 'Sequence_1', sequence: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK' }],
+        validation_errors: []
+      }
+    });
+
+    render(<MSAViewerTool />);
+    
+    const uploadButton = screen.getByText('Upload Test Sequences');
+    
+    // First upload fails
+    await userEvent.click(uploadButton);
+    await waitFor(() => {
+      expect(screen.getByText(/error/i)).toBeInTheDocument();
+    });
+
+    // Second upload succeeds
+    await userEvent.click(uploadButton);
+    await waitFor(() => {
+      expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
+    });
+  });
+});

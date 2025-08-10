@@ -1,14 +1,10 @@
 # Frontend Dockerfile - Multi-stage build for production
-FROM node:18-alpine AS builder
+# In CI, this will be pulled from registry; locally, it will use the local image
+ARG BASE_IMAGE=absequencealign-frontend-base:latest
+FROM ${BASE_IMAGE} AS builder
 
 # Set working directory
 WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm ci
 
 # Copy source code
 COPY . .

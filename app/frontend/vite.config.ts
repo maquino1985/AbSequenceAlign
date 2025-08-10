@@ -10,4 +10,16 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
   },
+  define: {
+    global: 'globalThis',
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom'],
+  },
+  server: {
+    // Ensure proper host binding for CI
+    host: '0.0.0.0',
+    port: parseInt(process.env.VITE_PORT || '3000'),
+    strictPort: true,
+  },
 })

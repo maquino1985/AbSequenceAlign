@@ -2,9 +2,11 @@
 import { useState, useMemo } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Container, Box, Typography, AppBar, Toolbar, Switch, FormControlLabel } from '@mui/material';
-import { Brightness4, Brightness7, Biotech } from '@mui/icons-material';
-import { SequenceAnnotationTool } from './components/SequenceAnnotationTool';
+import { Container, Box, Typography } from '@mui/material';
+import { ModuleProvider } from './modules/shared/context';
+import { MODULES } from './modules/moduleRegistry';
+import { useModuleContext } from './modules/shared/context';
+import { ModernNavigation } from './components/ModernNavigation';
 
 // Create theme function that accepts mode
 const createAppTheme = (mode: 'light' | 'dark') => createTheme({
@@ -83,6 +85,7 @@ const createAppTheme = (mode: 'light' | 'dark') => createTheme({
           '& .MuiOutlinedInput-root': {
             borderRadius: 12,
           },
+
         },
       },
     },
@@ -100,6 +103,32 @@ const createAppTheme = (mode: 'light' | 'dark') => createTheme({
   },
 });
 
+const AppContent: React.FC = () => {
+  const { getCurrentModule } = useModuleContext();
+  const currentModule = getCurrentModule();
+  
+  if (!currentModule) {
+    return (
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Welcome to AbSequenceAlign
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Please select a module from the navigation bar to begin.
+        </Typography>
+      </Container>
+    );
+  }
+
+  const ModuleComponent = currentModule.component;
+  
+  return (
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <ModuleComponent />
+    </Container>
+  );
+};
+
 function App() {
   const [darkMode, setDarkMode] = useState(false);
   
@@ -112,39 +141,12 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{ flexGrow: 1, minHeight: '100vh' }}>
-        <AppBar position="static" elevation={0}>
-          <Toolbar>
-            <Biotech sx={{ mr: 2, color: 'primary.main' }} />
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 700 }}>
-              AbSequenceAlign
-            </Typography>
-            <Typography variant="body2" sx={{ mr: 2, color: 'text.secondary' }}>
-              Antibody Sequence Analysis Tool
-            </Typography>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={darkMode}
-                  onChange={handleThemeToggle}
-                  color="primary"
-                />
-              }
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  {darkMode ? <Brightness7 fontSize="small" /> : <Brightness4 fontSize="small" />}
-                  {darkMode ? 'Light' : 'Dark'}
-                </Box>
-              }
-              labelPlacement="start"
-            />
-          </Toolbar>
-        </AppBar>
-        
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          <SequenceAnnotationTool />
-        </Container>
-      </Box>
+      <ModuleProvider modules={MODULES} defaultModule="antibody-annotation">
+        <Box sx={{ flexGrow: 1, minHeight: '100vh' }}>
+          <ModernNavigation darkMode={darkMode} onThemeToggle={handleThemeToggle} />
+          <AppContent />
+        </Box>
+      </ModuleProvider>
     </ThemeProvider>
   );
 }

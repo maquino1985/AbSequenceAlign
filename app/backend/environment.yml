@@ -39,4 +39,4 @@ dependencies:
   # Pip packages (not available in conda)
   - pip
   - pip:
-    - git+https://github.com/oxpig/ANARCI.git
+      - git+https://github.com/oxpig/ANARCI.git

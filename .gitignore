@@ -54,6 +54,15 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+# Frontend coverage reports
+app/frontend/coverage/
+# Backend coverage reports
+app/backend/coverage/
+# Any coverage directories
+**/coverage/
+# Coverage XML files
+*.clover.xml
+clover.xml
 
 # Translations
 *.mo

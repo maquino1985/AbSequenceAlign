@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { api } from '../services/api';
-import type { AnnotationRequest, AnnotationResult } from '../types/api';
+import type { AnnotationRequestV2, AnnotationResultV2 } from '../types/apiV2';
 
 interface ApiState<T> {
   data: T | null;
@@ -11,28 +11,24 @@ interface ApiState<T> {
 }
 
 export const useApi = () => {
-  const [annotationState, setAnnotationState] = useState<ApiState<AnnotationResult>>({
+  const [annotationState, setAnnotationState] = useState<ApiState<AnnotationResultV2>>({
     data: null,
     loading: false,
     error: null
   });
 
-  const annotateSequences = useCallback(async (request: AnnotationRequest) => {
+  const annotateSequences = useCallback(async (request: AnnotationRequestV2) => {
     setAnnotationState({ data: null, loading: true, error: null });
     
     try {
-      const response = await api.annotateSequences(request);
+      const response = await api.annotateSequencesV2(request);
       
-      if (response.success && response.data) {
-        setAnnotationState({
-          data: response.data.annotation_result,
-          loading: false,
-          error: null
-        });
-        return response.data.annotation_result;
-      } else {
-        throw new Error(response.error || 'Annotation failed');
-      }
+      setAnnotationState({
+        data: response,
+        loading: false,
+        error: null
+      });
+      return response;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setAnnotationState({

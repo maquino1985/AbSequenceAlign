@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  # Backend Test Environment
+  backend-test:
+    build:
+      context: .
+      dockerfile: ./app/backend/Dockerfile
+    container_name: absequencealign-backend-test
+    environment:
+      - PYTHONPATH=/app
+      - ENVIRONMENT=test
+      - PYTEST_ADDOPTS=-v --tb=short
+      - DATA_DIR=/app/data
+    volumes:
+      - ./app/backend:/app/backend:ro
+      - ./data:/app/data:ro
+    command: >
+      sh -c "
+        conda run -n AbSequenceAlign python -m pytest backend/tests/ -v --cov=backend --cov-report=xml --cov-report=term-missing
+      "
+    networks:
+      - test-network
+
+  # Frontend Test Environment
+  frontend-test:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile.test
+    container_name: absequencealign-frontend-test
+    environment:
+      - CI=true
+      - NODE_ENV=test
+    volumes:
+      - ./app/frontend:/app:ro
+    command: >
+      sh -c "
+        npm ci &&
+        npm run test &&
+        npm run type-check &&
+        npm run lint
+      "
+    networks:
+      - test-network
+
+  # Frontend Server for E2E Tests
+  frontend-server:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile.base
+    container_name: absequencealign-frontend-server
+    environment:
+      - CI=true
+      - VITE_PORT=5679
+      - VITE_BACKEND_URL=http://backend-server:8000
+    ports:
+      - "5679:5679"
+    volumes:
+      - ./app/frontend:/app:ro
+    command: npm run dev:port
+    networks:
+      - test-network
+
+  # Backend Server for E2E Tests
+  backend-server:
+    build:
+      context: .
+      dockerfile: ./app/backend/Dockerfile
+    container_name: absequencealign-backend-server
+    environment:
+      - PYTHONPATH=/app
+      - ENVIRONMENT=test
+      - DATA_DIR=/app/data
+    volumes:
+      - ./app/backend:/app/backend:ro
+      - ./data:/app/data:ro
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "
+        conda run -n AbSequenceAlign python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+      "
+    networks:
+      - test-network
+
+  # E2E Test Environment
+  e2e-test:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile.e2e
+    container_name: absequencealign-e2e-test
+    environment:
+      - CI=true
+      - CYPRESS_baseUrl=http://frontend-server:5679
+      - CYPRESS_backendPort=8000
+    volumes:
+      - /tmp/cypress:/tmp/cypress
+    depends_on:
+      - backend-server
+      - frontend-server
+    command: ./scripts/run-cypress.sh
+    networks:
+      - test-network
+
+  # Integration Test Environment
+  integration-test:
+    build:
+      context: .
+      dockerfile: ./app/backend/Dockerfile
+    container_name: absequencealign-integration-test
+    environment:
+      - PYTHONPATH=/app
+      - ENVIRONMENT=test
+      - PYTEST_ADDOPTS=-v
+      - DATA_DIR=/app/data
+    volumes:
+      - ./app/backend:/app/backend:ro
+      - ./data:/app/data:ro
+    command: >
+      sh -c "
+        conda run -n AbSequenceAlign python -m pytest backend/tests/test_integration.py -v
+      "
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge
+
+volumes:
+  cypress-videos:
+  cypress-screenshots:
