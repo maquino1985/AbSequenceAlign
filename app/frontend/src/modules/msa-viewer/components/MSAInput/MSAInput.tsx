@@ -75,7 +75,7 @@ export const MSAInput: React.FC<MSAInputProps> = ({ onUpload, isLoading }) => {
         const parsedSequences = parseFasta(content);
         setSequences(parsedSequences.map(seq => seq.sequence));
         setError(null);
-      } catch (err) {
+      } catch {
         setError('Invalid FASTA format');
         setSequences([]);
       }
@@ -92,7 +92,7 @@ export const MSAInput: React.FC<MSAInputProps> = ({ onUpload, isLoading }) => {
       try {
         const parsedSequences = parseFasta(text);
         setSequences(parsedSequences.map(seq => seq.sequence));
-      } catch (err) {
+      } catch {
         setError('Invalid FASTA format');
         setSequences([]);
       }
@@ -130,7 +130,7 @@ export const MSAInput: React.FC<MSAInputProps> = ({ onUpload, isLoading }) => {
       const parsedSequences = parseFasta(exampleContent);
       setSequences(parsedSequences.map(seq => seq.sequence));
       setError(null);
-    } catch (err) {
+    } catch {
       setError('Invalid FASTA format');
       setSequences([]);
     }

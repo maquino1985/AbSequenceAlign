@@ -1,3 +1,5 @@
+import type { AnnotationResultV2 } from '../types/apiV2';
+
 export interface HistoryEntry {
   id: string;
   name: string;
@@ -8,7 +10,7 @@ export interface HistoryEntry {
     numChains?: number;
     numDomains?: number;
   };
-  result?: any;
+  result?: AnnotationResultV2;
 }
 
 const STORAGE_KEY = 'annotation_history_v2';

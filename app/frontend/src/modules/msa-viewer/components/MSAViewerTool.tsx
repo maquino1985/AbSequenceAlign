@@ -20,22 +20,63 @@ import { RegionAnnotationTiles } from '../../../components/RegionAnnotationTiles
 import { CollapsibleCard } from '../../../components/CollapsibleCard';
 import { api } from '../../../services/api';
 import { NUMBERING_SCHEMES } from '../../../utils/numberingSchemes';
-import type { AlignmentMethod, MSAResult, MSAAnnotationResult, MSAJobStatus } from '../../../types/api';
+import type { AlignmentMethod } from '../../../types/api';
+import type { MSAResultV2, MSAAnnotationResultV2, MSAJobStatusV2 } from '../../../types/apiV2';
+
+// Define region type for MSA
+interface MSARegion {
+  id: string;
+  name: string;
+  start: number;
+  stop: number;
+  sequence: string;
+  color: string;
+  type: 'CDR' | 'FR' | 'LIABILITY' | 'MUTATION';
+  features: Array<{
+    id: string;
+    type: string;
+    start: number;
+    stop: number;
+    description: string;
+    color: string;
+  }>;
+  details?: {
+    isotype?: string;
+    domain_type?: string;
+    preceding_linker?: {
+      sequence: string;
+      start: number;
+      end: number;
+    };
+  };
+}
+
+// Define PSSM data type to match PSSMVisualization component
+interface PSSMData {
+  position_frequencies: Array<Record<string, number>>;
+  position_scores: Array<Record<string, number>>;
+  conservation_scores: number[];
+  quality_scores: number[];
+  consensus: string;
+  amino_acids: string[];
+  alignment_length: number;
+  num_sequences: number;
+}
 
 interface MSAState {
   sequences: string[];
   alignmentMatrix: string[][];
   sequenceNames: string[];
-  regions: any[];
+  regions: MSARegion[];
   isLoading: boolean;
   error: string | null;
   msaId: string | null;
   jobId: string | null;
-  jobStatus: MSAJobStatus | null;
-  msaResult: MSAResult | null;
-  annotationResult: MSAAnnotationResult | null;
+  jobStatus: MSAJobStatusV2 | null;
+  msaResult: MSAResultV2 | null;
+  annotationResult: MSAAnnotationResultV2 | null;
   consensus: string;
-  pssmData: any;
+  pssmData: PSSMData | null;
   selectedRegions: string[];
 }
 
@@ -83,23 +124,43 @@ export const MSAViewerTool: React.FC = () => {
       try {
         const response = await api.getJobStatus(msaState.jobId!);
         if (response.success && response.data) {
-          const jobStatus = response.data as MSAJobStatus;
+          const jobStatus = response.data as MSAJobStatusV2;
           setMsaState(prev => ({ ...prev, jobStatus }));
 
           if (jobStatus.status === 'completed' && jobStatus.result) {
             // Job completed, update with results
-            const msaResult = (jobStatus.result as any).msa_result || null;
-            const annotationResult = (jobStatus.result as any).annotation_result || null;
+            const result = jobStatus.result as { msa_result?: MSAResultV2; annotation_result?: MSAAnnotationResultV2 };
+            const msaResult = result.msa_result || null;
+            const annotationResult = result.annotation_result || null;
             
             setMsaState(prev => ({
               ...prev,
               msaResult,
               annotationResult,
               alignmentMatrix: msaResult?.alignment_matrix || [],
-              sequenceNames: msaResult?.sequences?.map((s: any) => s.name) || [],
+              sequenceNames: msaResult?.sequences?.map((s: { name: string }) => s.name) || [],
               consensus: msaResult?.consensus || '',
-              pssmData: msaResult?.metadata?.pssm_data || null,
-              regions: annotationResult?.annotated_sequences?.flatMap((seq: any) => seq.annotations || []) || [],
+              pssmData: null,
+              regions: annotationResult?.annotated_sequences?.flatMap((seq: { name: string; annotations?: Array<{ name: string; start: number; stop: number; sequence: string; color: string }> }) => 
+                seq.annotations?.map(ann => ({
+                  id: `${seq.name}_${ann.name}`,
+                  name: ann.name,
+                  start: ann.start,
+                  stop: ann.stop,
+                  sequence: ann.sequence,
+                  color: ann.color,
+                  type: 'CDR' as const,
+                  features: [] as Array<{
+                    id: string;
+                    type: string;
+                    start: number;
+                    stop: number;
+                    description: string;
+                    color: string;
+                  }>,
+                  details: {}
+                })) || []
+              ) || [],
               isLoading: false
             }));
           } else if (jobStatus.status === 'failed') {
@@ -163,7 +224,7 @@ export const MSAViewerTool: React.FC = () => {
       const request = {
         sequences: sequenceInputs,
         alignment_method: selectedAlgorithm as AlignmentMethod,
-        numbering_scheme: selectedNumberingScheme as any
+        numbering_scheme: selectedNumberingScheme as string
       };
       
       const response = await api.createMSA(request);
@@ -184,11 +245,30 @@ export const MSAViewerTool: React.FC = () => {
             isLoading: false,
             msaResult: data.msa_result || null,
             annotationResult: data.annotation_result || null,
-            alignmentMatrix: (data as any).msa_result?.alignment_matrix || [],
-            sequenceNames: (data as any).msa_result?.sequences?.map((s: any) => s.name) || [],
-            consensus: (data as any).consensus || '',
-            pssmData: (data as any).pssm_data || null,
-            regions: data.annotation_result?.annotated_sequences?.flatMap((seq: any) => seq.annotations || []) || []
+            alignmentMatrix: data.msa_result?.alignment_matrix || [],
+            sequenceNames: data.msa_result?.sequences?.map((s: { name: string }) => s.name) || [],
+            consensus: data.msa_result?.consensus || '',
+            pssmData: null,
+            regions: data.annotation_result?.annotated_sequences?.flatMap((seq: { name?: string; annotations?: Array<{ name: string; start: number; stop: number; sequence: string; color: string }> }) => 
+              seq.annotations?.map(ann => ({
+                id: `${seq.name || 'seq'}_${ann.name}`,
+                name: ann.name,
+                start: ann.start,
+                stop: ann.stop,
+                sequence: ann.sequence,
+                color: ann.color,
+                type: 'CDR' as const,
+                features: [] as Array<{
+                  id: string;
+                  type: string;
+                  start: number;
+                  stop: number;
+                  description: string;
+                  color: string;
+                }>,
+                details: {}
+              })) || []
+            ) || []
           }));
         }
       } else {

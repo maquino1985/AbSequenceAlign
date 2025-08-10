@@ -5,14 +5,13 @@ import {
   Paper,
   Chip,
   Tooltip,
-  IconButton,
   Slider,
   FormControl,
   InputLabel,
   Select,
   MenuItem
 } from '@mui/material';
-import { ZoomIn, ZoomOut, FilterList } from '@mui/icons-material';
+import { ZoomIn, ZoomOut } from '@mui/icons-material';
 
 interface PSSMData {
   position_frequencies: Array<Record<string, number>>;

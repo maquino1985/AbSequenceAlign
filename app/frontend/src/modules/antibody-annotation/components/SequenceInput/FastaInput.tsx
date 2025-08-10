@@ -11,8 +11,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  IconButton,
-  Tooltip
 } from '@mui/material';
 import {
   ContentPaste,

@@ -2,10 +2,15 @@
 
 import axios from 'axios';
 import type { 
-  APIResponse,
-  MSACreationRequest,
-  MSAAnnotationRequest
+  APIResponse
 } from '../types/api';
+import type {
+  MSACreationRequestV2,
+  MSAAnnotationRequestV2,
+  MSAResultV2,
+  MSAAnnotationResultV2,
+  MSAJobStatusV2
+} from '../types/apiV2';
 
 // Configure axios defaults
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -63,7 +68,7 @@ export const api = {
   // MSA Methods (using v2 API)
   uploadMSASequences: async (
     data: FormData
-  ): Promise<APIResponse<{ sequences: any[]; validation_errors: string[] }>> => {
+  ): Promise<APIResponse<{ sequences: Array<{ name: string; sequence: string }>; validation_errors: string[] }>> => {
     const response = await apiClient.post('/msa-viewer/upload', data, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -73,14 +78,14 @@ export const api = {
   },
 
   createMSA: async (
-    request: MSACreationRequest
-  ): Promise<APIResponse<{ job_id?: string; msa_result?: any; annotation_result?: any; use_background: boolean }>> => {
+    request: MSACreationRequestV2
+  ): Promise<APIResponse<{ job_id?: string; msa_result?: MSAResultV2; annotation_result?: MSAAnnotationResultV2; use_background: boolean }>> => {
     const response = await apiClient.post('/msa-viewer/create-msa', request);
     return response.data;
   },
 
   annotateMSA: async (
-    request: MSAAnnotationRequest
+    request: MSAAnnotationRequestV2
   ): Promise<APIResponse<{ job_id: string; status: string }>> => {
     const response = await apiClient.post('/msa-viewer/annotate-msa', request);
     return response.data;
@@ -88,12 +93,12 @@ export const api = {
 
   getJobStatus: async (
     jobId: string
-  ): Promise<APIResponse<any>> => {
+  ): Promise<APIResponse<MSAJobStatusV2>> => {
     const response = await apiClient.get(`/msa-viewer/job/${jobId}`);
     return response.data;
   },
 
-  listJobs: async (): Promise<APIResponse<{ jobs: any[] }>> => {
+  listJobs: async (): Promise<APIResponse<{ jobs: MSAJobStatusV2[] }>> => {
     const response = await apiClient.get('/msa-viewer/jobs');
     return response.data;
   },

@@ -12,11 +12,9 @@ import {
   ListItemIcon,
   useTheme,
   useMediaQuery,
-  Chip,
   Switch,
   FormControlLabel,
   Divider,
-  alpha,
   ListItemButton,
 } from '@mui/material';
 import {
@@ -54,7 +52,7 @@ export const ModernNavigation: React.FC<ModernNavigationProps> = ({
     }
   };
 
-  const currentModuleData = modules.find(m => m.id === currentModule);
+
 
   return (
     <>

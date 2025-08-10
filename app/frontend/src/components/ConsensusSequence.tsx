@@ -5,7 +5,6 @@ import {
   Paper,
   Chip,
   Tooltip,
-  LinearProgress
 } from '@mui/material';
 import { Info } from '@mui/icons-material';
 

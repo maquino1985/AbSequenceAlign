@@ -1,8 +1,21 @@
 export type DomainTypeV2 = 'V' | 'C' | 'LINKER';
 
+// Define specific feature value types based on kind
+export type RegionFeatureValue = 
+  | { kind: 'sequence'; value: string }
+  | { kind: 'isotype'; value: string }
+  | { kind: 'species'; value: string }
+  | { kind: 'germline'; value: string }
+  | { kind: 'confidence'; value: number }
+  | { kind: 'score'; value: number }
+  | { kind: 'color'; value: string }
+  | { kind: 'domain_type'; value: string }
+  | { kind: 'start'; value: number }
+  | { kind: 'stop'; value: number };
+
 export interface RegionFeatureV2 {
   kind: string;
-  value: any;
+  value: string | number | boolean | null | undefined;
 }
 
 export interface RegionV2 {
@@ -10,6 +23,23 @@ export interface RegionV2 {
   start: number;
   stop: number;
   features: RegionFeatureV2[];
+}
+
+// Define domain metadata structure
+export interface DomainMetadataV2 {
+  confidence?: number;
+  score?: number;
+  alignment_details?: {
+    query_start?: number;
+    query_end?: number;
+    start?: number;
+    end?: number;
+    identity?: number;
+    coverage?: number;
+  };
+  germlines?: string | string[];
+  warnings?: string[];
+  notes?: string;
 }
 
 export interface DomainV2 {
@@ -20,7 +50,7 @@ export interface DomainV2 {
   regions: RegionV2[];
   isotype?: string;
   species?: string;
-  metadata?: Record<string, any>;
+  metadata?: DomainMetadataV2;
 }
 
 export interface ChainV2 {
@@ -83,6 +113,22 @@ export interface MSASequenceV2 {
   }>;
 }
 
+// Define MSA metadata structure
+export interface MSAMetadataV2 {
+  total_sequences?: number;
+  alignment_length?: number;
+  consensus_quality?: number;
+  gap_percentage?: number;
+  identity_matrix?: number[][];
+  method_parameters?: {
+    gap_open?: number;
+    gap_extend?: number;
+    matrix?: string;
+  };
+  processing_time?: number;
+  warnings?: string[];
+}
+
 export interface MSAResultV2 {
   msa_id: string;
   sequences: MSASequenceV2[];
@@ -90,7 +136,7 @@ export interface MSAResultV2 {
   consensus: string;
   alignment_method: AlignmentMethodV2;
   created_at: string;
-  metadata: Record<string, unknown>;
+  metadata: MSAMetadataV2;
 }
 
 export interface MSAAnnotationResultV2 {
@@ -123,12 +169,18 @@ export interface MSAAnnotationRequestV2 {
   numbering_scheme?: string;
 }
 
+// Define job result types
+export type JobResultV2 = 
+  | { type: 'msa'; data: MSAResultV2 }
+  | { type: 'annotation'; data: MSAAnnotationResultV2 }
+  | { type: 'error'; error: string };
+
 export interface MSAJobStatusV2 {
   job_id: string;
   status: 'pending' | 'running' | 'completed' | 'failed';
   progress: number;
   message: string;
-  result?: unknown;
+  result?: JobResultV2;
   created_at: string;
   completed_at?: string;
 }

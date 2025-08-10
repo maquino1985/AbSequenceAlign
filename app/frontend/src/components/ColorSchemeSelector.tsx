@@ -5,7 +5,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Typography,
   Chip,
   Tooltip,
   IconButton

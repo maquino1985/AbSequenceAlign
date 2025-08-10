@@ -5,7 +5,7 @@ export interface ModuleDefinition {
   name: string;
   description: string;
   icon: React.ComponentType<any>;
-  component: React.ComponentType<any>;
+  component: React.ComponentType<Record<string, never>>;
   route: string;
   enabled: boolean;
   order: number;

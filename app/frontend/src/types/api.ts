@@ -117,7 +117,7 @@ export interface MSAResult {
   consensus: string;
   alignment_method: AlignmentMethod;
   created_at: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 export interface MSAAnnotationResult {
@@ -149,7 +149,7 @@ export interface MSAJobStatus {
   status: 'pending' | 'running' | 'completed' | 'failed';
   progress: number;
   message: string;
-  result?: any;
+  result?: unknown;
   created_at: string;
   completed_at?: string;
 }

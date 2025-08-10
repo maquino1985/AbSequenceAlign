@@ -92,7 +92,9 @@ export const SequenceAnnotation: React.FC = () => {
           }
           
           // Create the appropriate chain object based on type
-          const chainObject: any = { name: seq.id || `Sequence_${seq.sequence.substring(0, 10)}` };
+          const chainObject: { name: string; heavy_chain?: string; light_chain?: string; scfv?: string } = { 
+            name: seq.id || `Sequence_${seq.sequence.substring(0, 10)}` 
+          };
           
           if (sequenceType === 'heavy_chain') {
             chainObject.heavy_chain = seq.sequence;
@@ -203,7 +205,7 @@ export const SequenceAnnotation: React.FC = () => {
                     <Typography
                       variant="body2"
                       sx={{ cursor: 'pointer', color: 'primary.main' }}
-                      onClick={() => setSequencesV2(h.result)}
+                      onClick={() => h.result && setSequencesV2(h.result)}
                       data-testid={`history-reload-${h.id}`}
                     >
                       Reload
@@ -211,7 +213,7 @@ export const SequenceAnnotation: React.FC = () => {
                     <Typography
                       variant="body2"
                       sx={{ cursor: 'pointer', color: 'secondary.main' }}
-                      onClick={() => handleSubmit(h.fastaContent, h.numberingScheme as any)}
+                      onClick={() => handleSubmit(h.fastaContent, h.numberingScheme as NumberingScheme)}
                       data-testid={`history-reannotate-${h.id}`}
                     >
                       Re-annotate

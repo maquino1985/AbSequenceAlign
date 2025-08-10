@@ -7,6 +7,7 @@ import {
   Collapse,
   Tooltip,
 } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material';
 import {
   ExpandMore,
   ExpandLess,
@@ -20,7 +21,7 @@ interface CollapsibleCardProps {
   defaultExpanded?: boolean;
   minHeight?: string;
   maxHeight?: string;
-  sx?: any;
+  sx?: SxProps<Theme>;
 }
 
 export const CollapsibleCard: React.FC<CollapsibleCardProps> = ({

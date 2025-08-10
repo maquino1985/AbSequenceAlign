@@ -17,7 +17,13 @@ import { ColorSchemeSelector } from '../../../../components/ColorSchemeSelector'
 interface MSAVisualizationProps {
   alignmentMatrix: string[][];
   sequenceNames: string[];
-  regions: any[];
+  regions: Array<{
+    id: string;
+    name: string;
+    start: number;
+    stop: number;
+    color: string;
+  }>;
   numberingScheme: string;
 }
 
@@ -29,7 +35,7 @@ export const MSAVisualization: React.FC<MSAVisualizationProps> = ({
 }) => {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [showNumbering, setShowNumbering] = useState(true);
-  const [showRegions, setShowRegions] = useState(true);
+  const [showRegions] = useState(true);
   const [colorScheme, setColorScheme] = useState(COLOR_SCHEMES[ColorSchemeType.HYDROPHOBICITY]);
   const [startPosition, setStartPosition] = useState(0);
   const [visibleColumns] = useState(80);
