@@ -11,6 +11,8 @@ from backend.core.exceptions import AnnotationError, ValidationError
 from backend.domain.models import (
     NumberingScheme,
     ChainType,
+    DomainType,
+    RegionType,
 )
 from backend.domain.entities import (
     AntibodySequence,

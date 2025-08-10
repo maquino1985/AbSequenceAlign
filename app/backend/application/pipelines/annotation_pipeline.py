@@ -30,7 +30,7 @@ class AnnotationPipeline(AbstractProcessingSubject):
     def _setup_pipeline(self):
         """Setup the annotation pipeline steps"""
         # Step 1: Sequence validation
-        validation_step = AntibodySequenceValidationStep()
+        validation_step = SequenceValidationStep()
         self._steps.append(validation_step)
 
         # Step 2: Chain validation

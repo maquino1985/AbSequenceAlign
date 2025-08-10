@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from backend.annotation.AnarciResultProcessor import AnarciResultProcessor
+from backend.annotation.anarci_result_processor import AnarciResultProcessor
 from backend.annotation.sequence_processor import SequenceProcessor
 from backend.jobs.job_manager import job_manager
 from backend.logger import logger

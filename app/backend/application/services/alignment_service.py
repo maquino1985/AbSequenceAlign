@@ -8,7 +8,7 @@ from typing import Dict, Any, List
 from ...core.base_classes import AbstractProcessingSubject
 from ...core.interfaces import ProcessingResult
 from ...core.exceptions import AlignmentError, ValidationError
-from ...domain.models import RegionType
+from ...domain.models import RegionType, DomainType
 from ...domain.entities import (
     AntibodySequence,
 )
