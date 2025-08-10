@@ -16,7 +16,8 @@
     "test:coverage": "vitest --coverage",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
-    "test:e2e": "./scripts/test-e2e.sh"
+    "test:e2e": "./scripts/test-e2e.sh",
+    "test:e2e:prod": "./scripts/test-e2e-prod.sh"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

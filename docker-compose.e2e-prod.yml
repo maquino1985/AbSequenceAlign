@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # Backend Server for E2E Tests (same as production)
+  backend:
+    build:
+      context: .
+      dockerfile: ./app/backend/Dockerfile
+    container_name: absequencealign-backend-e2e
+    environment:
+      - PYTHONPATH=/app
+      - ENVIRONMENT=test
+      - DATA_DIR=/app/data
+    volumes:
+      - ./app/backend:/app/backend:ro
+      - ./data:/app/data:ro
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "
+        conda run -n AbSequenceAlign python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+      "
+    networks:
+      - e2e-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Frontend Server for E2E Tests (production build with Nginx)
+  frontend:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile
+    container_name: absequencealign-frontend-e2e
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - e2e-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+
+  # E2E Test Environment
+  e2e-test:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile.e2e
+    container_name: absequencealign-e2e-test
+    environment:
+      - CI=true
+      - CYPRESS_baseUrl=http://frontend:80
+      - CYPRESS_backendPort=8000
+    volumes:
+      - /tmp/cypress:/tmp/cypress
+    depends_on:
+      - frontend
+    command: ./scripts/run-cypress.sh
+    networks:
+      - e2e-network
+
+networks:
+  e2e-network:
+    driver: bridge
+
+volumes:
+  cypress-videos:
+  cypress-screenshots:

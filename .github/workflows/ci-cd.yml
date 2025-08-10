@@ -221,10 +221,20 @@ jobs:
           sleep 10
           curl -f http://localhost:8000/health
 
-      - name: Start frontend server
+      - name: Build frontend for production-like testing
         run: |
           cd app/frontend
-          VITE_PORT=5679 npm run dev:port &
+          npm run build
+
+      - name: Start frontend with Nginx (production-like)
+        run: |
+          cd app/frontend
+          # Use a simple nginx container to serve the built assets
+          docker run -d --name frontend-nginx \
+            -v $(pwd)/dist:/usr/share/nginx/html:ro \
+            -v $(pwd)/nginx.conf:/etc/nginx/conf.d/default.conf:ro \
+            -p 5679:80 \
+            nginx:alpine
           sleep 10
           curl -f http://localhost:5679
 
@@ -252,6 +262,12 @@ jobs:
           name: cypress-videos-${{ matrix.spec }}
           path: app/frontend/cypress/videos
           if-no-files-found: ignore
+
+      - name: Cleanup frontend container
+        if: always()
+        run: |
+          docker stop frontend-nginx || true
+          docker rm frontend-nginx || true
 
   # Security Scanning
   security-scan:
