@@ -51,6 +51,24 @@ class DomainValidationError(ValidationError):
     pass
 
 
+class DomainError(AbSequenceAlignException):
+    """Raised when domain business rules are violated"""
+
+    def __init__(
+        self,
+        message: str,
+        entity_type: Optional[str] = None,
+        entity_id: Optional[str] = None,
+        business_rule: Optional[str] = None,
+    ):
+        details = {
+            "entity_type": entity_type,
+            "entity_id": entity_id,
+            "business_rule": business_rule,
+        }
+        super().__init__(message, details)
+
+
 class RegionValidationError(ValidationError):
     """Raised when region validation fails"""
 
