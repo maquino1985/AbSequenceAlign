@@ -81,10 +81,12 @@ class SequenceInput(BaseModel):
         return v
     
     def get_all_chains(self) -> Dict[str, str]:
-        """Get all chain sequences as a dictionary"""
+        """Get all chain sequences as a dictionary.
+        Do not split scFv; keep it as a single chain so domain offsets remain relative to the original sequence.
+        """
         chains = {}
         
-        # Add standard chains if present
+        # Add standard chains if present (including scfv as-is)
         for field_name, value in self.model_dump().items():
             if field_name not in ['name', 'custom_chains'] and value is not None:
                 chains[field_name] = value

@@ -179,22 +179,22 @@ class MSAAnnotationEngine:
     def _get_region_color(self, region_name: str) -> str:
         """Get color for region based on name"""
         color_map = {
-            'FR1': '#4caf50',   # Green
-            'CDR1': '#e91e63',  # Pink
-            'FR2': '#2196f3',   # Blue
-            'CDR2': '#f44336',  # Red
-            'FR3': '#ff9800',   # Orange
-            'CDR3': '#9c27b0',  # Purple
-            'FR4': '#607d8b',   # Blue Grey
-            'VH': '#ff6b6b',
-            'VL': '#4ecdc4',
-            'CH1': '#45b7d1',
-            'CH2': '#96ceb4',
-            'CH3': '#ffeaa7',
-            'CL': '#dda0dd'
+            'FR1': '#FF6B6B',   # Red
+            'CDR1': '#4ECDC4',  # Teal
+            'FR2': '#45B7D1',   # Light Blue
+            'CDR2': '#96CEB4',  # Green
+            'FR3': '#FFEAA7',   # Yellow
+            'CDR3': '#DDA0DD',  # Purple
+            'FR4': '#98D8C8',   # Mint
+            'VH': '#FF6B6B',    # Red
+            'VL': '#4ECDC4',    # Teal
+            'CH1': '#45B7D1',   # Light Blue
+            'CH2': '#96CEB4',   # Green
+            'CH3': '#FFEAA7',   # Yellow
+            'CL': '#DDA0DD'     # Purple
         }
         
-        return color_map.get(region_name, '#cccccc')
+        return color_map.get(region_name, '#CCCCCC')
     
     def get_region_positions_in_alignment(self, msa_result: MSAResult, 
                                         region_name: str) -> List[Dict[str, Any]]:
@@ -273,3 +273,30 @@ class MSAAnnotationEngine:
                 orig_pos += 1
         
         return aligned_start, aligned_stop
+        
+    def _extract_annotations(self, seq_info: Any) -> List[Dict[str, Any]]:
+        """
+        Extract annotations from sequence info
+        
+        Args:
+            seq_info: Sequence info object with regions
+            
+        Returns:
+            List of region annotations
+        """
+        annotations = []
+        
+        if not hasattr(seq_info, 'regions') or not seq_info.regions:
+            return annotations
+            
+        for region_name, region_data in seq_info.regions.items():
+            annotation = {
+                'name': region_name,
+                'start': region_data.get('start', 0) if isinstance(region_data, dict) else getattr(region_data, 'start', 0),
+                'stop': region_data.get('stop', 0) if isinstance(region_data, dict) else getattr(region_data, 'stop', 0),
+                'sequence': region_data.get('sequence', '') if isinstance(region_data, dict) else getattr(region_data, 'sequence', ''),
+                'color': self._get_region_color(region_name)
+            }
+            annotations.append(annotation)
+            
+        return annotations

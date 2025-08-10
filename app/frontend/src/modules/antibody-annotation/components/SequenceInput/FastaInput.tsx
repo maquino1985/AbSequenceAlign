@@ -1,24 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Box,
-  Typography,
   Button,
   TextField,
+  Typography,
+  Stack,
+  Paper,
+  LinearProgress,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Paper,
-  Stack,
-  LinearProgress
+  IconButton,
+  Tooltip
 } from '@mui/material';
-import { 
-  CloudUpload,
+import {
   ContentPaste,
-  FileUpload,
+  Send,
   Clear,
-  Science,
-  PlayArrow
+  FileUpload,
+  CloudUpload,
+  Help
 } from '@mui/icons-material';
 import { NumberingScheme } from '../../../../types/api';
 
@@ -46,13 +48,12 @@ ELQLQESGPGLVKPSETLSLTCAVSGVSFSDYHWAWIRDPPGKGLEWIGDINHRGHTNYNPSLKSRVTVSIDTSKNQFSL
 export const FastaInput: React.FC<FastaInputProps> = ({ onSubmit }) => {
   const [fastaContent, setFastaContent] = useState('');
   const [numberingScheme, setNumberingScheme] = useState<NumberingScheme>(NumberingScheme.IMGT);
-  const [dragActive, setDragActive] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
   const handleSubmit = async () => {
-    if (!fastaContent.trim()) {
-      return;
-    }
+    if (!fastaContent.trim()) return;
+    
     setIsAnalyzing(true);
     try {
       await onSubmit(fastaContent, numberingScheme);
@@ -73,26 +74,29 @@ export const FastaInput: React.FC<FastaInputProps> = ({ onSubmit }) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
+      reader.onload = (event) => {
+        const content = event.target?.result as string;
         setFastaContent(content);
       };
       reader.readAsText(file);
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragActive(true);
-  };
+  }, []);
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragActive(false);
-  };
+  }, []);
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragActive(false);
     
     const files = e.dataTransfer.files;
@@ -105,7 +109,11 @@ export const FastaInput: React.FC<FastaInputProps> = ({ onSubmit }) => {
       };
       reader.readAsText(file);
     }
-  };
+  }, []);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFastaContent(e.target.value);
+  }, []);
 
   return (
     <Box>
@@ -166,8 +174,11 @@ export const FastaInput: React.FC<FastaInputProps> = ({ onSubmit }) => {
               : "Paste your FASTA sequences here...\n\nExample:\n>Heavy_Chain_1\nEVQLVESGGGLVQPGGSLRLSCAASGFTFSYFAMSWVRQAPGKGLEW..."
             }
             value={fastaContent}
-            onChange={(e) => setFastaContent(e.target.value)}
+            onChange={handleInputChange}
             disabled={isAnalyzing}
+            inputProps={{
+              'data-testid': 'sequence-input'
+            }}
             sx={{
               '& .MuiOutlinedInput-root': {
                 fontFamily: 'JetBrains Mono, Consolas, Monaco, monospace',
@@ -276,35 +287,33 @@ export const FastaInput: React.FC<FastaInputProps> = ({ onSubmit }) => {
         <Button
           variant="contained"
           size="large"
-          fullWidth
+          startIcon={<Send />}
           onClick={handleSubmit}
           disabled={!fastaContent.trim() || isAnalyzing}
-          startIcon={isAnalyzing ? <Science /> : <PlayArrow />}
-          sx={{ 
-            borderRadius: 2,
-            py: 1.5,
-            fontWeight: 600
-          }}
+          fullWidth
+          sx={{ borderRadius: 2 }}
+          data-testid="submit-button"
         >
           {isAnalyzing ? 'Analyzing...' : 'Start Analysis'}
         </Button>
 
         {/* Example Sequences */}
         <Box>
-          <Typography variant="h6" sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Help fontSize="small" />
             Example Sequences
           </Typography>
-          <Stack spacing={1}>
-            {Object.entries(EXAMPLE_SEQUENCES).map(([key, _sequence]) => (
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            {Object.keys(EXAMPLE_SEQUENCES).map((key) => (
               <Button
                 key={key}
-                variant="outlined"
                 size="small"
+                variant="outlined"
                 onClick={() => handleExampleLoad(key as keyof typeof EXAMPLE_SEQUENCES)}
                 disabled={isAnalyzing}
-                sx={{ justifyContent: 'flex-start', textAlign: 'left' }}
+                sx={{ borderRadius: 1 }}
               >
-                {key}
+                {key.replace(/_/g, ' ')}
               </Button>
             ))}
           </Stack>

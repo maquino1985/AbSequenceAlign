@@ -187,3 +187,4 @@ export const ConsensusSequence: React.FC<ConsensusSequenceProps> = ({
     </Paper>
   );
 };
+

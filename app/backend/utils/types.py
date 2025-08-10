@@ -31,6 +31,9 @@ class Domain:
         self.germlines: dict = germlines
         self.isotype: str = isotype
         self.chain: Optional['Chain'] = chain
+        # New fields for constant region information
+        self.domain_type: str = 'V'  # 'V' for variable, 'C' for constant
+        self.constant_region_info: Optional[Dict[str, Any]] = None  # Details about constant region if this is one
     def __repr__(self) -> str:
         base = f"Domain(sequence={self.sequence}, numbering={self.numbering})"
         if hasattr(self, 'regions') and self.regions:

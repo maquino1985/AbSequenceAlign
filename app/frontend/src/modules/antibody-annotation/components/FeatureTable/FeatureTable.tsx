@@ -12,6 +12,20 @@ import {
   Chip
 } from '@mui/material';
 import type { Region } from '../../../../types/sequence';
+import { FeatureType } from '../../../../types/sequence';
+
+const getChipColor = (type: string) => {
+  switch (type) {
+    case FeatureType.CDR:
+      return 'primary';
+    case FeatureType.CONSTANT:
+      return 'secondary';
+    case FeatureType.LINKER:
+      return 'info';
+    default:
+      return 'default';
+  }
+};
 
 interface FeatureTableProps {
   regions: Region[];
@@ -35,7 +49,7 @@ export const FeatureTable: React.FC<FeatureTableProps> = ({
   }
 
   return (
-    <TableContainer component={Paper} variant="outlined">
+    <TableContainer component={Paper} variant="outlined" data-testid="feature-table">
       <Table>
         <TableHead>
           <TableRow>
@@ -44,6 +58,7 @@ export const FeatureTable: React.FC<FeatureTableProps> = ({
             <TableCell><strong>Start</strong></TableCell>
             <TableCell><strong>Stop</strong></TableCell>
             <TableCell><strong>Length</strong></TableCell>
+            <TableCell><strong>Details</strong></TableCell>
             <TableCell><strong>Sequence</strong></TableCell>
           </TableRow>
         </TableHead>
@@ -82,13 +97,45 @@ export const FeatureTable: React.FC<FeatureTableProps> = ({
                 <Chip
                   label={region.type}
                   size="small"
-                  color={region.type === 'CDR' ? 'primary' : 'default'}
+                  color={getChipColor(region.type)}
                   variant="outlined"
+                  sx={region.type === 'LINKER' ? { fontStyle: 'italic' } : undefined}
                 />
               </TableCell>
               <TableCell>{region.start}</TableCell>
               <TableCell>{region.stop}</TableCell>
               <TableCell>{region.sequence.length}</TableCell>
+              <TableCell>
+                {region.details && (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    {region.details.isotype && (
+                      <Chip
+                        label={`Isotype: ${region.details.isotype}`}
+                        size="small"
+                        color="secondary"
+                        variant="outlined"
+                      />
+                    )}
+                    {region.details.domain_type && (
+                      <Chip
+                        label={`Domain: ${region.details.domain_type}`}
+                        size="small"
+                        color="info"
+                        variant="outlined"
+                      />
+                    )}
+                    {region.details.preceding_linker && (
+                      <Chip
+                        label={`Linker: ${region.details.preceding_linker.sequence.length} aa`}
+                        size="small"
+                        color="info"
+                        variant="outlined"
+                        sx={{ fontStyle: 'italic' }}
+                      />
+                    )}
+                  </Box>
+                )}
+              </TableCell>
               <TableCell>
                 <Box
                   sx={{

@@ -37,6 +37,13 @@ export interface RegionData {
   start: number | string;
   stop: number | string;
   sequence: string;
+  domain_type?: string;
+  isotype?: string;
+  preceding_linker?: {
+    sequence: string;
+    start: number;
+    end: number;
+  };
 }
 
 export interface AnnotationResult {

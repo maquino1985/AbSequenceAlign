@@ -15,12 +15,15 @@ import { FeatureTable } from '../components/FeatureTable/FeatureTable';
 import { useSequenceData } from '../../../hooks/useSequenceData';
 import type { NumberingScheme } from '../../../types/api';
 import { api } from '../../../services/api';
+import type { AnnotationRequestV2, AnnotationResultV2 } from '../../../types/apiV2';
+import { addHistory, loadHistory, clearHistory as clearHistoryStore, type HistoryEntry } from '../../../utils/history';
 import { parseFasta } from '../../../utils/fastaParser';
 
 export const SequenceAnnotation: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedTab, setSelectedTab] = useState(0);
+  const [selectedTab, setSelectedTab] = useState<number | false>(0);
+  const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory());
   
   const { 
     sequences, 
@@ -30,11 +33,15 @@ export const SequenceAnnotation: React.FC = () => {
     setColorScheme,
     selectRegion,
     selectPosition,
-    setSequences
+    setSequences,
+    setSequencesV2,
+    clearSelection
   } = useSequenceData();
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setSelectedTab(newValue);
+    // Reset selections when changing tabs
+    clearSelection();
   };
 
   const handleSubmit = async (fastaContent: string, numberingScheme: NumberingScheme) => {
@@ -50,22 +57,32 @@ export const SequenceAnnotation: React.FC = () => {
       }
 
       // Prepare request for API
-      const request = {
+      const request: AnnotationRequestV2 = {
         sequences: parsedSequences.map(seq => ({
           name: seq.id || `Sequence_${seq.sequence.substring(0, 10)}`,
-          heavy_chain: seq.sequence // Assume it's a heavy chain for now
+          scfv: seq.sequence
         })),
         numbering_scheme: numberingScheme
       };
 
       // Call API
-      const response = await api.annotateSequences(request);
-      
-      if (response.success && response.data?.annotation_result) {
-        setSequences(response.data.annotation_result);
-      } else {
-        throw new Error(response.message || 'Annotation failed');
-      }
+      const resultV2: AnnotationResultV2 = await api.annotateSequencesV2(request);
+      setSequencesV2(resultV2);
+      const summary = {
+        numChains: resultV2.sequences?.[0]?.chains?.length || 0,
+        numDomains: (resultV2.sequences?.[0]?.chains || []).reduce((acc, c) => acc + (c.domains?.length || 0), 0)
+      };
+      const entry: HistoryEntry = {
+        id: `${Date.now()}`,
+        name: parsedSequences[0].id || 'Sequence',
+        fastaContent,
+        numberingScheme,
+        timestamp: Date.now(),
+        summary,
+        result: resultV2
+      };
+      addHistory(entry);
+      setHistory(loadHistory());
     } catch (err) {
       console.error('Annotation error:', err);
       setError(err instanceof Error ? err.message : 'Failed to annotate sequences');
@@ -75,7 +92,7 @@ export const SequenceAnnotation: React.FC = () => {
   };
 
   return (
-    <Box>
+    <Box data-testid="antibody-annotation-tool">
       <Typography variant="h4" component="h1" gutterBottom>
         Antibody Sequence Annotation
       </Typography>
@@ -84,13 +101,13 @@ export const SequenceAnnotation: React.FC = () => {
       </Typography>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 3 }} data-testid="error-message">
           {error}
         </Alert>
       )}
 
       {isLoading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }} data-testid="loading-indicator">
           <CircularProgress />
         </Box>
       )}
@@ -103,6 +120,66 @@ export const SequenceAnnotation: React.FC = () => {
         <FastaInput 
           onSubmit={handleSubmit}
         />
+      </Paper>
+
+      {/* History Section */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6">History</Typography>
+          <Box>
+            <Typography
+              variant="body2"
+              sx={{ cursor: 'pointer', color: 'primary.main' }}
+              onClick={() => { clearHistoryStore(); setHistory([]); }}
+              data-testid="clear-history"
+            >
+              Clear history
+            </Typography>
+          </Box>
+        </Box>
+        {history.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">No history yet</Typography>
+        ) : (
+          <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse' }}>
+            <Box component="thead">
+              <Box component="tr">
+                <Box component="th" sx={{ textAlign: 'left', py: 1 }}>Name</Box>
+                <Box component="th" sx={{ textAlign: 'left', py: 1 }}>Numbering</Box>
+                <Box component="th" sx={{ textAlign: 'left', py: 1 }}>Chains</Box>
+                <Box component="th" sx={{ textAlign: 'left', py: 1 }}>Domains</Box>
+                <Box component="th" sx={{ textAlign: 'left', py: 1 }}>Actions</Box>
+              </Box>
+            </Box>
+            <Box component="tbody">
+              {history.map((h) => (
+                <Box component="tr" key={h.id}>
+                  <Box component="td" sx={{ py: 1 }}>{h.name}</Box>
+                  <Box component="td" sx={{ py: 1 }}>{h.numberingScheme}</Box>
+                  <Box component="td" sx={{ py: 1 }}>{h.summary?.numChains ?? '-'}</Box>
+                  <Box component="td" sx={{ py: 1 }}>{h.summary?.numDomains ?? '-'}</Box>
+                  <Box component="td" sx={{ py: 1, display: 'flex', gap: 1 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ cursor: 'pointer', color: 'primary.main' }}
+                      onClick={() => setSequencesV2(h.result)}
+                      data-testid={`history-reload-${h.id}`}
+                    >
+                      Reload
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ cursor: 'pointer', color: 'secondary.main' }}
+                      onClick={() => handleSubmit(h.fastaContent, h.numberingScheme as any)}
+                      data-testid={`history-reannotate-${h.id}`}
+                    >
+                      Re-annotate
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        )}
       </Paper>
 
       {/* Results Section */}

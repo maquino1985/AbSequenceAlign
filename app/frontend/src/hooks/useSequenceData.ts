@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import type { SequenceData, Region, ColorScheme } from '../types/sequence';
 import type { AnnotationResult } from '../types/api';
+import type { AnnotationResultV2, SequenceV2, ChainV2, DomainV2, RegionV2 } from '../types/apiV2';
 import { COLOR_SCHEMES, getRegionColor } from '../utils/colorUtils';
 import { ColorSchemeType } from '../types/sequence';
 
@@ -50,15 +51,33 @@ export const useSequenceData = () => {
           
 
           
+          // Extract base region name without index
+          const baseRegionName = regionName.split('_')[0];
+
+          // Determine region type
+          let regionType: Region['type'] = 'FR';
+          if (baseRegionName.startsWith('CDR')) {
+            regionType = 'CDR';
+          } else if (regionData.domain_type === 'C') {
+            regionType = 'CONSTANT';
+          } else if (baseRegionName === 'LINKER') {
+            regionType = 'LINKER';
+          }
+
           regions.push({
             id: `${seqInfo.name || `seq_${index}`}_${regionName}`,
-            name: regionName,
+            name: baseRegionName,
             start,
             stop,
             sequence: regionData.sequence,
-            type: regionName.startsWith('CDR') ? 'CDR' : 'FR',
-            color: getRegionColor(regionName),
-            features: []
+            type: regionType,
+            color: getRegionColor(baseRegionName),
+            features: [],
+            details: {
+              isotype: regionData.isotype,
+              domain_type: regionData.domain_type,
+              preceding_linker: regionData.preceding_linker
+            }
           });
         });
       }
@@ -80,6 +99,66 @@ export const useSequenceData = () => {
     });
 
     setState(prev => ({
+      ...prev,
+      sequences,
+      selectedRegions: [],
+      selectedPositions: []
+    }));
+  }, []);
+
+  const setSequencesV2 = useCallback((annotationResult: AnnotationResultV2) => {
+    const sequences: SequenceData[] = [];
+
+    annotationResult.sequences.forEach((seqInfo: SequenceV2, seqIndex) => {
+      const chains = seqInfo.chains.map((chain: ChainV2, chainIdx) => {
+        const annotations: Region[] = [];
+
+        chain.domains.forEach((domain: DomainV2, domainIdx) => {
+          const domainType = domain.domain_type;
+          domain.regions.forEach((r: RegionV2, regionIdx) => {
+            const baseRegionName = r.name;
+            let regionType: Region['type'] = 'FR';
+            if (domainType === 'LINKER') regionType = 'LINKER';
+            else if (domainType === 'C') regionType = 'CONSTANT';
+            else if (baseRegionName.startsWith('CDR')) regionType = 'CDR';
+
+            const seqFeature = r.features.find((f) => f.kind === 'sequence') as { kind: string; value?: string } | undefined;
+            const sequenceText = typeof seqFeature?.value === 'string' ? seqFeature?.value : '';
+
+            annotations.push({
+              id: `${seqInfo.name || `seq_${seqIndex}`}_${chain.name}_${domainIdx}_${regionIdx}_${baseRegionName}`,
+              name: baseRegionName,
+              start: r.start,
+              stop: r.stop,
+              sequence: sequenceText,
+              type: regionType,
+              color: getRegionColor(baseRegionName),
+              features: [],
+              details: {
+                isotype: domain.isotype,
+                domain_type: domain.domain_type,
+              }
+            });
+          });
+        });
+
+        return {
+          id: `${seqInfo.name || `seq_${seqIndex}`}_chain_${chainIdx}`,
+          type: chain.name,
+          sequence: chain.sequence,
+          annotations
+        };
+      });
+
+      sequences.push({
+        id: seqInfo.name || `seq_${seqIndex}`,
+        name: seqInfo.name || `Sequence ${seqIndex + 1}`,
+        chains,
+        species: undefined
+      });
+    });
+
+    setState((prev) => ({
       ...prev,
       sequences,
       selectedRegions: [],
@@ -168,6 +247,7 @@ export const useSequenceData = () => {
     allRegions,
     regionStats,
     setSequences,
+    setSequencesV2,
     selectRegion,
     selectPosition,
     setColorScheme,

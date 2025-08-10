@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.api.v1.endpoints import router as api_v1_router
+from backend.api.v2.endpoints import router as api_v2_router
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -21,6 +22,9 @@ app.add_middleware(
 
 # Register v1 API router
 app.include_router(api_v1_router, prefix="/api/v1")
+
+# Register v2 API router
+app.include_router(api_v2_router, prefix="/api/v2")
 
 # Health check endpoint
 @app.get("/health")

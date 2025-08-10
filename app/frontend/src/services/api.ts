@@ -20,6 +20,14 @@ const apiClient = axios.create({
   },
 });
 
+const apiClientV2 = axios.create({
+  baseURL: `${API_BASE_URL}/api/v2`,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 // Request interceptor for logging
 apiClient.interceptors.request.use(
   (config) => {
@@ -57,6 +65,14 @@ export const api = {
     request: AnnotationRequest
   ): Promise<APIResponse<{ annotation_result: AnnotationResult }>> => {
     const response = await apiClient.post('/annotate', request);
+    return response.data;
+  },
+
+  // V2 Annotate sequences (structured)
+  annotateSequencesV2: async (
+    request: import('../types/apiV2').AnnotationRequestV2
+  ): Promise<import('../types/apiV2').AnnotationResultV2> => {
+    const response = await apiClientV2.post('/annotate', request);
     return response.data;
   },
 

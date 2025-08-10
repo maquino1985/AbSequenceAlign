@@ -11,7 +11,7 @@ import {
   MenuItem,
   Chip
 } from '@mui/material';
-import { PlayArrow, Download } from '@mui/icons-material';
+import { PlayArrow } from '@mui/icons-material';
 import { MSAInput } from './MSAInput/MSAInput';
 import { MSAVisualization } from './MSAVisualization/MSAVisualization';
 import { ConsensusSequence } from '../../../components/ConsensusSequence';
@@ -88,8 +88,8 @@ export const MSAViewerTool: React.FC = () => {
 
           if (jobStatus.status === 'completed' && jobStatus.result) {
             // Job completed, update with results
-            const msaResult = jobStatus.result.msa_result || null;
-            const annotationResult = jobStatus.result.annotation_result || null;
+            const msaResult = (jobStatus.result as any).msa_result || null;
+            const annotationResult = (jobStatus.result as any).annotation_result || null;
             
             setMsaState(prev => ({
               ...prev,
@@ -170,7 +170,7 @@ export const MSAViewerTool: React.FC = () => {
       
       if (response.success && response.data) {
         const data = response.data;
-        if (data.use_background) {
+          if (data.use_background) {
           // Background job created
           setMsaState(prev => ({ 
             ...prev, 
@@ -184,10 +184,10 @@ export const MSAViewerTool: React.FC = () => {
             isLoading: false,
             msaResult: data.msa_result || null,
             annotationResult: data.annotation_result || null,
-            alignmentMatrix: data.msa_result?.alignment_matrix || [],
-            sequenceNames: data.msa_result?.sequences?.map((s: any) => s.name) || [],
-            consensus: data.consensus || '',
-            pssmData: data.pssm_data || null,
+            alignmentMatrix: (data as any).msa_result?.alignment_matrix || [],
+            sequenceNames: (data as any).msa_result?.sequences?.map((s: any) => s.name) || [],
+            consensus: (data as any).consensus || '',
+            pssmData: (data as any).pssm_data || null,
             regions: data.annotation_result?.annotated_sequences?.flatMap((seq: any) => seq.annotations || []) || []
           }));
         }
@@ -324,11 +324,11 @@ export const MSAViewerTool: React.FC = () => {
               {/* Consensus Sequence */}
               {msaState.consensus && (
                 <Box sx={{ mt: 2 }}>
-                  <ConsensusSequence
-                    consensus={msaState.consensus}
-                    conservationScores={msaState.pssmData?.conservation_scores || []}
-                    qualityScores={msaState.pssmData?.quality_scores || []}
-                  />
+              <ConsensusSequence
+                consensus={msaState.consensus}
+                conservationScores={msaState.pssmData?.conservation_scores || []}
+                qualityScores={msaState.pssmData?.quality_scores || []}
+              />
                 </Box>
               )}
 

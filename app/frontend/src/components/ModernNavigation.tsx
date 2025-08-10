@@ -17,6 +17,7 @@ import {
   FormControlLabel,
   Divider,
   alpha,
+  ListItemButton,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -220,53 +221,52 @@ export const ModernNavigation: React.FC<ModernNavigationProps> = ({
 
           <List>
             {modules.map((module) => (
-              <ListItem
-                key={module.id}
-                button
-                component="div"
-                onClick={() => handleModuleSelect(module.id)}
-                selected={currentModule === module.id}
-                sx={{
-                  borderRadius: 2,
-                  mb: 1,
-                  background: currentModule === module.id
-                    ? darkMode
-                      ? 'rgba(255, 255, 255, 0.1)'
-                      : 'rgba(0, 0, 0, 0.05)'
-                    : 'transparent',
-                  '&:hover': {
-                    background: darkMode
-                      ? 'rgba(255, 255, 255, 0.05)'
-                      : 'rgba(0, 0, 0, 0.02)',
-                  },
-                }}
-              >
-                <ListItemIcon>
-                  {module.icon && <module.icon />}
-                </ListItemIcon>
-                <ListItemText
-                  primary={
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontWeight: 600,
-                        color: darkMode ? '#FFFFFF' : '#000000',
-                      }}
-                    >
-                      {module.name}
-                    </Typography>
-                  }
-                  secondary={
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: '#6C6C70',
-                      }}
-                    >
-                      {module.description}
-                    </Typography>
-                  }
-                />
+              <ListItem key={module.id} disablePadding>
+                <ListItemButton
+                  onClick={() => handleModuleSelect(module.id)}
+                  selected={currentModule === module.id}
+                  sx={{
+                    borderRadius: 2,
+                    mb: 1,
+                    background: currentModule === module.id
+                      ? darkMode
+                        ? 'rgba(255, 255, 255, 0.1)'
+                        : 'rgba(0, 0, 0, 0.05)'
+                      : 'transparent',
+                    '&:hover': {
+                      background: darkMode
+                        ? 'rgba(255, 255, 255, 0.05)'
+                        : 'rgba(0, 0, 0, 0.02)',
+                    },
+                  }}
+                >
+                  <ListItemIcon>
+                    {module.icon && <module.icon />}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 600,
+                          color: darkMode ? '#FFFFFF' : '#000000',
+                        }}
+                      >
+                        {module.name}
+                      </Typography>
+                    }
+                    secondary={
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: '#6C6C70',
+                        }}
+                      >
+                        {module.description}
+                      </Typography>
+                    }
+                  />
+                </ListItemButton>
               </ListItem>
             ))}
           </List>

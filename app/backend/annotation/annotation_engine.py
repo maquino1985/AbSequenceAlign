@@ -35,28 +35,47 @@ def annotate_sequences_with_processor(
     
     for result_obj in processor.results:
         for chain in result_obj.chains:
-            for domain in chain.domains:
-                # Always use the original FASTA header (biologic_name) as the sequence name
-                # This preserves the user's original sequence identifiers
-                sequence_name = result_obj.biologic_name
-                
-                info = SequenceInfo(
-                    sequence=domain.sequence,
-                    name=sequence_name,
-                    chain_type=domain.isotype,
-                    isotype=domain.isotype,
-                    species=domain.species,
-                    germline=str(domain.germlines) if domain.germlines is not None else None,
-                    regions=getattr(domain, 'regions', None)
-                )
-                all_sequence_infos.append(info)
-                # Stats
-                if domain.isotype:
-                    chain_types[domain.isotype] = chain_types.get(domain.isotype, 0) + 1
-                if domain.isotype:
-                    isotypes[domain.isotype] = isotypes.get(domain.isotype, 0) + 1
-                if domain.species:
-                    species_counts[domain.species] = species_counts.get(domain.species, 0) + 1
+            # Always use the original FASTA header (biologic_name) as the sequence name
+            sequence_name = result_obj.biologic_name
+            
+            # Get the primary domain (first variable domain) for chain metadata
+            primary_domain = next((d for d in chain.domains if d.domain_type == 'V'), chain.domains[0])
+            
+            # Collect regions from all domains (regions are now absolute positions)
+            all_regions = {}
+            for i, domain in enumerate(chain.domains):
+                if domain.domain_type == 'LINKER':
+                    # Create a region for the linker
+                    all_regions[f'LINKER_{i}'] = {
+                        'name': 'LINKER',
+                        'start': domain.alignment_details['start'],
+                        'stop': domain.alignment_details['end'],
+                        'sequence': domain.sequence,
+                        'domain_type': 'LINKER'
+                    }
+                elif domain.domain_type == 'V' and hasattr(domain, 'regions'):
+                    # Keep original region names; positions are absolute now
+                    for region_name, region_data in domain.regions.items():
+                        all_regions[region_name] = region_data
+            
+            # Create a single SequenceInfo for the entire chain
+            info = SequenceInfo(
+                sequence=chain.sequence,  # Use full chain sequence
+                name=sequence_name,
+                chain_type=primary_domain.isotype,  # Use primary domain's isotype
+                isotype=primary_domain.isotype,
+                species=primary_domain.species,
+                germline=str(primary_domain.germlines) if primary_domain.germlines is not None else None,
+                regions=all_regions
+            )
+            all_sequence_infos.append(info)
+            
+            # Stats - only count primary domain
+            if primary_domain.isotype:
+                chain_types[primary_domain.isotype] = chain_types.get(primary_domain.isotype, 0) + 1
+                isotypes[primary_domain.isotype] = isotypes.get(primary_domain.isotype, 0) + 1
+            if primary_domain.species:
+                species_counts[primary_domain.species] = species_counts.get(primary_domain.species, 0) + 1
     
     return AnnotationResult(
         sequences=all_sequence_infos,

@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Container, Box } from '@mui/material';
+import { Container, Box, Typography } from '@mui/material';
 import { ModuleProvider } from './modules/shared/context/ModuleContext';
 import { MODULES } from './modules/moduleRegistry';
 import { useModuleContext } from './modules/shared/context/ModuleContext';

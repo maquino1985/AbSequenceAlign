@@ -15,7 +15,10 @@ class AlignmentEngine:
     """Handles sequence alignment using various algorithms"""
 
     def __init__(self):
-        self.available_matrices = substitution_matrices.load()
+        # Load substitution matrices as a dictionary
+        self.available_matrices = {}
+        for matrix_name in substitution_matrices.load():
+            self.available_matrices[matrix_name] = substitution_matrices.load(matrix_name)
 
     def align_sequences(self, sequences: List[str],
                         method: AlignmentMethod,
@@ -40,6 +43,14 @@ class AlignmentEngine:
         if len(sequences) < 2:
             raise ValueError("At least 2 sequences required for alignment")
 
+        # Validate method
+        if not isinstance(method, AlignmentMethod):
+            raise ValueError(f"Unsupported alignment method: {method}")
+
+        # Validate matrix
+        if matrix not in self.available_matrices:
+            raise ValueError(f"Unsupported substitution matrix: {matrix}")
+
         try:
             if method == AlignmentMethod.PAIRWISE_GLOBAL:
                 return self._pairwise_global_alignment(sequences, gap_open, gap_extend, matrix)
@@ -52,6 +63,9 @@ class AlignmentEngine:
             else:
                 raise ValueError(f"Unsupported alignment method: {method}")
 
+        except ValueError as e:
+            # Re-raise validation errors
+            raise e
         except Exception as e:
             logger.error(f"Alignment failed: {e}")
             raise RuntimeError(f"Alignment failed: {e}")
@@ -69,30 +83,34 @@ class AlignmentEngine:
         else:
             scoring_matrix = self.available_matrices["BLOSUM62"]
 
-        # Perform alignment
-        alignments = PairwiseAligner.align.globalds(
-            sequences[0], sequences[1],
-            scoring_matrix, gap_open, gap_extend
-        )
-        
+        # Create aligner with scoring matrix and gap penalties
+        aligner = PairwiseAligner()
+        aligner.mode = 'global'
+        aligner.substitution_matrix = scoring_matrix
+        aligner.open_gap_score = gap_open
+        aligner.extend_gap_score = gap_extend
 
+        # Perform alignment
+        alignments = list(aligner.align(sequences[0], sequences[1]))
         if not alignments:
             raise RuntimeError("No alignment found")
 
+        # Get best alignment
         best_alignment = alignments[0]
-        best_alignment.format()
+        aligned_seqs = str(best_alignment).split('\n')[:2]  # Get aligned sequences
+        seq_a, seq_b = aligned_seqs[0], aligned_seqs[1]
 
         # Calculate statistics
         score = best_alignment.score
-        identity = self._calculate_identity(best_alignment.seqA, best_alignment.seqB)
+        identity = self._calculate_identity(seq_a, seq_b)
 
         return {
             "method": "pairwise_global",
-            "alignment": best_alignment,
+            "alignment": str(best_alignment),
             "score": score,
             "identity": identity,
-            "length": len(best_alignment.seqA),
-            "gaps": best_alignment.seqA.count("-") + best_alignment.seqB.count("-")
+            "length": len(seq_a),
+            "gaps": seq_a.count("-") + seq_b.count("-")
         }
 
     def _pairwise_local_alignment(self, sequences: List[str],
@@ -108,28 +126,34 @@ class AlignmentEngine:
         else:
             scoring_matrix = self.available_matrices["BLOSUM62"]
 
-        # Perform alignment
-        alignments = PairwiseAligner.align.localds(
-            sequences[0], sequences[1],
-            scoring_matrix, gap_open, gap_extend
-        )
+        # Create aligner with scoring matrix and gap penalties
+        aligner = PairwiseAligner()
+        aligner.mode = 'local'
+        aligner.substitution_matrix = scoring_matrix
+        aligner.open_gap_score = gap_open
+        aligner.extend_gap_score = gap_extend
 
+        # Perform alignment
+        alignments = list(aligner.align(sequences[0], sequences[1]))
         if not alignments:
             raise RuntimeError("No alignment found")
 
+        # Get best alignment
         best_alignment = alignments[0]
+        aligned_seqs = str(best_alignment).split('\n')[:2]  # Get aligned sequences
+        seq_a, seq_b = aligned_seqs[0], aligned_seqs[1]
 
         # Calculate statistics
         score = best_alignment.score
-        identity = self._calculate_identity(best_alignment.seqA, best_alignment.seqB)
+        identity = self._calculate_identity(seq_a, seq_b)
 
         return {
             "method": "pairwise_local",
-            "alignment": best_alignment.format(),
+            "alignment": str(best_alignment),
             "score": score,
             "identity": identity,
-            "length": len(best_alignment.seqA),
-            "gaps": best_alignment.seqA.count("-") + best_alignment.seqB.count("-")
+            "length": len(seq_a),
+            "gaps": seq_a.count("-") + seq_b.count("-")
         }
 
     def _external_msa_alignment(self, sequences: List[str],
@@ -231,10 +255,15 @@ class AlignmentEngine:
         if len(seq1) != len(seq2):
             return 0.0
 
-        matches = sum(1 for a, b in zip(seq1, seq2) if a == b and a != '-')
-        total = sum(1 for a, b in zip(seq1, seq2) if a != '-' or b != '-')
+        # Count positions where both sequences have non-gap characters
+        non_gap_positions = sum(1 for a, b in zip(seq1, seq2) if a != '-' and b != '-')
+        if non_gap_positions == 0:
+            return 0.0
 
-        return matches / total if total > 0 else 0.0
+        # Count matches at non-gap positions
+        matches = sum(1 for a, b in zip(seq1, seq2) if a == b and a != '-' and b != '-')
+
+        return matches / non_gap_positions
 
     def _calculate_msa_identity(self, aligned_sequences: List[str]) -> float:
         """Calculate average identity across MSA"""
@@ -269,3 +298,32 @@ class AlignmentEngine:
             sequences.append(current_seq)
 
         return sequences
+
+    def _map_position_to_aligned(self, orig_pos: int, original_seq: str, aligned_seq: str) -> int:
+        """
+        Map a position from original sequence to aligned sequence
+        
+        Args:
+            orig_pos: Position in original sequence (0-based)
+            original_seq: Original sequence
+            aligned_seq: Aligned sequence with gaps
+            
+        Returns:
+            Position in aligned sequence (0-based)
+        """
+        if orig_pos >= len(original_seq):
+            return len(aligned_seq) - 1
+        
+        # Count gaps up to the target position
+        gap_count = 0
+        orig_count = 0
+        
+        for i, char in enumerate(aligned_seq):
+            if char == '-':
+                gap_count += 1
+            else:
+                if orig_count == orig_pos:
+                    return i
+                orig_count += 1
+        
+        return len(aligned_seq) - 1

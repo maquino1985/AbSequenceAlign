@@ -165,7 +165,7 @@ export const DomainGraphics: React.FC<DomainGraphicsProps> = ({
   }
 
   return (
-    <Box sx={{ width: '100%', overflow: 'auto' }}>
+    <Box sx={{ width: '100%', overflow: 'auto' }} data-testid="domain-graphics">
       <svg
         ref={svgRef}
         width={width}

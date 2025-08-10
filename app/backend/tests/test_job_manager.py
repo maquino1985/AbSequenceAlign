@@ -165,23 +165,27 @@ class TestJobManager:
         assert job_status.result is not None
         assert job_status.result["job_type"] == "msa_creation"
     
-    @patch('backend.jobs.job_manager.MSAEngine')
-    @patch('backend.jobs.job_manager.MSAAnnotationEngine')
-    def test_process_msa_job_failure(self, mock_annotation_engine_class, mock_msa_engine_class):
+    def test_process_msa_job_failure(self):
         """Test MSA job processing with failure"""
-        # Mock MSA engine to raise exception
-        mock_msa_engine = MagicMock()
-        mock_msa_engine.create_msa.side_effect = Exception("Test error")
-        mock_msa_engine_class.return_value = mock_msa_engine
-        
+        # Create a job
         job_id = self.job_manager.create_msa_job(self.test_msa_request)
         
-        # Simulate job processing
-        self.job_manager._process_msa_job(job_id, self.test_msa_request)
+        # Replace the MSA engine with a mock that raises an exception
+        self.job_manager.msa_engine = MagicMock()
+        self.job_manager.msa_engine.create_msa.side_effect = Exception("Test error")
+        
+        # Wait for job to complete (with timeout)
+        max_wait = 5  # seconds
+        start_time = time.time()
+        while time.time() - start_time < max_wait:
+            job_status = self.job_manager.get_job_status(job_id)
+            if job_status.status in ["completed", "failed"]:
+                break
+            time.sleep(0.1)
         
         # Check final job status
         job_status = self.job_manager.get_job_status(job_id)
-        assert job_status.status == "failed"
+        assert job_status.status == "failed", f"Expected status 'failed', got '{job_status.status}'"
         assert job_status.progress == 0.0
         assert "Test error" in job_status.message
     
