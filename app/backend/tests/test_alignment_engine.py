@@ -378,3 +378,4 @@ def test_map_position_to_aligned_beyond_sequence(alignment_engine):
     aligned_seq = "ABCDEF--"  # Gaps at end
     pos = alignment_engine._map_position_to_aligned(10, original_seq, aligned_seq)
     assert pos == len(aligned_seq) - 1  # Should return last position
+# Test comment to trigger CI
