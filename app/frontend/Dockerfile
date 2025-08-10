@@ -7,7 +7,7 @@ FROM ${BASE_IMAGE} AS builder
 WORKDIR /app
 
 # Copy source code
-COPY app/frontend/ .
+COPY . .
 
 # Build the application
 RUN npm run build
@@ -19,7 +19,7 @@ FROM nginx:alpine AS production
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration
-COPY app/frontend/nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port 80
 EXPOSE 80
