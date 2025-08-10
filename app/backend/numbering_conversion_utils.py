@@ -8,16 +8,12 @@ NumberingScheme = Literal["imgt", "kabat", "chothia"]
 # Complete mapping for heavy chain (IMGT -> Kabat)
 IMGT_TO_KABAT_HEAVY = {i: (i, "") for i in range(1, 118)}
 # Insertions (example, real mapping may differ)
-IMGT_TO_KABAT_HEAVY.update(
-    {32: (31, "A"), 33: (31, "B"), 38: (35, "A"), 39: (35, "B")}
-)
+IMGT_TO_KABAT_HEAVY.update({32: (31, "A"), 33: (31, "B"), 38: (35, "A"), 39: (35, "B")})
 
 # Complete mapping for light chain (IMGT -> Kabat)
 IMGT_TO_KABAT_LIGHT = {i: (i, "") for i in range(1, 111)}
 # Insertions (example, real mapping may differ)
-IMGT_TO_KABAT_LIGHT.update(
-    {27: (26, "A"), 28: (26, "B"), 38: (35, "A"), 39: (35, "B")}
-)
+IMGT_TO_KABAT_LIGHT.update({27: (26, "A"), 28: (26, "B"), 38: (35, "A"), 39: (35, "B")})
 
 # Complete mapping for heavy chain (IMGT -> Chothia)
 IMGT_TO_CHOTHIA_HEAVY = {i: (i, "") for i in range(1, 118)}

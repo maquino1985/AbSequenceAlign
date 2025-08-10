@@ -294,9 +294,7 @@ class TestDomainServices:
         assert validator.validate_amino_acid_sequence("ACDEFGHIKLMNPQRSTVWY")
 
         # Invalid sequence
-        assert not validator.validate_amino_acid_sequence(
-            "ACDEFGHIKLMNPQRSTVWY123"
-        )
+        assert not validator.validate_amino_acid_sequence("ACDEFGHIKLMNPQRSTVWY123")
 
         # Valid chain type
         assert validator.validate_chain_type("H")

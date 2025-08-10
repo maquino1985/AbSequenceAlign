@@ -61,9 +61,7 @@ class PipelineBuilder(AbstractBuilder):
         logger.debug(f"Configured pipeline with {key}={value}")
         return self
 
-    def configure_numbering_scheme(
-        self, scheme: NumberingScheme
-    ) -> "PipelineBuilder":
+    def configure_numbering_scheme(self, scheme: NumberingScheme) -> "PipelineBuilder":
         """Configure the numbering scheme for the pipeline"""
         return self.configure("numbering_scheme", scheme)
 
@@ -71,9 +69,7 @@ class PipelineBuilder(AbstractBuilder):
         """Configure the validation level"""
         return self.configure("validation_level", level)
 
-    def configure_parallel_processing(
-        self, enabled: bool
-    ) -> "PipelineBuilder":
+    def configure_parallel_processing(self, enabled: bool) -> "PipelineBuilder":
         """Configure parallel processing"""
         return self.configure("parallel_processing", enabled)
 
@@ -98,9 +94,7 @@ class PipelineBuilder(AbstractBuilder):
 class ProcessingPipeline:
     """A processing pipeline that executes steps in sequence"""
 
-    def __init__(
-        self, steps: List[AbstractPipelineStep], config: Dict[str, Any]
-    ):
+    def __init__(self, steps: List[AbstractPipelineStep], config: Dict[str, Any]):
         self.steps = steps
         self.config = config
 
@@ -112,16 +106,16 @@ class ProcessingPipeline:
             # Execute each step in sequence
             for i, step in enumerate(self.steps):
                 step_progress = i / len(self.steps)
-                logger.debug(
-                    f"Executing step {i+1}/{len(self.steps)}: {step.name}"
-                )
+                logger.debug(f"Executing step {i+1}/{len(self.steps)}: {step.name}")
 
                 # Execute the step
                 context = step.execute(context)
 
                 # Check for errors
                 if context.errors:
-                    error_msg = f"Pipeline failed at step '{step.name}': {context.errors[-1]}"
+                    error_msg = (
+                        f"Pipeline failed at step '{step.name}': {context.errors[-1]}"
+                    )
                     logger.error(error_msg)
                     return ProcessingResult(
                         success=False,
@@ -154,9 +148,7 @@ class ProcessingPipeline:
             {
                 "name": step.name,
                 "index": i,
-                "can_execute": step.can_execute(
-                    ProcessingContext(sequence=None)
-                ),
+                "can_execute": step.can_execute(ProcessingContext(sequence=None)),
             }
             for i, step in enumerate(self.steps)
         ]
@@ -209,9 +201,7 @@ def create_alignment_pipeline() -> ProcessingPipeline:
     builder.add_step_by_type(SequenceValidationStep, "sequence_validation")
     builder.add_step_by_type(AlignmentPreparationStep, "alignment_preparation")
     builder.add_step_by_type(MSAStep, "msa_alignment")
-    builder.add_step_by_type(
-        AlignmentPostProcessingStep, "alignment_post_processing"
-    )
+    builder.add_step_by_type(AlignmentPostProcessingStep, "alignment_post_processing")
 
     builder.configure_parallel_processing(True)
 

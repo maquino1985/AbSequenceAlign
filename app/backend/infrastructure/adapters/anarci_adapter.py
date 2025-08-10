@@ -166,9 +166,7 @@ class AnarciAdapter(AbstractExternalToolAdapter):
             results = []
             for i, (seq_name, seq_sequence) in enumerate(sequences_out):
                 seq_numbered = numbered[i] if i < len(numbered) else []
-                seq_aligns = (
-                    alignment_details[i] if i < len(alignment_details) else []
-                )
+                seq_aligns = alignment_details[i] if i < len(alignment_details) else []
                 seq_hits = hit_tables[i] if i < len(hit_tables) else []
 
                 result = {
@@ -219,9 +217,7 @@ class AnarciAdapter(AbstractExternalToolAdapter):
 
         # Find relevant column indices
         id_idx = header.index("id") if "id" in header else None
-        bitscore_idx = (
-            header.index("bitscore") if "bitscore" in header else None
-        )
+        bitscore_idx = header.index("bitscore") if "bitscore" in header else None
         e_value_idx = header.index("evalue") if "evalue" in header else None
 
         if not rows:
@@ -245,9 +241,7 @@ class AnarciAdapter(AbstractExternalToolAdapter):
 
         return germline_info
 
-    def _process_numbering(
-        self, numbered_domain: List
-    ) -> List[Dict[str, Any]]:
+    def _process_numbering(self, numbered_domain: List) -> List[Dict[str, Any]]:
         """Process ANARCI numbering output"""
         processed = []
 

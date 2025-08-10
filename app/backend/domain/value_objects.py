@@ -95,10 +95,7 @@ class SequencePosition:
         """Check equality of positions"""
         if not isinstance(other, SequencePosition):
             return NotImplemented
-        return (
-            self.position == other.position
-            and self.insertion == other.insertion
-        )
+        return self.position == other.position and self.insertion == other.insertion
 
     def __hash__(self) -> int:
         """Hash for use in sets and dicts"""
@@ -139,9 +136,7 @@ class RegionBoundary:
         """Check if this boundary overlaps with another"""
         return not (self.end < other.start or other.end < self.start)
 
-    def intersection(
-        self, other: "RegionBoundary"
-    ) -> Optional["RegionBoundary"]:
+    def intersection(self, other: "RegionBoundary") -> Optional["RegionBoundary"]:
         """Get the intersection of two boundaries"""
         if not self.overlaps_with(other):
             return None

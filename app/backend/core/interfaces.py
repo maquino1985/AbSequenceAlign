@@ -124,9 +124,7 @@ class PipelineStep(ABC):
         self.next_step = step
         return step
 
-    def _process_next(
-        self, context: "ProcessingContext"
-    ) -> "ProcessingContext":
+    def _process_next(self, context: "ProcessingContext") -> "ProcessingContext":
         """Helper method to process the next step if it exists"""
         if self.next_step:
             return self.next_step.process(context)
@@ -154,17 +152,17 @@ class ExternalToolAdapter(ABC):
 
 class AbstractExternalToolAdapter(ABC):
     """Abstract base class for external tool adapters"""
-    
+
     @abstractmethod
     def execute(self, **kwargs) -> Dict[str, Any]:
         """Execute the external tool"""
         pass
-    
+
     @abstractmethod
     def is_available(self) -> bool:
         """Check if the external tool is available"""
         pass
-    
+
     @abstractmethod
     def get_version(self) -> Optional[str]:
         """Get the version of the external tool"""

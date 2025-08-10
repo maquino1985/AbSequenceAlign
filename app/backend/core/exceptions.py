@@ -383,9 +383,7 @@ def create_processing_error(
     )
 
 
-def create_tool_error(
-    tool_name: str, message: str, **kwargs
-) -> ExternalToolError:
+def create_tool_error(tool_name: str, message: str, **kwargs) -> ExternalToolError:
     """Helper function to create external tool errors"""
     return ExternalToolError(
         message=f"Tool '{tool_name}' failed: {message}",

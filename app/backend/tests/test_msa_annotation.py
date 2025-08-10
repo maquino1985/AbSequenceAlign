@@ -158,9 +158,7 @@ class TestMSAAnnotationEngine:
             "FR2": {"start": 33, "stop": 49, "sequence": "FAMSWVRQAPGKGLEW"},
         }
 
-        annotations = self.annotation_engine._extract_annotations(
-            mock_seq_info
-        )
+        annotations = self.annotation_engine._extract_annotations(mock_seq_info)
 
         assert len(annotations) == 3
         assert annotations[0]["name"] == "FR1"
@@ -177,9 +175,7 @@ class TestMSAAnnotationEngine:
         mock_seq_info = MagicMock()
         mock_seq_info.regions = None
 
-        annotations = self.annotation_engine._extract_annotations(
-            mock_seq_info
-        )
+        annotations = self.annotation_engine._extract_annotations(mock_seq_info)
 
         assert annotations == []
 
@@ -311,10 +307,8 @@ class TestMSAAnnotationEngine:
             metadata={},
         )
 
-        region_positions = (
-            self.annotation_engine.get_region_positions_in_alignment(
-                msa_result, "CDR1"
-            )
+        region_positions = self.annotation_engine.get_region_positions_in_alignment(
+            msa_result, "CDR1"
         )
 
         assert len(region_positions) == 2
@@ -350,10 +344,8 @@ class TestMSAAnnotationEngine:
             metadata={},
         )
 
-        region_positions = (
-            self.annotation_engine.get_region_positions_in_alignment(
-                msa_result, "CDR1"
-            )
+        region_positions = self.annotation_engine.get_region_positions_in_alignment(
+            msa_result, "CDR1"
         )
 
         assert region_positions == []
@@ -388,10 +380,8 @@ class TestMSAAnnotationEngine:
             metadata={},
         )
 
-        region_positions = (
-            self.annotation_engine.get_region_positions_in_alignment(
-                msa_result, "CDR2"  # Region not present in annotations
-            )
+        region_positions = self.annotation_engine.get_region_positions_in_alignment(
+            msa_result, "CDR2"  # Region not present in annotations
         )
 
         assert region_positions == []

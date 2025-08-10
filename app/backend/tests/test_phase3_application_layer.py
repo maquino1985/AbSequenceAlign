@@ -4,6 +4,7 @@ Verifies pipeline pattern, application services, and observer pattern functional
 """
 
 import pytest
+from unittest.mock import Mock, patch
 
 from backend.application.pipelines.pipeline_builder import (
     PipelineBuilder,
@@ -265,8 +266,29 @@ class TestProcessingService:
         assert "annotation" in processing_types
         assert "alignment" in processing_types
 
-    def test_processing_service_process_sequence(self):
+    @patch("backend.application.services.annotation_service.AnarciAdapter")
+    @patch("backend.application.services.annotation_service.HmmerAdapter")
+    def test_processing_service_process_sequence(self, mock_hmmer, mock_anarci):
         """Test processing a single sequence"""
+        # Mock ANARCI adapter
+        mock_anarci_instance = Mock()
+        mock_anarci_instance.number_sequence.return_value = {
+            "success": True,
+            "numbered": [[("1", "A"), ("2", "C"), ("3", "D")]],
+            "sequences": [("TestChain", "ACD")],
+            "alignment_details": [[]],
+            "hit_tables": [[]],
+        }
+        mock_anarci.return_value = mock_anarci_instance
+
+        # Mock HMMER adapter
+        mock_hmmer_instance = Mock()
+        mock_hmmer_instance.detect_isotype.return_value = {
+            "success": True,
+            "isotype": "IGHG1",
+        }
+        mock_hmmer.return_value = mock_hmmer_instance
+
         service = ProcessingService()
         sequence = self._create_test_sequence()
 
@@ -281,11 +303,34 @@ class TestProcessingService:
         service = ProcessingService()
         sequence = self._create_test_sequence()
 
-        with pytest.raises(ProcessingError):
-            service.process_sequence(sequence, "invalid_type")
+        result = service.process_sequence(sequence, "invalid_type")
 
-    def test_processing_service_batch_processing(self):
+        assert not result.success
+        assert "Unknown processing type: invalid_type" in result.error
+
+    @patch("backend.application.services.annotation_service.AnarciAdapter")
+    @patch("backend.application.services.annotation_service.HmmerAdapter")
+    def test_processing_service_batch_processing(self, mock_hmmer, mock_anarci):
         """Test batch processing of sequences"""
+        # Mock ANARCI adapter
+        mock_anarci_instance = Mock()
+        mock_anarci_instance.number_sequence.return_value = {
+            "success": True,
+            "numbered": [[("1", "A"), ("2", "C"), ("3", "D")]],
+            "sequences": [("TestChain", "ACD")],
+            "alignment_details": [[]],
+            "hit_tables": [[]],
+        }
+        mock_anarci.return_value = mock_anarci_instance
+
+        # Mock HMMER adapter
+        mock_hmmer_instance = Mock()
+        mock_hmmer_instance.detect_isotype.return_value = {
+            "success": True,
+            "isotype": "IGHG1",
+        }
+        mock_hmmer.return_value = mock_hmmer_instance
+
         service = ProcessingService()
         sequences = [
             self._create_test_sequence(),
@@ -295,7 +340,7 @@ class TestProcessingService:
         result = service.process_sequences_batch(sequences, "annotation")
 
         assert result.success
-        assert result.data["total_sequences"] == 2
+        assert result.metadata["total_sequences"] == 2
         assert result.data["successful_count"] == 2
         assert result.data["success_rate"] == 1.0
 
@@ -422,9 +467,7 @@ class TestProcessingServiceFactory:
     def test_create_service_with_observers(self):
         """Test creating service with observers"""
         observer = ProgressTrackingObserver()
-        service = ProcessingServiceFactory.create_service_with_observers(
-            [observer]
-        )
+        service = ProcessingServiceFactory.create_service_with_observers([observer])
 
         assert service is not None
         # Note: We can't easily test observer attachment without exposing internal state
@@ -436,10 +479,8 @@ class TestProcessingServiceFactory:
             return create_custom_pipeline(["sequence_validation"], kwargs)
 
         custom_pipelines = {"custom": custom_pipeline}
-        service = (
-            ProcessingServiceFactory.create_service_with_custom_pipelines(
-                custom_pipelines
-            )
+        service = ProcessingServiceFactory.create_service_with_custom_pipelines(
+            custom_pipelines
         )
 
         assert service is not None

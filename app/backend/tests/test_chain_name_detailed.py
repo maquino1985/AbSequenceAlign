@@ -43,9 +43,7 @@ def test_trace_chain_name_processing():
             print(f"   - chain.name: {chain.name}")
 
     # Now run through annotation engine
-    result = annotate_sequences_with_processor(
-        [sequence_input], NumberingScheme.IMGT
-    )
+    result = annotate_sequences_with_processor([sequence_input], NumberingScheme.IMGT)
 
     print(f"5. Final annotation result:")
     for seq in result.sequences:

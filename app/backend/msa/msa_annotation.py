@@ -68,12 +68,10 @@ class MSAAnnotationEngine:
                             region_data,
                         ) in seq_info.regions.items():
                             # Map region positions to aligned sequence positions
-                            aligned_start, aligned_stop = (
-                                self._map_region_to_aligned(
-                                    region_data,
-                                    msa_seq.original_sequence,
-                                    msa_seq.aligned_sequence,
-                                )
+                            aligned_start, aligned_stop = self._map_region_to_aligned(
+                                region_data,
+                                msa_seq.original_sequence,
+                                msa_seq.aligned_sequence,
                             )
 
                             region_info = {
@@ -86,9 +84,7 @@ class MSAAnnotationEngine:
                                     if hasattr(region_data, "sequence")
                                     else ""
                                 ),
-                                "type": (
-                                    "CDR" if "CDR" in region_name else "FR"
-                                ),
+                                "type": ("CDR" if "CDR" in region_name else "FR"),
                                 "color": self._get_region_color(region_name),
                                 "original_start": (
                                     region_data.start
@@ -259,13 +255,11 @@ class MSAAnnotationEngine:
                 for annotation in msa_seq.annotations:
                     if annotation.get("name") == region_name:
                         # Map original positions to aligned positions
-                        aligned_start, aligned_stop = (
-                            self._map_positions_to_alignment(
-                                msa_seq.original_sequence,
-                                msa_seq.aligned_sequence,
-                                annotation.get("start", 0),
-                                annotation.get("stop", 0),
-                            )
+                        aligned_start, aligned_stop = self._map_positions_to_alignment(
+                            msa_seq.original_sequence,
+                            msa_seq.aligned_sequence,
+                            annotation.get("start", 0),
+                            annotation.get("stop", 0),
                         )
 
                         region_positions.append(

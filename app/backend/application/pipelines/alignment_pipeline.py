@@ -51,9 +51,7 @@ class AlignmentPipeline(AbstractProcessingSubject):
         for i in range(len(self._steps) - 1):
             self._steps[i].set_next(self._steps[i + 1])
 
-        self._logger.info(
-            f"Alignment pipeline setup with {len(self._steps)} steps"
-        )
+        self._logger.info(f"Alignment pipeline setup with {len(self._steps)} steps")
 
     def align_sequences(
         self,
@@ -93,9 +91,7 @@ class AlignmentPipeline(AbstractProcessingSubject):
 
             # Check for errors
             if final_context.errors:
-                error_msg = (
-                    f"Pipeline failed with {len(final_context.errors)} errors"
-                )
+                error_msg = f"Pipeline failed with {len(final_context.errors)} errors"
                 self._logger.error(error_msg)
                 self.notify_error(error_msg)
                 return ProcessingResult(
@@ -202,9 +198,7 @@ class AlignmentPipeline(AbstractProcessingSubject):
             self.notify_error(error_msg)
             return ProcessingResult(success=False, error=error_msg)
 
-    def _extract_alignment_result(
-        self, context: PipelineContext
-    ) -> Dict[str, Any]:
+    def _extract_alignment_result(self, context: PipelineContext) -> Dict[str, Any]:
         """Extract the alignment result from the pipeline context"""
         # The alignment result should be in the context after processing
         # For now, return a placeholder (this would be enhanced in real implementation)
@@ -240,9 +234,7 @@ class AlignmentPipeline(AbstractProcessingSubject):
                 self._rechain_steps()
                 return
 
-        raise PipelineError(
-            f"Step not found: {step_name}", pipeline_name="alignment"
-        )
+        raise PipelineError(f"Step not found: {step_name}", pipeline_name="alignment")
 
     def _rechain_steps(self):
         """Rechain the pipeline steps"""

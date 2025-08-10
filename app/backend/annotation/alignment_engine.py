@@ -246,14 +246,10 @@ class AlignmentEngine:
                 raise ValueError(f"Unsupported MSA method: {method}")
 
             # Run external tool
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=300
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
 
             if result.returncode != 0:
-                raise RuntimeError(
-                    f"External alignment failed: {result.stderr}"
-                )
+                raise RuntimeError(f"External alignment failed: {result.stderr}")
 
             # Read alignment result
             if method == AlignmentMethod.MAFFT:
@@ -272,9 +268,7 @@ class AlignmentEngine:
                 "method": method.value,
                 "alignment": alignment_content,
                 "identity": identity,
-                "length": (
-                    len(aligned_sequences[0]) if aligned_sequences else 0
-                ),
+                "length": (len(aligned_sequences[0]) if aligned_sequences else 0),
                 "sequences": len(aligned_sequences),
             }
 
@@ -337,16 +331,12 @@ class AlignmentEngine:
             return 0.0
 
         # Count positions where both sequences have non-gap characters
-        non_gap_positions = sum(
-            1 for a, b in zip(seq1, seq2) if a != "-" and b != "-"
-        )
+        non_gap_positions = sum(1 for a, b in zip(seq1, seq2) if a != "-" and b != "-")
         if non_gap_positions == 0:
             return 0.0
 
         # Count matches at non-gap positions
-        matches = sum(
-            1 for a, b in zip(seq1, seq2) if a == b and a != "-" and b != "-"
-        )
+        matches = sum(1 for a, b in zip(seq1, seq2) if a == b and a != "-" and b != "-")
 
         return matches / non_gap_positions
 

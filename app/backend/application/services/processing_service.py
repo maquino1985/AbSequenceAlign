@@ -52,9 +52,7 @@ class ProcessingService(AbstractProcessingSubject):
             "pipeline": self._execute_pipeline,
         }
 
-        logger.info(
-            "Processing service initialized with pipeline and strategy support"
-        )
+        logger.info("Processing service initialized with pipeline and strategy support")
 
     def process_sequence(
         self,
@@ -135,9 +133,7 @@ class ProcessingService(AbstractProcessingSubject):
                 ) * 0.9  # 90% for processing, 10% for completion
                 self.notify_step_completed(f"sequence_{i+1}", progress)
 
-                result = self.process_sequence(
-                    sequence, processing_type, **kwargs
-                )
+                result = self.process_sequence(sequence, processing_type, **kwargs)
                 results.append(result)
 
                 if not result.success:
@@ -150,15 +146,11 @@ class ProcessingService(AbstractProcessingSubject):
             failed_results = [r for r in results if not r.success]
 
             success_rate = (
-                len(successful_results) / total_sequences
-                if total_sequences > 0
-                else 0
+                len(successful_results) / total_sequences if total_sequences > 0 else 0
             )
 
             self.notify_step_completed("batch_complete", 1.0)
-            logger.info(
-                f"Batch processing completed. Success rate: {success_rate:.1%}"
-            )
+            logger.info(f"Batch processing completed. Success rate: {success_rate:.1%}")
 
             return ProcessingResult(
                 success=success_rate > 0,
@@ -181,15 +173,11 @@ class ProcessingService(AbstractProcessingSubject):
             self.notify_error(error_msg)
             return ProcessingResult(success=False, error=error_msg)
 
-    def create_pipeline(
-        self, pipeline_type: str, **config
-    ) -> ProcessingPipeline:
+    def create_pipeline(self, pipeline_type: str, **config) -> ProcessingPipeline:
         """Create a processing pipeline of the specified type"""
         try:
             if pipeline_type not in self._pipeline_registry:
-                raise ProcessingError(
-                    f"Unknown pipeline type: {pipeline_type}"
-                )
+                raise ProcessingError(f"Unknown pipeline type: {pipeline_type}")
 
             pipeline_creator = self._pipeline_registry[pipeline_type]
             pipeline = pipeline_creator(**config)
@@ -212,9 +200,7 @@ class ProcessingService(AbstractProcessingSubject):
     ) -> ProcessingResult:
         """Execute a custom pipeline on a sequence"""
         try:
-            logger.info(
-                f"Executing custom pipeline for sequence: {sequence.name}"
-            )
+            logger.info(f"Executing custom pipeline for sequence: {sequence.name}")
 
             # Create processing context
             context = ProcessingContext(sequence=sequence, metadata=kwargs)
@@ -234,7 +220,9 @@ class ProcessingService(AbstractProcessingSubject):
             return result
 
         except Exception as e:
-            error_msg = f"Pipeline execution failed for sequence {sequence.name}: {str(e)}"
+            error_msg = (
+                f"Pipeline execution failed for sequence {sequence.name}: {str(e)}"
+            )
             logger.error(error_msg)
             return ProcessingResult(success=False, error=error_msg)
 
@@ -288,9 +276,7 @@ class ProgressTrackingObserver(ProcessingObserver):
 
     def on_error(self, error: str) -> None:
         """Called when an error occurs during processing"""
-        self.errors.append(
-            {"error": error, "timestamp": datetime.now().isoformat()}
-        )
+        self.errors.append({"error": error, "timestamp": datetime.now().isoformat()})
 
     def on_processing_complete(self, result: Any) -> None:
         """Called when processing is completely finished"""
@@ -303,9 +289,7 @@ class ProgressTrackingObserver(ProcessingObserver):
             "completed": self.completed,
             "total_steps": len(self.progress_history),
             "current_progress": (
-                self.progress_history[-1]["progress"]
-                if self.progress_history
-                else 0.0
+                self.progress_history[-1]["progress"] if self.progress_history else 0.0
             ),
             "error_count": len(self.errors),
             "has_errors": len(self.errors) > 0,

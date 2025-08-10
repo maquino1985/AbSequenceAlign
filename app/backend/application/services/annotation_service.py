@@ -56,24 +56,18 @@ class AnnotationService(AbstractProcessingSubject):
 
             # Validate sequence
             if not self._validate_sequence(sequence):
-                raise ValidationError(
-                    "Invalid antibody sequence", field="sequence"
-                )
+                raise ValidationError("Invalid antibody sequence", field="sequence")
 
             # Process each chain
             annotated_chains = []
             total_chains = len(sequence.chains)
 
             for i, chain in enumerate(sequence.chains):
-                logger.debug(
-                    f"Processing chain {i+1}/{total_chains}: {chain.name}"
-                )
-                progress = (
-                    i / total_chains
-                ) * 0.8  # 80% of work is chain processing
+                logger.debug(f"Processing chain {i+1}/{total_chains}: {chain.name}")
+                progress = (i / total_chains) * 0.8  # 80% of work is chain processing
                 self.notify_step_completed(f"chain_{i+1}", progress)
 
-                annotated_chain = self._annotate_chain(chain, numbering_scheme)
+                annotated_chain = self.annotate_chain(chain, numbering_scheme)
                 annotated_chains.append(annotated_chain)
 
             # Create annotated sequence
@@ -93,9 +87,7 @@ class AnnotationService(AbstractProcessingSubject):
             )
 
         except Exception as e:
-            error_msg = (
-                f"Annotation failed for sequence {sequence.name}: {str(e)}"
-            )
+            error_msg = f"Annotation failed for sequence {sequence.name}: {str(e)}"
             logger.error(error_msg)
             self.notify_error(error_msg)
             return ProcessingResult(success=False, error=error_msg)
@@ -120,9 +112,7 @@ class AnnotationService(AbstractProcessingSubject):
             # Process domains
             annotated_domains = []
             for domain in chain.domains:
-                annotated_domain = self._annotate_domain(
-                    domain, numbering_scheme
-                )
+                annotated_domain = self.annotate_domain(domain, numbering_scheme)
                 annotated_domains.append(annotated_domain)
 
             # Create annotated chain
@@ -157,9 +147,7 @@ class AnnotationService(AbstractProcessingSubject):
             elif domain.domain_type == DomainType.LINKER:
                 return self._annotate_linker_domain(domain)
             else:
-                raise AnnotationError(
-                    f"Unknown domain type: {domain.domain_type}"
-                )
+                raise AnnotationError(f"Unknown domain type: {domain.domain_type}")
 
         except Exception as e:
             raise AnnotationError(
@@ -201,15 +189,11 @@ class AnnotationService(AbstractProcessingSubject):
                 step="variable_domain",
             )
 
-    def _annotate_constant_domain(
-        self, domain: AntibodyDomain
-    ) -> AntibodyDomain:
+    def _annotate_constant_domain(self, domain: AntibodyDomain) -> AntibodyDomain:
         """Annotate a constant domain using HMMER"""
         try:
             # Use HMMER for isotype detection
-            hmmer_result = self._hmmer_adapter.detect_isotype(
-                str(domain.sequence)
-            )
+            hmmer_result = self._hmmer_adapter.detect_isotype(str(domain.sequence))
 
             if not hmmer_result.get("success", False):
                 raise AnnotationError(
@@ -234,9 +218,7 @@ class AnnotationService(AbstractProcessingSubject):
                 metadata={
                     **domain.metadata,
                     "hmmer_result": hmmer_result,
-                    "isotype": hmmer_result.get("data", {}).get(
-                        "best_isotype"
-                    ),
+                    "isotype": hmmer_result.get("data", {}).get("best_isotype"),
                 },
             )
 
@@ -248,9 +230,7 @@ class AnnotationService(AbstractProcessingSubject):
                 step="constant_domain",
             )
 
-    def _annotate_linker_domain(
-        self, domain: AntibodyDomain
-    ) -> AntibodyDomain:
+    def _annotate_linker_domain(self, domain: AntibodyDomain) -> AntibodyDomain:
         """Annotate a linker domain"""
         try:
             # Create linker region
@@ -318,9 +298,7 @@ class AnnotationService(AbstractProcessingSubject):
         for cdr_name, (start, end) in cdr_boundaries.items():
             try:
                 # Extract CDR sequence
-                cdr_sequence = self._extract_region_sequence(
-                    numbered, start, end
-                )
+                cdr_sequence = self._extract_region_sequence(numbered, start, end)
                 if cdr_sequence:
                     region = AntibodyRegion(
                         name=cdr_name,
@@ -352,9 +330,7 @@ class AnnotationService(AbstractProcessingSubject):
         for fr_name, (start, end) in fr_boundaries.items():
             try:
                 # Extract FR sequence
-                fr_sequence = self._extract_region_sequence(
-                    numbered, start, end
-                )
+                fr_sequence = self._extract_region_sequence(numbered, start, end)
                 if fr_sequence:
                     region = AntibodyRegion(
                         name=fr_name,

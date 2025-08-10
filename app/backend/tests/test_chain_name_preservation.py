@@ -18,9 +18,7 @@ def test_chain_name_preservation_single_sequence():
     )
 
     # Call annotation engine
-    result = annotate_sequences_with_processor(
-        [sequence_input], NumberingScheme.IMGT
-    )
+    result = annotate_sequences_with_processor([sequence_input], NumberingScheme.IMGT)
 
     # Verify that the returned sequence name matches the input name
     assert len(result.sequences) == 1
@@ -47,9 +45,7 @@ def test_chain_name_preservation_multiple_sequences():
     ]
 
     # Call annotation engine
-    result = annotate_sequences_with_processor(
-        sequence_inputs, NumberingScheme.IMGT
-    )
+    result = annotate_sequences_with_processor(sequence_inputs, NumberingScheme.IMGT)
 
     # Verify that the returned sequence names match the input names
     assert len(result.sequences) == 2
@@ -75,9 +71,7 @@ def test_chain_name_preservation_with_custom_chains():
     )
 
     # Call annotation engine
-    result = annotate_sequences_with_processor(
-        [sequence_input], NumberingScheme.IMGT
-    )
+    result = annotate_sequences_with_processor([sequence_input], NumberingScheme.IMGT)
 
     # Since we have custom chains, we should get results for each chain
     # But the sequence name should still be based on the main name

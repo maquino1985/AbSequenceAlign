@@ -84,17 +84,9 @@ class TestEnhancedMSA:
         assert "num_sequences" in pssm_data
 
         # Verify data integrity
-        assert (
-            len(pssm_data["position_frequencies"])
-            == pssm_data["alignment_length"]
-        )
-        assert (
-            len(pssm_data["position_scores"]) == pssm_data["alignment_length"]
-        )
-        assert (
-            len(pssm_data["conservation_scores"])
-            == pssm_data["alignment_length"]
-        )
+        assert len(pssm_data["position_frequencies"]) == pssm_data["alignment_length"]
+        assert len(pssm_data["position_scores"]) == pssm_data["alignment_length"]
+        assert len(pssm_data["conservation_scores"]) == pssm_data["alignment_length"]
         assert len(pssm_data["consensus"]) == pssm_data["alignment_length"]
         assert pssm_data["num_sequences"] == 3
 
@@ -204,9 +196,7 @@ class TestEnhancedMSA:
         pssm_data = self.pssm_calculator.calculate_pssm(alignment_matrix)
 
         # Get position summary
-        position_summary = self.pssm_calculator.get_position_summary(
-            pssm_data, 0
-        )
+        position_summary = self.pssm_calculator.get_position_summary(pssm_data, 0)
 
         # Verify position summary structure
         assert "position" in position_summary
@@ -289,9 +279,7 @@ class TestEnhancedMSA:
 
         # PSSM should still be calculated
         pssm_data = msa_result.metadata["pssm_data"]
-        assert len(pssm_data["conservation_scores"]) == len(
-            single_sequence[0][1]
-        )
+        assert len(pssm_data["conservation_scores"]) == len(single_sequence[0][1])
 
         # All conservation scores should be 1.0 for single sequence
         for score in pssm_data["conservation_scores"]:
