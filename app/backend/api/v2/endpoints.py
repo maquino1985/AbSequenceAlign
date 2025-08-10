@@ -118,10 +118,38 @@ async def annotate_sequences_v2(request: AnnotationRequestV2):
                 )
             )
 
+        # Calculate statistics like v1
+        chain_types = {}
+        isotypes = {}
+        species_counts = {}
+        
+        for result in processor.results:
+            for chain in result.chains:
+                # Get the primary domain (first variable domain) for chain metadata
+                primary_domain = next(
+                    (d for d in chain.domains if d.domain_type == "V"), chain.domains[0]
+                )
+                
+                # Stats - only count primary domain
+                if primary_domain.isotype:
+                    chain_types[primary_domain.isotype] = (
+                        chain_types.get(primary_domain.isotype, 0) + 1
+                    )
+                    isotypes[primary_domain.isotype] = (
+                        isotypes.get(primary_domain.isotype, 0) + 1
+                    )
+                if primary_domain.species:
+                    species_counts[primary_domain.species] = (
+                        species_counts.get(primary_domain.species, 0) + 1
+                    )
+        
         return V2AnnotationResult(
             sequences=v2_sequences,
             numbering_scheme=request.numbering_scheme.value,
             total_sequences=len(v2_sequences),
+            chain_types=chain_types,
+            isotypes=isotypes,
+            species=species_counts,
         )
     except HTTPException:
         raise

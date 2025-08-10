@@ -33,7 +33,6 @@ export const SequenceAnnotation: React.FC = () => {
     setColorScheme,
     selectRegion,
     selectPosition,
-    setSequences,
     setSequencesV2,
     clearSelection
   } = useSequenceData();

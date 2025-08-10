@@ -48,3 +48,6 @@ class AnnotationResult(BaseModel):
     sequences: List[Sequence]
     numbering_scheme: str
     total_sequences: int
+    chain_types: Dict[str, int] = Field(default_factory=dict)
+    isotypes: Dict[str, int] = Field(default_factory=dict)
+    species: Dict[str, int] = Field(default_factory=dict)

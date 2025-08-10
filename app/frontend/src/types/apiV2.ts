@@ -39,6 +39,9 @@ export interface AnnotationResultV2 {
   sequences: SequenceV2[];
   numbering_scheme: string;
   total_sequences: number;
+  chain_types: Record<string, number>;
+  isotypes: Record<string, number>;
+  species: Record<string, number>;
 }
 
 export interface AnnotationRequestV2 {
@@ -50,6 +53,84 @@ export interface AnnotationRequestV2 {
     custom_chains?: Record<string, string>;
   }>;
   numbering_scheme?: string;
+}
+
+// MSA Types for v2
+export const AlignmentMethodV2 = {
+  PAIRWISE_GLOBAL: 'pairwise_global',
+  PAIRWISE_LOCAL: 'pairwise_local',
+  MUSCLE: 'muscle',
+  MAFFT: 'mafft',
+  CLUSTALO: 'clustalo',
+  CUSTOM_ANTIBODY: 'custom_antibody'
+} as const;
+
+export type AlignmentMethodV2 = typeof AlignmentMethodV2[keyof typeof AlignmentMethodV2];
+
+export interface MSASequenceV2 {
+  name: string;
+  original_sequence: string;
+  aligned_sequence: string;
+  start_position: number;
+  end_position: number;
+  gaps: number[];
+  annotations?: Array<{
+    name: string;
+    start: number;
+    stop: number;
+    sequence: string;
+    color: string;
+  }>;
+}
+
+export interface MSAResultV2 {
+  msa_id: string;
+  sequences: MSASequenceV2[];
+  alignment_matrix: string[][];
+  consensus: string;
+  alignment_method: AlignmentMethodV2;
+  created_at: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface MSAAnnotationResultV2 {
+  msa_id: string;
+  annotated_sequences: MSASequenceV2[];
+  numbering_scheme: string;
+  region_mappings: Record<string, Array<{
+    sequence_name: string;
+    start: number;
+    stop: number;
+    sequence: string;
+    color: string;
+  }>>;
+}
+
+export interface MSACreationRequestV2 {
+  sequences: Array<{
+    name: string;
+    heavy_chain?: string;
+    light_chain?: string;
+    scfv?: string;
+    custom_chains?: Record<string, string>;
+  }>;
+  alignment_method?: AlignmentMethodV2;
+  numbering_scheme?: string;
+}
+
+export interface MSAAnnotationRequestV2 {
+  msa_id: string;
+  numbering_scheme?: string;
+}
+
+export interface MSAJobStatusV2 {
+  job_id: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  progress: number;
+  message: string;
+  result?: unknown;
+  created_at: string;
+  completed_at?: string;
 }
 
 
