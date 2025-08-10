@@ -138,7 +138,7 @@ class RegionCalculator:
         sequence: str, boundary: RegionBoundary
     ) -> str:
         """Extract a region sequence from a larger sequence"""
-        return sequence[boundary.start:boundary.end + 1]
+        return sequence[boundary.start : boundary.end + 1]
 
     @staticmethod
     def calculate_region_overlap(
