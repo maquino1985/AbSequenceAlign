@@ -38,7 +38,11 @@ jobs:
 
       - name: Build base Docker images
         run: |
+          # Build base images locally for testing
           ./scripts/build-base-images.sh
+          
+          # Note: Base images are built locally but not pushed to registry
+          # For production, we should push base images to registry
 
       - name: Run backend tests
         shell: bash -l {0}
@@ -79,7 +83,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '18.19.0'
           cache: 'npm'
           cache-dependency-path: app/frontend/package-lock.json
 
@@ -119,12 +123,36 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push base images
+        run: |
+          # Build base images
+          ./scripts/build-base-images.sh
+          
+          # For now, just build locally - we'll use local images for testing
+          # TODO: Set up proper registry for base images
+          echo "Base images built locally for testing"
+          
+          # Uncomment when registry is properly configured:
+          # docker tag absequencealign-backend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
+          # docker tag absequencealign-frontend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
+          # docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
+          # docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
+
       - name: Test backend Docker build
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./app/backend/Dockerfile
           push: false
+          build-args: |
+            BASE_IMAGE=absequencealign-backend-base:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -133,6 +161,8 @@ jobs:
         with:
           context: ./app/frontend
           push: false
+          build-args: |
+            BASE_IMAGE=absequencealign-frontend-base:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -142,6 +172,8 @@ jobs:
           context: ./app/frontend
           file: ./app/frontend/Dockerfile.test
           push: false
+          build-args: |
+            BASE_IMAGE=absequencealign-frontend-base:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -151,6 +183,8 @@ jobs:
           context: ./app/frontend
           file: ./app/frontend/Dockerfile.e2e
           push: false
+          build-args: |
+            BASE_IMAGE=absequencealign-frontend-base:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -174,7 +208,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '18.19.0'
           cache: 'npm'
           cache-dependency-path: app/frontend/package-lock.json
 

@@ -1,5 +1,7 @@
 # Backend Dockerfile - Uses base image with dependencies pre-installed
-FROM absequencealign-backend-base:latest
+# In CI, this will be pulled from registry; locally, it will use the local image
+ARG BASE_IMAGE=absequencealign-backend-base:latest
+FROM ${BASE_IMAGE}
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
