@@ -41,7 +41,3 @@ export const ModuleProvider: React.FC<ModuleProviderProps> = ({
     </ModuleContext.Provider>
   );
 };
-
-
-
-
