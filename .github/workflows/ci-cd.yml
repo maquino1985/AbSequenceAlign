@@ -43,6 +43,21 @@ jobs:
           cd app/backend
           python -m pytest tests/ -v --cov=backend --cov-report=xml --cov-report=term-missing
 
+      - name: Run code formatting check
+        shell: bash -l {0}
+        run: |
+          conda activate AbSequenceAlign
+          cd app/backend
+          black . --check
+
+      - name: Run linting
+        shell: bash -l {0}
+        run: |
+          conda activate AbSequenceAlign
+          cd app/backend
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
@@ -89,10 +104,141 @@ jobs:
           cd app/frontend
           npm run build
 
+  # Docker Tests
+  docker-tests:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Test backend Docker build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./app/backend/Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test frontend Docker build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app/frontend
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test frontend test Docker build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app/frontend
+          file: ./app/frontend/Dockerfile.test
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test frontend E2E Docker build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app/frontend
+          file: ./app/frontend/Dockerfile.e2e
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # E2E Tests - Parallel
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    strategy:
+      matrix:
+        # Split Cypress tests into parallel jobs
+        spec: [
+          'cypress/e2e/0-health-check.cy.ts',
+          'cypress/e2e/1-scfv-annotation.cy.ts',
+          'cypress/e2e/2-igG-dvdi-tcr.cy.ts',
+          'cypress/e2e/quick-ui-test.cy.ts'
+        ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: app/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd app/frontend
+          npm ci
+
+      - name: Setup Microconda for backend
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          activate-environment: AbSequenceAlign
+          environment-file: environment.yml
+          python-version: 3.11
+          auto-activate-base: false
+
+      - name: Install ANARCI
+        shell: bash -l {0}
+        run: |
+          conda activate AbSequenceAlign
+          pip install git+https://github.com/oxpig/ANARCI.git
+
+      - name: Start backend server
+        shell: bash -l {0}
+        run: |
+          conda activate AbSequenceAlign
+          cd app/backend
+          PYTHONPATH="$(pwd)/.." python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 &
+          sleep 10
+          curl -f http://localhost:8000/health
+
+      - name: Start frontend server
+        run: |
+          cd app/frontend
+          VITE_PORT=5679 npm run dev:port &
+          sleep 10
+          curl -f http://localhost:5679
+
+      - name: Run Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: app/frontend
+          spec: ${{ matrix.spec }}
+          config: baseUrl=http://localhost:5679,defaultCommandTimeout=10000,requestTimeout=15000,responseTimeout=15000
+          wait-on: 'http://localhost:5679'
+          wait-on-timeout: 120
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots-${{ matrix.spec }}
+          path: app/frontend/cypress/screenshots
+          if-no-files-found: ignore
+
+      - name: Upload videos
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cypress-videos-${{ matrix.spec }}
+          path: app/frontend/cypress/videos
+          if-no-files-found: ignore
+
   # Security Scanning
   security-scan:
     runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests]
+    needs: [backend-tests, frontend-tests, docker-tests, e2e-tests]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -114,7 +260,7 @@ jobs:
   # Build and Push Docker Images
   build-and-push:
     runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests, security-scan]
+    needs: [backend-tests, frontend-tests, docker-tests, e2e-tests, security-scan]
     if: github.event_name != 'pull_request'
     permissions:
       contents: read
@@ -185,7 +331,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-and-push]
     if: github.event_name == 'release' && github.event.action == 'published'
-    environment: production
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
