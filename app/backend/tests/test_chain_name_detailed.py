@@ -2,7 +2,7 @@
 Detailed test to trace exactly what happens to chain names through the annotation pipeline.
 """
 
-from backend.annotation.AnarciResultProcessor import AnarciResultProcessor
+from backend.annotation.anarci_result_processor import AnarciResultProcessor
 from backend.annotation.annotation_engine import (
     annotate_sequences_with_processor,
 )

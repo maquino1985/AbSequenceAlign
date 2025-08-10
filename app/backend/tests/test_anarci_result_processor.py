@@ -1,5 +1,5 @@
 import pytest
-from backend.annotation.AnarciResultProcessor import AnarciResultProcessor
+from backend.annotation.anarci_result_processor import AnarciResultProcessor
 from backend.logger import logger
 
 

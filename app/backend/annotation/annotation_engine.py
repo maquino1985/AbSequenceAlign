@@ -4,7 +4,7 @@
 from typing import List
 
 # If you need annotation, import annotate_sequences_with_processor from this module.
-from .AnarciResultProcessor import AnarciResultProcessor
+from .anarci_result_processor import AnarciResultProcessor
 from ..models.models import (
     SequenceInfo,
     AnnotationResult,
