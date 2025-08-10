@@ -1,6 +1,7 @@
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, field_validator
 from enum import Enum
+from typing import List, Optional, Dict, Any
+
+from pydantic import BaseModel, Field, field_validator
 
 
 class NumberingScheme(str, Enum):
@@ -48,32 +49,45 @@ class SequenceInput(BaseModel):
     name: str = Field(..., description="Name/identifier for the sequence")
 
     # Common chain patterns
-    heavy_chain: Optional[str] = Field(None, description="Heavy chain sequence")
-    light_chain: Optional[str] = Field(None, description="Light chain sequence")
+    heavy_chain: Optional[str] = Field(
+        None, description="Heavy chain sequence"
+    )
+    light_chain: Optional[str] = Field(
+        None, description="Light chain sequence"
+    )
     scfv: Optional[str] = Field(None, description="Single-chain Fv sequence")
 
     # Variable chain patterns (e.g., heavy_chain_1, heavy_chain_2, etc.)
-    heavy_chain_1: Optional[str] = Field(None, description="First heavy chain sequence")
+    heavy_chain_1: Optional[str] = Field(
+        None, description="First heavy chain sequence"
+    )
     heavy_chain_2: Optional[str] = Field(
         None, description="Second heavy chain sequence"
     )
-    heavy_chain_3: Optional[str] = Field(None, description="Third heavy chain sequence")
+    heavy_chain_3: Optional[str] = Field(
+        None, description="Third heavy chain sequence"
+    )
     heavy_chain_4: Optional[str] = Field(
         None, description="Fourth heavy chain sequence"
     )
 
-    light_chain_1: Optional[str] = Field(None, description="First light chain sequence")
+    light_chain_1: Optional[str] = Field(
+        None, description="First light chain sequence"
+    )
     light_chain_2: Optional[str] = Field(
         None, description="Second light chain sequence"
     )
-    light_chain_3: Optional[str] = Field(None, description="Third light chain sequence")
+    light_chain_3: Optional[str] = Field(
+        None, description="Third light chain sequence"
+    )
     light_chain_4: Optional[str] = Field(
         None, description="Fourth light chain sequence"
     )
 
     # Additional custom chains
     custom_chains: Optional[Dict[str, str]] = Field(
-        None, description="Additional custom chain sequences with arbitrary labels"
+        None,
+        description="Additional custom chain sequences with arbitrary labels",
     )
 
     @field_validator(
@@ -118,7 +132,10 @@ class SequenceInput(BaseModel):
 
         # Add standard chains if present (including scfv as-is)
         for field_name, value in self.model_dump().items():
-            if field_name not in ["name", "custom_chains"] and value is not None:
+            if (
+                field_name not in ["name", "custom_chains"]
+                and value is not None
+            ):
                 chains[field_name] = value
 
         # Add custom chains if present
@@ -134,8 +151,12 @@ class UploadRequest(BaseModel):
     sequences: List[str] = Field(
         ..., description="List of protein sequences in FASTA format"
     )
-    chain_type: Optional[ChainType] = Field(None, description="Expected chain type")
-    species: Optional[str] = Field(None, description="Species (e.g., human, mouse)")
+    chain_type: Optional[ChainType] = Field(
+        None, description="Expected chain type"
+    )
+    species: Optional[str] = Field(
+        None, description="Species (e.g., human, mouse)"
+    )
 
 
 class AlignmentRequest(BaseModel):
@@ -147,7 +168,9 @@ class AlignmentRequest(BaseModel):
         default=NumberingScheme.IMGT, description="Numbering scheme"
     )
     gap_open: float = Field(default=-10.0, description="Gap opening penalty")
-    gap_extend: float = Field(default=-0.5, description="Gap extension penalty")
+    gap_extend: float = Field(
+        default=-0.5, description="Gap extension penalty"
+    )
     matrix: str = Field(default="BLOSUM62", description="Substitution matrix")
 
 
@@ -160,7 +183,9 @@ class AnnotationRequest(BaseModel):
     numbering_scheme: NumberingScheme = Field(
         default=NumberingScheme.IMGT, description="Numbering scheme"
     )
-    chain_type: Optional[ChainType] = Field(None, description="Expected chain type")
+    chain_type: Optional[ChainType] = Field(
+        None, description="Expected chain type"
+    )
 
 
 class SequenceInfo(BaseModel):
@@ -209,11 +234,17 @@ class MSASequence(BaseModel):
     """Individual sequence in MSA with annotations"""
 
     name: str = Field(..., description="Sequence name/identifier")
-    original_sequence: str = Field(..., description="Original unaligned sequence")
-    aligned_sequence: str = Field(..., description="Aligned sequence with gaps")
+    original_sequence: str = Field(
+        ..., description="Original unaligned sequence"
+    )
+    aligned_sequence: str = Field(
+        ..., description="Aligned sequence with gaps"
+    )
     start_position: int = Field(..., description="Start position in alignment")
     end_position: int = Field(..., description="End position in alignment")
-    gaps: List[int] = Field(default_factory=list, description="Positions with gaps")
+    gaps: List[int] = Field(
+        default_factory=list, description="Positions with gaps"
+    )
     annotations: Optional[List[Dict[str, Any]]] = Field(
         None, description="Region annotations"
     )
@@ -244,7 +275,9 @@ class MSAAnnotationResult(BaseModel):
     annotated_sequences: List[MSASequence] = Field(
         ..., description="Sequences with annotations"
     )
-    numbering_scheme: NumberingScheme = Field(..., description="Numbering scheme used")
+    numbering_scheme: NumberingScheme = Field(
+        ..., description="Numbering scheme used"
+    )
     region_mappings: Dict[str, List[Dict[str, Any]]] = Field(
         ..., description="Region mappings across sequences"
     )
@@ -253,12 +286,15 @@ class MSAAnnotationResult(BaseModel):
 class MSACreationRequest(BaseModel):
     """Request model for MSA creation"""
 
-    sequences: List[SequenceInput] = Field(..., description="Sequences to align")
+    sequences: List[SequenceInput] = Field(
+        ..., description="Sequences to align"
+    )
     alignment_method: AlignmentMethod = Field(
         default=AlignmentMethod.MUSCLE, description="Alignment method"
     )
     numbering_scheme: NumberingScheme = Field(
-        default=NumberingScheme.IMGT, description="Numbering scheme for annotation"
+        default=NumberingScheme.IMGT,
+        description="Numbering scheme for annotation",
     )
 
 
@@ -284,7 +320,9 @@ class MSAJobStatus(BaseModel):
         None, description="Job result when completed"
     )
     created_at: str = Field(..., description="Job creation timestamp")
-    completed_at: Optional[str] = Field(None, description="Job completion timestamp")
+    completed_at: Optional[str] = Field(
+        None, description="Job completion timestamp"
+    )
 
 
 class APIResponse(BaseModel):

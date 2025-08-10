@@ -3,9 +3,13 @@ import os
 import sys
 
 if "pytest" in sys.modules:
-    LOG_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "app-test.log")
+    LOG_FILE = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "app-test.log"
+    )
 else:
-    LOG_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "app.log")
+    LOG_FILE = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "app.log"
+    )
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

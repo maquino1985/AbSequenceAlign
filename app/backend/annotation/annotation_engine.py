@@ -1,6 +1,8 @@
 # This file is now deprecated. AnnotationEngine and related logic have been replaced by AnarciResultProcessor and annotate_sequences_with_processor.
 # All annotation should use the new pipeline.
 
+from typing import List
+
 # If you need annotation, import annotate_sequences_with_processor from this module.
 from .AnarciResultProcessor import AnarciResultProcessor
 from ..models.models import (
@@ -9,7 +11,6 @@ from ..models.models import (
     NumberingScheme,
     SequenceInput,
 )
-from typing import List
 
 
 def annotate_sequences_with_processor(
@@ -53,7 +54,8 @@ def annotate_sequences_with_processor(
 
             # Get the primary domain (first variable domain) for chain metadata
             primary_domain = next(
-                (d for d in chain.domains if d.domain_type == "V"), chain.domains[0]
+                (d for d in chain.domains if d.domain_type == "V"),
+                chain.domains[0],
             )
 
             # Collect regions from all domains (regions are now absolute positions)

@@ -1,12 +1,12 @@
-import pytest
 from unittest.mock import patch, MagicMock
-from backend.msa.msa_annotation import MSAAnnotationEngine
+
 from backend.models.models import (
     MSAResult,
     MSASequence,
     MSAAnnotationResult,
     NumberingScheme,
 )
+from backend.msa.msa_annotation import MSAAnnotationEngine
 
 
 class TestMSAAnnotationEngine:
@@ -71,15 +71,27 @@ class TestMSAAnnotationEngine:
                         "sequence": "EVQLVESGGGLVQPGGSLRLSCAAS",
                     },
                     "CDR1": {"start": 26, "stop": 32, "sequence": "GFTFSY"},
-                    "FR2": {"start": 33, "stop": 49, "sequence": "FAMSWVRQAPGKGLEW"},
+                    "FR2": {
+                        "start": 33,
+                        "stop": 49,
+                        "sequence": "FAMSWVRQAPGKGLEW",
+                    },
                     "CDR2": {"start": 50, "stop": 56, "sequence": "VATISG"},
                     "FR3": {
                         "start": 57,
                         "stop": 85,
                         "sequence": "GGGNTYYLDRVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYY",
                     },
-                    "CDR3": {"start": 86, "stop": 98, "sequence": "CVRQTYGGFGY"},
-                    "FR4": {"start": 99, "stop": 119, "sequence": "WGQGTLVTVSS"},
+                    "CDR3": {
+                        "start": 86,
+                        "stop": 98,
+                        "sequence": "CVRQTYGGFGY",
+                    },
+                    "FR4": {
+                        "start": 99,
+                        "stop": 119,
+                        "sequence": "WGQGTLVTVSS",
+                    },
                 },
             ),
             MagicMock(
@@ -91,7 +103,11 @@ class TestMSAAnnotationEngine:
                         "sequence": "EVQLVESGGGLVQPGGSLRLSCAAS",
                     },
                     "CDR1": {"start": 26, "stop": 32, "sequence": "GFTFSS"},
-                    "FR2": {"start": 33, "stop": 49, "sequence": "YAMSWVRQAPGKGLEW"},
+                    "FR2": {
+                        "start": 33,
+                        "stop": 49,
+                        "sequence": "YAMSWVRQAPGKGLEW",
+                    },
                     "CDR2": {"start": 50, "stop": 56, "sequence": "VSAISG"},
                     "FR3": {
                         "start": 57,
@@ -99,7 +115,11 @@ class TestMSAAnnotationEngine:
                         "sequence": "SGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYY",
                     },
                     "CDR3": {"start": 86, "stop": 98, "sequence": "CAK"},
-                    "FR4": {"start": 99, "stop": 119, "sequence": "WGQGTLVTVSS"},
+                    "FR4": {
+                        "start": 99,
+                        "stop": 119,
+                        "sequence": "WGQGTLVTVSS",
+                    },
                 },
             ),
         ]
@@ -129,12 +149,18 @@ class TestMSAAnnotationEngine:
         # Create mock sequence info with regions
         mock_seq_info = MagicMock()
         mock_seq_info.regions = {
-            "FR1": {"start": 0, "stop": 25, "sequence": "EVQLVESGGGLVQPGGSLRLSCAAS"},
+            "FR1": {
+                "start": 0,
+                "stop": 25,
+                "sequence": "EVQLVESGGGLVQPGGSLRLSCAAS",
+            },
             "CDR1": {"start": 26, "stop": 32, "sequence": "GFTFSY"},
             "FR2": {"start": 33, "stop": 49, "sequence": "FAMSWVRQAPGKGLEW"},
         }
 
-        annotations = self.annotation_engine._extract_annotations(mock_seq_info)
+        annotations = self.annotation_engine._extract_annotations(
+            mock_seq_info
+        )
 
         assert len(annotations) == 3
         assert annotations[0]["name"] == "FR1"
@@ -151,7 +177,9 @@ class TestMSAAnnotationEngine:
         mock_seq_info = MagicMock()
         mock_seq_info.regions = None
 
-        annotations = self.annotation_engine._extract_annotations(mock_seq_info)
+        annotations = self.annotation_engine._extract_annotations(
+            mock_seq_info
+        )
 
         assert annotations == []
 
@@ -283,8 +311,10 @@ class TestMSAAnnotationEngine:
             metadata={},
         )
 
-        region_positions = self.annotation_engine.get_region_positions_in_alignment(
-            msa_result, "CDR1"
+        region_positions = (
+            self.annotation_engine.get_region_positions_in_alignment(
+                msa_result, "CDR1"
+            )
         )
 
         assert len(region_positions) == 2
@@ -320,8 +350,10 @@ class TestMSAAnnotationEngine:
             metadata={},
         )
 
-        region_positions = self.annotation_engine.get_region_positions_in_alignment(
-            msa_result, "CDR1"
+        region_positions = (
+            self.annotation_engine.get_region_positions_in_alignment(
+                msa_result, "CDR1"
+            )
         )
 
         assert region_positions == []
@@ -356,8 +388,10 @@ class TestMSAAnnotationEngine:
             metadata={},
         )
 
-        region_positions = self.annotation_engine.get_region_positions_in_alignment(
-            msa_result, "CDR2"  # Region not present in annotations
+        region_positions = (
+            self.annotation_engine.get_region_positions_in_alignment(
+                msa_result, "CDR2"  # Region not present in annotations
+            )
         )
 
         assert region_positions == []

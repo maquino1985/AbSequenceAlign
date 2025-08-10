@@ -1,7 +1,7 @@
-from fastapi.testclient import TestClient
-from backend.main import app
 from backend.logger import logger
+from backend.main import app
 from backend.utils.json_to_fasta import json_seqs_to_fasta
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
 

@@ -1,13 +1,10 @@
-import pytest
 import time
 from unittest.mock import patch, MagicMock
-from datetime import datetime, timedelta
 
 from backend.jobs.job_manager import JobManager
 from backend.models.models import (
     MSACreationRequest,
     MSAAnnotationRequest,
-    MSAJobStatus,
     NumberingScheme,
     AlignmentMethod,
     SequenceInput,
@@ -68,7 +65,9 @@ class TestJobManager:
 
     def test_create_annotation_job(self):
         """Test creating annotation job"""
-        job_id = self.job_manager.create_annotation_job(self.test_annotation_request)
+        job_id = self.job_manager.create_annotation_job(
+            self.test_annotation_request
+        )
 
         assert job_id is not None
         assert isinstance(job_id, str)
@@ -93,7 +92,9 @@ class TestJobManager:
         job_id = self.job_manager.create_msa_job(self.test_msa_request)
 
         # Update job status
-        self.job_manager._update_job_status(job_id, "running", 0.5, "Processing...")
+        self.job_manager._update_job_status(
+            job_id, "running", 0.5, "Processing..."
+        )
 
         job_status = self.job_manager.get_job_status(job_id)
         assert job_status.status == "running"
@@ -105,7 +106,9 @@ class TestJobManager:
         job_id = self.job_manager.create_msa_job(self.test_msa_request)
 
         # Update job status to completed
-        self.job_manager._update_job_status(job_id, "completed", 1.0, "Job completed")
+        self.job_manager._update_job_status(
+            job_id, "completed", 1.0, "Job completed"
+        )
 
         job_status = self.job_manager.get_job_status(job_id)
         assert job_status.status == "completed"
@@ -118,7 +121,9 @@ class TestJobManager:
         job_id = self.job_manager.create_msa_job(self.test_msa_request)
 
         # Update job status to failed
-        self.job_manager._update_job_status(job_id, "failed", 0.0, "Job failed")
+        self.job_manager._update_job_status(
+            job_id, "failed", 0.0, "Job failed"
+        )
 
         job_status = self.job_manager.get_job_status(job_id)
         assert job_status.status == "failed"
@@ -182,7 +187,9 @@ class TestJobManager:
 
         # Replace the MSA engine with a mock that raises an exception
         self.job_manager.msa_engine = MagicMock()
-        self.job_manager.msa_engine.create_msa.side_effect = Exception("Test error")
+        self.job_manager.msa_engine.create_msa.side_effect = Exception(
+            "Test error"
+        )
 
         # Wait for job to complete (with timeout)
         max_wait = 5  # seconds
@@ -221,10 +228,14 @@ class TestJobManager:
 
     def test_process_annotation_job_success(self):
         """Test successful annotation job processing"""
-        job_id = self.job_manager.create_annotation_job(self.test_annotation_request)
+        job_id = self.job_manager.create_annotation_job(
+            self.test_annotation_request
+        )
 
         # Simulate job processing
-        self.job_manager._process_annotation_job(job_id, self.test_annotation_request)
+        self.job_manager._process_annotation_job(
+            job_id, self.test_annotation_request
+        )
 
         # Check final job status
         job_status = self.job_manager.get_job_status(job_id)
@@ -236,10 +247,14 @@ class TestJobManager:
 
     def test_process_annotation_job_failure(self):
         """Test annotation job processing with failure"""
-        job_id = self.job_manager.create_annotation_job(self.test_annotation_request)
+        job_id = self.job_manager.create_annotation_job(
+            self.test_annotation_request
+        )
 
         # Mock the job to fail
-        with patch.object(self.job_manager, "_update_job_status") as mock_update:
+        with patch.object(
+            self.job_manager, "_update_job_status"
+        ) as mock_update:
             mock_update.side_effect = Exception("Test error")
 
             # Simulate job processing
@@ -260,7 +275,9 @@ class TestJobManager:
         job_id_3 = self.job_manager.create_msa_job(self.test_msa_request)
 
         # Mark jobs as completed/failed
-        self.job_manager._update_job_status(job_id_1, "completed", 1.0, "Completed")
+        self.job_manager._update_job_status(
+            job_id_1, "completed", 1.0, "Completed"
+        )
         self.job_manager._update_job_status(job_id_2, "failed", 0.0, "Failed")
         # Leave job_id_3 as pending
 
@@ -270,7 +287,9 @@ class TestJobManager:
         assert self.job_manager.get_job_status(job_id_3) is not None
 
         # Clean up old jobs (should remove completed/failed jobs)
-        self.job_manager.cleanup_old_jobs(max_age_hours=0)  # Clean up immediately
+        self.job_manager.cleanup_old_jobs(
+            max_age_hours=0
+        )  # Clean up immediately
 
         # Verify completed/failed jobs are removed, pending job remains
         assert self.job_manager.get_job_status(job_id_1) is None
@@ -315,7 +334,10 @@ class TestJobManager:
         def update_job(thread_id):
             for i in range(10):
                 self.job_manager._update_job_status(
-                    job_id, "running", i * 0.1, f"Thread {thread_id} update {i}"
+                    job_id,
+                    "running",
+                    i * 0.1,
+                    f"Thread {thread_id} update {i}",
                 )
                 time.sleep(0.01)  # Small delay
 
@@ -333,5 +355,10 @@ class TestJobManager:
         # Verify job still exists and has valid status
         job_status = self.job_manager.get_job_status(job_id)
         assert job_status is not None
-        assert job_status.status in ["pending", "running", "completed", "failed"]
+        assert job_status.status in [
+            "pending",
+            "running",
+            "completed",
+            "failed",
+        ]
         assert 0.0 <= job_status.progress <= 1.0

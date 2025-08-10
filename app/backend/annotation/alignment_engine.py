@@ -1,14 +1,11 @@
-import logging
 import os
 import subprocess
 import tempfile
 from typing import List, Dict, Any
 
 from Bio.Align import PairwiseAligner, substitution_matrices
-
+from backend.logger import logger
 from backend.models.models import AlignmentMethod, NumberingScheme
-
-logger = logging.getLogger(__name__)
 
 
 class AlignmentEngine:
@@ -88,7 +85,11 @@ class AlignmentEngine:
             raise RuntimeError(f"Alignment failed: {e}")
 
     def _pairwise_global_alignment(
-        self, sequences: List[str], gap_open: float, gap_extend: float, matrix: str
+        self,
+        sequences: List[str],
+        gap_open: float,
+        gap_extend: float,
+        matrix: str,
     ) -> Dict[str, Any]:
         """Perform global pairwise alignment"""
         if len(sequences) != 2:
@@ -115,14 +116,14 @@ class AlignmentEngine:
         # Get best alignment
         best_alignment = alignments[0]
         alignment_str = str(best_alignment)
-        
+
         # Parse alignment string to extract sequences
         seq_a, seq_b = self._parse_alignment_string(alignment_str)
 
         # Calculate statistics
         score = best_alignment.score
         identity = self._calculate_identity(seq_a, seq_b)
-        
+
         # Calculate length without gaps
         length_without_gaps = len(seq_a.replace("-", ""))
 
@@ -136,7 +137,11 @@ class AlignmentEngine:
         }
 
     def _pairwise_local_alignment(
-        self, sequences: List[str], gap_open: float, gap_extend: float, matrix: str
+        self,
+        sequences: List[str],
+        gap_open: float,
+        gap_extend: float,
+        matrix: str,
     ) -> Dict[str, Any]:
         """Perform local pairwise alignment"""
         if len(sequences) != 2:
@@ -163,14 +168,14 @@ class AlignmentEngine:
         # Get best alignment
         best_alignment = alignments[0]
         alignment_str = str(best_alignment)
-        
+
         # Parse alignment string to extract sequences
         seq_a, seq_b = self._parse_alignment_string(alignment_str)
 
         # Calculate statistics
         score = best_alignment.score
         identity = self._calculate_identity(seq_a, seq_b)
-        
+
         # Calculate length without gaps
         length_without_gaps = len(seq_a.replace("-", ""))
 
@@ -221,7 +226,13 @@ class AlignmentEngine:
                     str(gap_extend),
                 ]
             elif method == AlignmentMethod.MAFFT:
-                cmd = ["mafft", "--localpair", "--maxiterate", "1000", temp_fasta_path]
+                cmd = [
+                    "mafft",
+                    "--localpair",
+                    "--maxiterate",
+                    "1000",
+                    temp_fasta_path,
+                ]
             elif method == AlignmentMethod.CLUSTALO:
                 cmd = [
                     "clustalo",
@@ -235,10 +246,14 @@ class AlignmentEngine:
                 raise ValueError(f"Unsupported MSA method: {method}")
 
             # Run external tool
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=300
+            )
 
             if result.returncode != 0:
-                raise RuntimeError(f"External alignment failed: {result.stderr}")
+                raise RuntimeError(
+                    f"External alignment failed: {result.stderr}"
+                )
 
             # Read alignment result
             if method == AlignmentMethod.MAFFT:
@@ -257,7 +272,9 @@ class AlignmentEngine:
                 "method": method.value,
                 "alignment": alignment_content,
                 "identity": identity,
-                "length": len(aligned_sequences[0]) if aligned_sequences else 0,
+                "length": (
+                    len(aligned_sequences[0]) if aligned_sequences else 0
+                ),
                 "sequences": len(aligned_sequences),
             }
 
@@ -311,7 +328,7 @@ class AlignmentEngine:
             # Fallback to old format
             aligned_seqs = lines[:2]
             seq_a, seq_b = aligned_seqs[0], aligned_seqs[1]
-        
+
         return seq_a, seq_b
 
     def _calculate_identity(self, seq1: str, seq2: str) -> float:
@@ -320,12 +337,16 @@ class AlignmentEngine:
             return 0.0
 
         # Count positions where both sequences have non-gap characters
-        non_gap_positions = sum(1 for a, b in zip(seq1, seq2) if a != "-" and b != "-")
+        non_gap_positions = sum(
+            1 for a, b in zip(seq1, seq2) if a != "-" and b != "-"
+        )
         if non_gap_positions == 0:
             return 0.0
 
         # Count matches at non-gap positions
-        matches = sum(1 for a, b in zip(seq1, seq2) if a == b and a != "-" and b != "-")
+        matches = sum(
+            1 for a, b in zip(seq1, seq2) if a == b and a != "-" and b != "-"
+        )
 
         return matches / non_gap_positions
 

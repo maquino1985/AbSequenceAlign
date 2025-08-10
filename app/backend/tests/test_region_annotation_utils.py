@@ -1,4 +1,3 @@
-import pytest
 from backend.region_annotation_utils import annotate_all_schemes
 
 # Example scFv sequence (VH-linker-VL)

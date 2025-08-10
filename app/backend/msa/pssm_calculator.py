@@ -1,7 +1,8 @@
-import numpy as np
-from typing import List, Dict, Any
-from collections import Counter
 import logging
+from collections import Counter
+from typing import List, Dict, Any
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,9 @@ class PSSMCalculator:
         position_scores = self._calculate_position_scores(position_frequencies)
 
         # Calculate conservation scores
-        conservation_scores = self._calculate_conservation_scores(position_frequencies)
+        conservation_scores = self._calculate_conservation_scores(
+            position_frequencies
+        )
 
         # Calculate consensus sequence
         consensus = self._calculate_consensus(position_frequencies)
@@ -137,7 +140,9 @@ class PSSMCalculator:
                     score = np.log2(freq / bg_freq)
                     scores[aa] = score
                 else:
-                    scores[aa] = -10.0  # Very low score for impossible combinations
+                    scores[aa] = (
+                        -10.0
+                    )  # Very low score for impossible combinations
 
             position_scores.append(scores)
 
@@ -186,7 +191,9 @@ class PSSMCalculator:
 
         return conservation_scores
 
-    def _calculate_consensus(self, position_frequencies: List[Dict[str, float]]) -> str:
+    def _calculate_consensus(
+        self, position_frequencies: List[Dict[str, float]]
+    ) -> str:
         """Calculate consensus sequence from position frequencies"""
         consensus = []
 
@@ -225,7 +232,9 @@ class PSSMCalculator:
         top_aas = sorted(freq.items(), key=lambda x: x[1], reverse=True)[:5]
 
         # Get top amino acids by score
-        top_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:5]
+        top_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)[
+            :5
+        ]
 
         return {
             "position": position,
@@ -243,17 +252,23 @@ class PSSMCalculator:
         self, pssm_data: Dict[str, Any], start_pos: int, end_pos: int
     ) -> Dict[str, Any]:
         """Get PSSM data for a specific region"""
-        if start_pos >= len(pssm_data["position_frequencies"]) or end_pos > len(
+        if start_pos >= len(
             pssm_data["position_frequencies"]
-        ):
+        ) or end_pos > len(pssm_data["position_frequencies"]):
             return {}
 
-        region_frequencies = pssm_data["position_frequencies"][start_pos:end_pos]
+        region_frequencies = pssm_data["position_frequencies"][
+            start_pos:end_pos
+        ]
         region_scores = pssm_data["position_scores"][start_pos:end_pos]
-        region_conservation = pssm_data["conservation_scores"][start_pos:end_pos]
+        region_conservation = pssm_data["conservation_scores"][
+            start_pos:end_pos
+        ]
 
         # Calculate average conservation for region
-        avg_conservation = np.mean(region_conservation) if region_conservation else 0.0
+        avg_conservation = (
+            np.mean(region_conservation) if region_conservation else 0.0
+        )
 
         return {
             "start_position": start_pos,

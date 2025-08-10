@@ -2,10 +2,14 @@
 End-to-end test to verify the complete flow from FASTA input to annotation result.
 """
 
-import pytest
+from backend.annotation.annotation_engine import (
+    annotate_sequences_with_processor,
+)
 from backend.annotation.sequence_processor import SequenceProcessor
-from backend.models.models import SequenceInput, AnnotationRequest, NumberingScheme
-from backend.annotation.annotation_engine import annotate_sequences_with_processor
+from backend.models.models import (
+    SequenceInput,
+    NumberingScheme,
+)
 
 
 def test_fasta_to_annotation_flow():
@@ -35,27 +39,39 @@ DIQMTQSPSSLSASVGDRVTITCRASQGIRNYLAWYQQKPGKAPKLLIYAASTLQSGVPSRFSGSGSGTDFTLTISSLQP
         # This simulates how the frontend creates SequenceInput objects
         sequence_input = SequenceInput(
             name=record.id,  # This should preserve the FASTA header
-            heavy_chain=str(record.seq) if "heavy" in record.id.lower() else None,
-            light_chain=str(record.seq) if "light" in record.id.lower() else None,
+            heavy_chain=(
+                str(record.seq) if "heavy" in record.id.lower() else None
+            ),
+            light_chain=(
+                str(record.seq) if "light" in record.id.lower() else None
+            ),
         )
         sequence_inputs.append(sequence_input)
-        print(f"\n3. SequenceInput {i+1}:")
+        print(f"\n3. SequenceInput {i + 1}:")
         print(f"   name: {sequence_input.name}")
-        print(f"   heavy_chain: {'Yes' if sequence_input.heavy_chain else 'No'}")
-        print(f"   light_chain: {'Yes' if sequence_input.light_chain else 'No'}")
+        print(
+            f"   heavy_chain: {'Yes' if sequence_input.heavy_chain else 'No'}"
+        )
+        print(
+            f"   light_chain: {'Yes' if sequence_input.light_chain else 'No'}"
+        )
 
     # Run annotation
-    result = annotate_sequences_with_processor(sequence_inputs, NumberingScheme.IMGT)
+    result = annotate_sequences_with_processor(
+        sequence_inputs, NumberingScheme.IMGT
+    )
 
     print(f"\n4. Annotation results:")
     print(f"   Total sequences: {len(result.sequences)}")
 
     for i, seq in enumerate(result.sequences):
-        print(f"\n   Sequence {i+1}:")
+        print(f"\n   Sequence {i + 1}:")
         print(f"     name: {seq.name}")
         print(f"     chain_type: {seq.chain_type}")
         print(f"     sequence length: {len(seq.sequence)}")
-        print(f"     regions: {list(seq.regions.keys()) if seq.regions else 'None'}")
+        print(
+            f"     regions: {list(seq.regions.keys()) if seq.regions else 'None'}"
+        )
 
     # Verify that names are preserved
     original_names = [record.id for record in records]

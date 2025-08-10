@@ -1,4 +1,10 @@
 from typing import List, Dict, Any
+
+from backend.annotation.annotation_engine import (
+    annotate_sequences_with_processor,
+)
+from backend.annotation.sequence_processor import SequenceProcessor
+from backend.logger import logger
 from backend.models.models import (
     MSAResult,
     MSASequence,
@@ -6,9 +12,6 @@ from backend.models.models import (
     NumberingScheme,
     SequenceInput,
 )
-from backend.annotation.annotation_engine import annotate_sequences_with_processor
-from backend.annotation.sequence_processor import SequenceProcessor
-from backend.logger import logger
 
 
 class MSAAnnotationEngine:
@@ -60,12 +63,17 @@ class MSAAnnotationEngine:
 
                     # Extract regions if they exist
                     if hasattr(seq_info, "regions") and seq_info.regions:
-                        for region_name, region_data in seq_info.regions.items():
+                        for (
+                            region_name,
+                            region_data,
+                        ) in seq_info.regions.items():
                             # Map region positions to aligned sequence positions
-                            aligned_start, aligned_stop = self._map_region_to_aligned(
-                                region_data,
-                                msa_seq.original_sequence,
-                                msa_seq.aligned_sequence,
+                            aligned_start, aligned_stop = (
+                                self._map_region_to_aligned(
+                                    region_data,
+                                    msa_seq.original_sequence,
+                                    msa_seq.aligned_sequence,
+                                )
                             )
 
                             region_info = {
@@ -78,7 +86,9 @@ class MSAAnnotationEngine:
                                     if hasattr(region_data, "sequence")
                                     else ""
                                 ),
-                                "type": "CDR" if "CDR" in region_name else "FR",
+                                "type": (
+                                    "CDR" if "CDR" in region_name else "FR"
+                                ),
                                 "color": self._get_region_color(region_name),
                                 "original_start": (
                                     region_data.start
@@ -249,11 +259,13 @@ class MSAAnnotationEngine:
                 for annotation in msa_seq.annotations:
                     if annotation.get("name") == region_name:
                         # Map original positions to aligned positions
-                        aligned_start, aligned_stop = self._map_positions_to_alignment(
-                            msa_seq.original_sequence,
-                            msa_seq.aligned_sequence,
-                            annotation.get("start", 0),
-                            annotation.get("stop", 0),
+                        aligned_start, aligned_stop = (
+                            self._map_positions_to_alignment(
+                                msa_seq.original_sequence,
+                                msa_seq.aligned_sequence,
+                                annotation.get("start", 0),
+                                annotation.get("stop", 0),
+                            )
                         )
 
                         region_positions.append(

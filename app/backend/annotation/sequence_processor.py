@@ -68,7 +68,9 @@ class SequenceProcessor:
 
         return True, ""
 
-    def validate_sequences(self, sequences: List[str]) -> Tuple[List[str], List[str]]:
+    def validate_sequences(
+        self, sequences: List[str]
+    ) -> Tuple[List[str], List[str]]:
         """
         Validate a list of sequences
 

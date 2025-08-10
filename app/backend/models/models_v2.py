@@ -1,6 +1,7 @@
-from typing import List, Optional, Any, Dict
-from pydantic import BaseModel, Field
 from enum import Enum
+from typing import List, Optional, Any, Dict
+
+from pydantic import BaseModel, Field
 
 
 class DomainType(str, Enum):

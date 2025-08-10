@@ -1,8 +1,6 @@
-import os
-import tempfile
-import pytest
 from unittest.mock import patch, MagicMock
-from Bio.Align import PairwiseAligner
+
+import pytest
 from backend.annotation.alignment_engine import AlignmentEngine
 from backend.models.models import AlignmentMethod, NumberingScheme
 
@@ -45,7 +43,9 @@ def test_align_sequences_invalid_method(alignment_engine, test_sequences):
 def test_align_sequences_single_sequence(alignment_engine):
     """Test alignment with single sequence"""
     with pytest.raises(ValueError, match="At least 2 sequences required"):
-        alignment_engine.align_sequences(["SEQUENCE"], AlignmentMethod.PAIRWISE_GLOBAL)
+        alignment_engine.align_sequences(
+            ["SEQUENCE"], AlignmentMethod.PAIRWISE_GLOBAL
+        )
 
 
 def test_pairwise_global_alignment(alignment_engine):
@@ -68,7 +68,9 @@ def test_pairwise_global_alignment(alignment_engine):
         mock_aligner.return_value = mock_instance
 
         # Mock identity calculation
-        with patch.object(alignment_engine, "_calculate_identity", return_value=1.0):
+        with patch.object(
+            alignment_engine, "_calculate_identity", return_value=1.0
+        ):
             result = alignment_engine.align_sequences(
                 sequences,
                 AlignmentMethod.PAIRWISE_GLOBAL,
@@ -86,11 +88,15 @@ def test_pairwise_global_alignment(alignment_engine):
             assert result["length"] == len(sequences[0])  # No gaps
 
 
-def test_pairwise_global_alignment_invalid_matrix(alignment_engine, test_sequences):
+def test_pairwise_global_alignment_invalid_matrix(
+    alignment_engine, test_sequences
+):
     """Test global pairwise alignment with invalid matrix"""
     with pytest.raises(ValueError, match="Unsupported substitution matrix"):
         alignment_engine.align_sequences(
-            test_sequences, AlignmentMethod.PAIRWISE_GLOBAL, matrix="INVALID_MATRIX"
+            test_sequences,
+            AlignmentMethod.PAIRWISE_GLOBAL,
+            matrix="INVALID_MATRIX",
         )
 
 
@@ -124,7 +130,10 @@ def test_pairwise_global_alignment_no_alignment(alignment_engine):
 def test_pairwise_local_alignment(alignment_engine, test_sequences):
     """Test local pairwise alignment"""
     result = alignment_engine.align_sequences(
-        test_sequences, AlignmentMethod.PAIRWISE_LOCAL, gap_open=-10.0, gap_extend=-0.5
+        test_sequences,
+        AlignmentMethod.PAIRWISE_LOCAL,
+        gap_open=-10.0,
+        gap_extend=-0.5,
     )
 
     assert result is not None
@@ -141,7 +150,9 @@ def test_pairwise_alignment_too_many_sequences(alignment_engine):
     with pytest.raises(
         ValueError, match="Pairwise alignment requires exactly 2 sequences"
     ):
-        alignment_engine.align_sequences(sequences, AlignmentMethod.PAIRWISE_GLOBAL)
+        alignment_engine.align_sequences(
+            sequences, AlignmentMethod.PAIRWISE_GLOBAL
+        )
 
 
 @patch("subprocess.run")
@@ -175,7 +186,10 @@ def test_muscle_alignment_failure(mock_run, alignment_engine, test_sequences):
 
     with pytest.raises(RuntimeError, match="External alignment failed"):
         alignment_engine.align_sequences(
-            test_sequences, AlignmentMethod.MUSCLE, gap_open=-10.0, gap_extend=-0.5
+            test_sequences,
+            AlignmentMethod.MUSCLE,
+            gap_open=-10.0,
+            gap_extend=-0.5,
         )
 
 
@@ -209,7 +223,10 @@ def test_clustalo_alignment(mock_run, alignment_engine, test_sequences):
     mock_run.return_value = mock_process
 
     result = alignment_engine.align_sequences(
-        test_sequences, AlignmentMethod.CLUSTALO, gap_open=-10.0, gap_extend=-0.5
+        test_sequences,
+        AlignmentMethod.CLUSTALO,
+        gap_open=-10.0,
+        gap_extend=-0.5,
     )
 
     assert result is not None
@@ -249,7 +266,9 @@ def test_calculate_identity(alignment_engine):
     seq2 = "ABCXEF-GHI"
     identity = alignment_engine._calculate_identity(seq1, seq2)
     assert 0.0 <= identity <= 1.0
-    assert abs(identity - 0.889) < 0.001  # 8 matches out of 9 non-gap positions
+    assert (
+        abs(identity - 0.889) < 0.001
+    )  # 8 matches out of 9 non-gap positions
 
 
 def test_calculate_identity_different_lengths(alignment_engine):
@@ -311,7 +330,9 @@ def test_external_msa_alignment_invalid_method(
         )
 
 
-def test_external_msa_alignment_cleanup(mock_run, alignment_engine, test_sequences):
+def test_external_msa_alignment_cleanup(
+    mock_run, alignment_engine, test_sequences
+):
     """Test MSA alignment file cleanup"""
     # Mock successful MSA run
     mock_process = MagicMock()
@@ -363,7 +384,9 @@ def test_map_position_to_aligned_with_gaps(alignment_engine):
     """Test mapping positions with gaps"""
     original_seq = "ABCDEF"
     aligned_seq = "ABC-DEF"  # Gap after C
-    pos = alignment_engine._map_position_to_aligned(2, original_seq, aligned_seq)
+    pos = alignment_engine._map_position_to_aligned(
+        2, original_seq, aligned_seq
+    )
     assert pos == 2  # Position before gap
 
 
@@ -371,7 +394,9 @@ def test_map_position_to_aligned_end_of_sequence(alignment_engine):
     """Test mapping position at end of sequence"""
     original_seq = "ABCDEF"
     aligned_seq = "ABCDEF--"  # Gaps at end
-    pos = alignment_engine._map_position_to_aligned(5, original_seq, aligned_seq)
+    pos = alignment_engine._map_position_to_aligned(
+        5, original_seq, aligned_seq
+    )
     assert pos == 5  # Last position before gaps
 
 
@@ -379,5 +404,7 @@ def test_map_position_to_aligned_beyond_sequence(alignment_engine):
     """Test mapping position beyond sequence length"""
     original_seq = "ABCDEF"
     aligned_seq = "ABCDEF--"  # Gaps at end
-    pos = alignment_engine._map_position_to_aligned(10, original_seq, aligned_seq)
+    pos = alignment_engine._map_position_to_aligned(
+        10, original_seq, aligned_seq
+    )
     assert pos == len(aligned_seq) - 1  # Should return last position

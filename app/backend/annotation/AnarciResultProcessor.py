@@ -20,7 +20,9 @@ class AnarciResultObject:
 
 class AnarciResultProcessor:
     def __init__(
-        self, input_dict: Dict[str, Dict[str, str]], numbering_scheme: str = "imgt"
+        self,
+        input_dict: Dict[str, Dict[str, str]],
+        numbering_scheme: str = "imgt",
     ) -> None:
         self.original_scheme = numbering_scheme
         self.numbering_scheme = numbering_scheme
@@ -55,13 +57,19 @@ class AnarciResultProcessor:
         # If CGG, use Kabat for ANARCI, but keep track of original scheme
         anarci_scheme = "kabat" if scheme == "cgg" else scheme
         try:
-            return run_anarci(anarci_input, scheme=anarci_scheme, **kwargs), scheme
+            return (
+                run_anarci(anarci_input, scheme=anarci_scheme, **kwargs),
+                scheme,
+            )
         except Exception as e:
             if anarci_scheme != "imgt":
                 logging.warning(
                     f"ANARCI failed with scheme '{anarci_scheme}' ({e}), retrying with 'imgt'."
                 )
-                return run_anarci(anarci_input, scheme="imgt", **kwargs), "imgt"
+                return (
+                    run_anarci(anarci_input, scheme="imgt", **kwargs),
+                    "imgt",
+                )
             else:
                 raise
 
@@ -74,13 +82,16 @@ class AnarciResultProcessor:
             chains = []
             for chain_name, chain_seq in chains_dict.items():
                 anarci_input = [(chain_name, chain_seq)]
-                (sequences, numbered, alignment_details, hit_tables), used_scheme = (
-                    self._run_anarci_with_fallback(
-                        anarci_input,
-                        scheme=self.numbering_scheme,
-                        allowed_species=["human", "mouse", "rat"],
-                        assign_germline=True,
-                    )
+                (
+                    sequences,
+                    numbered,
+                    alignment_details,
+                    hit_tables,
+                ), used_scheme = self._run_anarci_with_fallback(
+                    anarci_input,
+                    scheme=self.numbering_scheme,
+                    allowed_species=["human", "mouse", "rat"],
+                    assign_germline=True,
                 )
 
                 # Process one sequence at a time (ANARCI processes one sequence per call)
@@ -90,8 +101,12 @@ class AnarciResultProcessor:
                 seq_hits = hit_tables[0]
 
                 # Process hit tables for germline info
-                hit_table_header = seq_hits[0] if seq_hits and len(seq_hits) > 0 else []
-                hit_table_rows = seq_hits[1:] if seq_hits and len(seq_hits) > 1 else []
+                hit_table_header = (
+                    seq_hits[0] if seq_hits and len(seq_hits) > 0 else []
+                )
+                hit_table_rows = (
+                    seq_hits[1:] if seq_hits and len(seq_hits) > 1 else []
+                )
                 best_hits_by_chain = {}
 
                 if hit_table_header and hit_table_rows:
@@ -108,7 +123,9 @@ class AnarciResultProcessor:
                     for key, group in itertools.groupby(
                         sorted(hit_table_rows, key=lambda row: row[id_idx]),
                         key=lambda row: (
-                            row[id_idx].split("_")[0] + "_" + row[id_idx].split("_")[1]
+                            row[id_idx].split("_")[0]
+                            + "_"
+                            + row[id_idx].split("_")[1]
                             if id_idx is not None
                             else None
                         ),
@@ -116,7 +133,9 @@ class AnarciResultProcessor:
                         best_row = max(
                             list(group),
                             key=lambda row: (
-                                row[bitscore_idx] if bitscore_idx is not None else 0
+                                row[bitscore_idx]
+                                if bitscore_idx is not None
+                                else 0
                             ),
                         )
                         best_hits_by_chain[key] = best_row
@@ -134,7 +153,9 @@ class AnarciResultProcessor:
 
                     domain_start = domain_alignment.get("query_start", 0)
                     domain_end = domain_alignment.get("query_end", 0)
-                    domain_positions.append((dom_idx, domain_start, domain_end))
+                    domain_positions.append(
+                        (dom_idx, domain_start, domain_end)
+                    )
 
                 # Sort domains by their start position to maintain sequence order
                 domain_positions.sort(key=lambda x: x[1])
@@ -207,7 +228,9 @@ class AnarciResultProcessor:
                     # Attach annotation scheme and annotate regions
                     domain.domain_type = "V"  # Mark as variable domain
                     domain.annotation_scheme = used_scheme
-                    AntibodyRegionAnnotator.annotate_domain(domain, scheme=used_scheme)
+                    AntibodyRegionAnnotator.annotate_domain(
+                        domain, scheme=used_scheme
+                    )
                     # Shift region coordinates to absolute positions within the original sequence
                     if hasattr(domain, "regions") and domain.regions:
                         absolute_regions = {}
@@ -252,7 +275,9 @@ class AnarciResultProcessor:
                                 germlines=None,
                             )
                             constant_domain.domain_type = "C"
-                            constant_domain.constant_region_info = constant_info
+                            constant_domain.constant_region_info = (
+                                constant_info
+                            )
                             # Add constant region directly to the domain
                             constant_domain.regions = {
                                 "CONSTANT": {

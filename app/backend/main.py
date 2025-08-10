@@ -1,8 +1,7 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
 from backend.api.v1.endpoints import router as api_v1_router
 from backend.api.v2.endpoints import router as api_v2_router
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 # Initialize FastAPI app
 app = FastAPI(

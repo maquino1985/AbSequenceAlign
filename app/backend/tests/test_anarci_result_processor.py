@@ -1,7 +1,5 @@
 import pytest
 from backend.annotation.AnarciResultProcessor import AnarciResultProcessor
-from backend.annotation.AntibodyRegionAnnotator import AntibodyRegionAnnotator
-from .conftest import SCFV_SEQ, IGHG1_SEQ, KIH_SEQ, TCR_SEQ
 from backend.logger import logger
 
 
@@ -60,7 +58,9 @@ def test_anarci_result_processor_domains(
         for domain in chain.domains:
             logger.info(f"  Domain type: {domain.domain_type}")
             if domain.domain_type == "C" and domain.constant_region_info:
-                logger.info(f"    Isotype: {domain.constant_region_info['isotype']}")
+                logger.info(
+                    f"    Isotype: {domain.constant_region_info['isotype']}"
+                )
                 logger.info(
                     f"    Position: {domain.constant_region_info['start']}-{domain.constant_region_info['end']}"
                 )
@@ -80,7 +80,9 @@ def test_constant_region_detection(IGHG1_SEQ):
     chain = result.chains[0]
     constant_domains = [d for d in chain.domains if d.domain_type == "C"]
 
-    assert len(constant_domains) == 1, "Expected 1 constant domain for IgG1 heavy chain"
+    assert (
+        len(constant_domains) == 1
+    ), "Expected 1 constant domain for IgG1 heavy chain"
 
     c_domain = constant_domains[0]
     assert c_domain.constant_region_info is not None
@@ -89,7 +91,10 @@ def test_constant_region_detection(IGHG1_SEQ):
     assert isinstance(c_domain.constant_region_info["start"], int)
     assert isinstance(c_domain.constant_region_info["end"], int)
     assert c_domain.constant_region_info["start"] > 0
-    assert c_domain.constant_region_info["end"] > c_domain.constant_region_info["start"]
+    assert (
+        c_domain.constant_region_info["end"]
+        > c_domain.constant_region_info["start"]
+    )
 
 
 def test_scfv_chain_preservation(SCFV_SEQ):
@@ -100,10 +105,14 @@ def test_scfv_chain_preservation(SCFV_SEQ):
     result = processor.get_result_by_biologic_name("scfv")
 
     assert result is not None
-    assert len(result.chains) == 1, "scFv should be processed as a single chain"
+    assert (
+        len(result.chains) == 1
+    ), "scFv should be processed as a single chain"
 
     chain = result.chains[0]
-    assert len(chain.domains) == 3, "scFv should have 2 variable domains and 1 linker domain"
+    assert (
+        len(chain.domains) == 3
+    ), "scFv should have 2 variable domains and 1 linker domain"
 
     # Verify domain order and linker detection
     domains = chain.domains
@@ -114,4 +123,6 @@ def test_scfv_chain_preservation(SCFV_SEQ):
     # Check for linker information
     linker_domain = domains[1]
     assert linker_domain.domain_type == "LINKER"
-    assert linker_domain.sequence.count("G") > 0, "Linker should contain glycine residues"
+    assert (
+        linker_domain.sequence.count("G") > 0
+    ), "Linker should contain glycine residues"

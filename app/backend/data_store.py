@@ -1,8 +1,13 @@
 import uuid
-from typing import Dict, Any, Optional, List
 from datetime import datetime
-from backend.models.models import DatasetInfo, AlignmentResult, AnnotationResult
+from typing import Dict, Any, Optional, List
+
 from backend.logger import logger
+from backend.models.models import (
+    DatasetInfo,
+    AlignmentResult,
+    AnnotationResult,
+)
 
 
 class DataStore:
@@ -37,7 +42,9 @@ class DataStore:
             "metadata": metadata or {},
         }
 
-        logger.info(f"Created dataset {dataset_id} with {len(sequences)} sequences")
+        logger.info(
+            f"Created dataset {dataset_id} with {len(sequences)} sequences"
+        )
         return dataset_id
 
     def get_dataset(self, dataset_id: str) -> Optional[Dict[str, Any]]:
@@ -81,7 +88,9 @@ class DataStore:
         self.update_dataset_status(dataset_id, "aligned")
         return True
 
-    def get_alignment_result(self, dataset_id: str) -> Optional[AlignmentResult]:
+    def get_alignment_result(
+        self, dataset_id: str
+    ) -> Optional[AlignmentResult]:
         """Get alignment result for a dataset"""
         return self.alignments.get(dataset_id)
 
@@ -96,7 +105,9 @@ class DataStore:
         self.update_dataset_status(dataset_id, "annotated")
         return True
 
-    def get_annotation_result(self, dataset_id: str) -> Optional[AnnotationResult]:
+    def get_annotation_result(
+        self, dataset_id: str
+    ) -> Optional[AnnotationResult]:
         """Get annotation result for a dataset"""
         return self.annotations.get(dataset_id)
 

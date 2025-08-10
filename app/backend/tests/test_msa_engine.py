@@ -1,11 +1,6 @@
 import pytest
-import tempfile
-import os
 import subprocess
 from unittest.mock import patch, MagicMock
-from Bio import AlignIO
-from Bio.SeqRecord import SeqRecord
-from Bio.Seq import Seq
 
 from backend.msa.msa_engine import MSAEngine
 from backend.models.models import AlignmentMethod, MSAResult, MSASequence

@@ -2,8 +2,9 @@
 Test to verify that using custom_chains preserves the original FASTA header names.
 """
 
-import pytest
-from backend.annotation.annotation_engine import annotate_sequences_with_processor
+from backend.annotation.annotation_engine import (
+    annotate_sequences_with_processor,
+)
 from backend.models.models import SequenceInput, NumberingScheme
 
 
@@ -34,14 +35,16 @@ def test_custom_chains_preserve_names():
         )
 
     # Run annotation
-    result = annotate_sequences_with_processor(sequence_inputs, NumberingScheme.IMGT)
+    result = annotate_sequences_with_processor(
+        sequence_inputs, NumberingScheme.IMGT
+    )
 
     print(f"\n2. Annotation results:")
     print(f"   Total sequences: {len(result.sequences)}")
 
     returned_names = []
     for i, seq in enumerate(result.sequences):
-        print(f"\n   Sequence {i+1}:")
+        print(f"\n   Sequence {i + 1}:")
         print(f"     name: {seq.name}")
         print(f"     chain_type: {seq.chain_type}")
         returned_names.append(seq.name)

@@ -1,7 +1,10 @@
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, File, Form, UploadFile
 
-
+from backend.annotation.AnarciResultProcessor import AnarciResultProcessor
+from backend.annotation.sequence_processor import SequenceProcessor
+from backend.jobs.job_manager import job_manager
+from backend.logger import logger
+from backend.models.models import MSACreationRequest, MSAAnnotationRequest
 from backend.models.models_v2 import (
     AnnotationResult as V2AnnotationResult,
     Sequence as V2Sequence,
@@ -11,15 +14,10 @@ from backend.models.models_v2 import (
     RegionFeature as V2RegionFeature,
     DomainType,
 )
-from backend.annotation.AnarciResultProcessor import AnarciResultProcessor
 from backend.models.requests_v2 import AnnotationRequestV2
-from backend.models.models import MSACreationRequest, MSAAnnotationRequest
-from backend.jobs.job_manager import job_manager
-from backend.msa.msa_engine import MSAEngine
 from backend.msa.msa_annotation import MSAAnnotationEngine
-from backend.annotation.sequence_processor import SequenceProcessor
-
-
+from backend.msa.msa_engine import MSAEngine
+from fastapi import APIRouter, HTTPException, File, Form, UploadFile
 
 router = APIRouter()
 
@@ -65,7 +63,9 @@ async def annotate_sequences_v2(request: AnnotationRequestV2):
                             dstart = domain.alignment_details.get("start")
                             dstop = domain.alignment_details.get("end")
                         else:
-                            dstart = domain.alignment_details.get("query_start")
+                            dstart = domain.alignment_details.get(
+                                "query_start"
+                            )
                             dstop = domain.alignment_details.get("query_end")
 
                     v2_regions: List[V2Region] = []
@@ -81,7 +81,9 @@ async def annotate_sequences_v2(request: AnnotationRequestV2):
                                 start = int(r.start)
                                 stop = int(r.stop)
                                 seq_val = r.sequence
-                            features = [V2RegionFeature(kind="sequence", value=seq_val)]
+                            features = [
+                                V2RegionFeature(kind="sequence", value=seq_val)
+                            ]
                             v2_regions.append(
                                 V2Region(
                                     name=rname,
@@ -106,14 +108,18 @@ async def annotate_sequences_v2(request: AnnotationRequestV2):
 
                 v2_chains.append(
                     V2Chain(
-                        name=chain.name, sequence=chain.sequence, domains=v2_domains
+                        name=chain.name,
+                        sequence=chain.sequence,
+                        domains=v2_domains,
                     )
                 )
 
             v2_sequences.append(
                 V2Sequence(
                     name=result.biologic_name,
-                    original_sequence=v2_chains[0].sequence if v2_chains else "",
+                    original_sequence=(
+                        v2_chains[0].sequence if v2_chains else ""
+                    ),
                     chains=v2_chains,
                 )
             )
@@ -122,14 +128,15 @@ async def annotate_sequences_v2(request: AnnotationRequestV2):
         chain_types = {}
         isotypes = {}
         species_counts = {}
-        
+
         for result in processor.results:
             for chain in result.chains:
                 # Get the primary domain (first variable domain) for chain metadata
                 primary_domain = next(
-                    (d for d in chain.domains if d.domain_type == "V"), chain.domains[0]
+                    (d for d in chain.domains if d.domain_type == "V"),
+                    chain.domains[0],
                 )
-                
+
                 # Stats - only count primary domain
                 if primary_domain.isotype:
                     chain_types[primary_domain.isotype] = (
@@ -142,7 +149,7 @@ async def annotate_sequences_v2(request: AnnotationRequestV2):
                     species_counts[primary_domain.species] = (
                         species_counts.get(primary_domain.species, 0) + 1
                     )
-        
+
         return V2AnnotationResult(
             sequences=v2_sequences,
             numbering_scheme=request.numbering_scheme.value,
@@ -160,21 +167,25 @@ async def annotate_sequences_v2(request: AnnotationRequestV2):
 # MSA Endpoints
 @router.post("/msa-viewer/upload")
 async def upload_msa_sequences_v2(
-    file: Optional[UploadFile] = File(None), sequences: Optional[str] = Form(None)
+    file: Optional[UploadFile] = File(None),
+    sequences: Optional[str] = Form(None),
 ):
     """Upload sequences for MSA analysis"""
     try:
         fasta_content = ""
         if file:
             if not file.filename.endswith((".fasta", ".fa", ".txt")):
-                raise HTTPException(status_code=400, detail="File must be FASTA format")
+                raise HTTPException(
+                    status_code=400, detail="File must be FASTA format"
+                )
             fasta_content = await file.read()
             fasta_content = fasta_content.decode("utf-8")
         elif sequences:
             fasta_content = sequences
         else:
             raise HTTPException(
-                status_code=400, detail="Either file or sequences must be provided"
+                status_code=400,
+                detail="Either file or sequences must be provided",
             )
 
         sequence_processor = SequenceProcessor()
@@ -182,9 +193,13 @@ async def upload_msa_sequences_v2(
             records = sequence_processor.parse_fasta(fasta_content)
             sequences_list = [str(record.seq) for record in records]
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=f"Invalid FASTA format: {e}")
+            raise HTTPException(
+                status_code=400, detail=f"Invalid FASTA format: {e}"
+            )
 
-        valid_sequences, errors = sequence_processor.validate_sequences(sequences_list)
+        valid_sequences, errors = sequence_processor.validate_sequences(
+            sequences_list
+        )
         if not valid_sequences:
             raise HTTPException(
                 status_code=400,
@@ -192,14 +207,17 @@ async def upload_msa_sequences_v2(
             )
 
         if errors:
-            logger.warning(f"Some sequences had validation issues: {'; '.join(errors)}")
+            logger.warning(
+                f"Some sequences had validation issues: {'; '.join(errors)}"
+            )
 
         # Create SequenceInput objects
         sequence_inputs = []
         for i, (record, seq) in enumerate(zip(records, valid_sequences)):
             from backend.models.models import SequenceInput
+
             seq_input = SequenceInput(
-                name=record.id or f"Sequence_{i+1}",
+                name=record.id or f"Sequence_{i + 1}",
                 heavy_chain=seq,  # Assume heavy chain for now
             )
             sequence_inputs.append(seq_input)
@@ -227,7 +245,9 @@ async def create_msa_v2(request: MSACreationRequest):
         total_sequences = sum(
             len(seq_input.get_all_chains()) for seq_input in request.sequences
         )
-        use_background = total_sequences > 10  # Use background for >10 sequences
+        use_background = (
+            total_sequences > 10
+        )  # Use background for >10 sequences
 
         if use_background:
             # Create background job
@@ -235,7 +255,11 @@ async def create_msa_v2(request: MSACreationRequest):
             return {
                 "success": True,
                 "message": f"MSA job created for {total_sequences} sequences",
-                "data": {"job_id": job_id, "status": "pending", "use_background": True},
+                "data": {
+                    "job_id": job_id,
+                    "status": "pending",
+                    "use_background": True,
+                },
             }
         else:
             # Process immediately for small datasets
@@ -247,7 +271,9 @@ async def create_msa_v2(request: MSACreationRequest):
             for seq_input in request.sequences:
                 chains = seq_input.get_all_chains()
                 for chain_name, sequence in chains.items():
-                    sequences.append((f"{seq_input.name}_{chain_name}", sequence))
+                    sequences.append(
+                        (f"{seq_input.name}_{chain_name}", sequence)
+                    )
 
             if not sequences:
                 raise ValueError("No valid sequences provided")
@@ -259,7 +285,8 @@ async def create_msa_v2(request: MSACreationRequest):
 
             # Annotate sequences
             annotation_result = annotation_engine.annotate_msa(
-                msa_result=msa_result, numbering_scheme=request.numbering_scheme
+                msa_result=msa_result,
+                numbering_scheme=request.numbering_scheme,
             )
 
             # Extract PSSM data from metadata
@@ -273,7 +300,9 @@ async def create_msa_v2(request: MSACreationRequest):
                     "annotation_result": annotation_result.model_dump(),
                     "pssm_data": pssm_data,
                     "consensus": msa_result.consensus,
-                    "conservation_scores": pssm_data.get("conservation_scores", []),
+                    "conservation_scores": pssm_data.get(
+                        "conservation_scores", []
+                    ),
                     "quality_scores": pssm_data.get("quality_scores", []),
                     "use_background": False,
                 },
@@ -281,7 +310,9 @@ async def create_msa_v2(request: MSACreationRequest):
 
     except Exception as e:
         logger.error(f"MSA creation failed: {e}")
-        raise HTTPException(status_code=500, detail=f"MSA creation failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"MSA creation failed: {e}"
+        )
 
 
 @router.post("/msa-viewer/annotate-msa")
@@ -298,7 +329,9 @@ async def annotate_msa_v2(request: MSAAnnotationRequest):
         }
     except Exception as e:
         logger.error(f"MSA annotation failed: {e}")
-        raise HTTPException(status_code=500, detail=f"MSA annotation failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"MSA annotation failed: {e}"
+        )
 
 
 @router.get("/msa-viewer/job/{job_id}")
@@ -318,7 +351,9 @@ async def get_job_status_v2(job_id: str):
         raise
     except Exception as e:
         logger.error(f"Failed to get job status: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get job status: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get job status: {e}"
+        )
 
 
 @router.get("/msa-viewer/jobs")
@@ -337,4 +372,6 @@ async def list_jobs_v2():
         }
     except Exception as e:
         logger.error(f"Failed to list jobs: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to list jobs: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to list jobs: {e}"
+        )

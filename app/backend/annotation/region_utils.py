@@ -24,7 +24,9 @@ class RegionIndexHelper:
         # Fallback: find closest available position if not found
         if start_idx is None:
             for k, idx in pos_to_idx.items():
-                if (k[0] > start[0]) or (k[0] == start[0] and k[1] >= start[1]):
+                if (k[0] > start[0]) or (
+                    k[0] == start[0] and k[1] >= start[1]
+                ):
                     start_idx = idx
                     break
         if stop_idx is None:
@@ -38,6 +40,12 @@ class RegionIndexHelper:
     def extract_region_sequence(
         numbering: List[Tuple[Any, Any]], start_idx: int, stop_idx: int
     ) -> str:
-        if start_idx is not None and stop_idx is not None and start_idx <= stop_idx:
-            return "".join([numbering[i][1] for i in range(start_idx, stop_idx + 1)])
+        if (
+            start_idx is not None
+            and stop_idx is not None
+            and start_idx <= stop_idx
+        ):
+            return "".join(
+                [numbering[i][1] for i in range(start_idx, stop_idx + 1)]
+            )
         return ""

@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from typing import Dict, Literal, Any
-from backend.utils.types import Chain, Domain
 
-from backend.numbering.kabat import KABAT_REGIONS
+from backend.annotation.region_utils import RegionIndexHelper
+from backend.numbering.cgg import CGG_REGIONS
 from backend.numbering.chothia import CHOTHIA_REGIONS
 from backend.numbering.imgt import IMGT_REGIONS
-from backend.numbering.cgg import CGG_REGIONS
-from backend.annotation.region_utils import RegionIndexHelper
+from backend.numbering.kabat import KABAT_REGIONS
+from backend.utils.types import Chain, Domain
 
 
 @dataclass
@@ -56,7 +56,8 @@ def get_chain_type(domain: Domain) -> str:
 class AntibodyRegionAnnotator:
     @staticmethod
     def annotate_domain(
-        domain: Domain, scheme: Literal["imgt", "kabat", "chothia", "cgg"] = "cgg"
+        domain: Domain,
+        scheme: Literal["imgt", "kabat", "chothia", "cgg"] = "cgg",
     ) -> Domain:
         chain_type = get_chain_type(domain)
         region_defs = SCHEME_MAP[scheme]
@@ -81,7 +82,8 @@ class AntibodyRegionAnnotator:
 
     @staticmethod
     def annotate_chain_domains(
-        chain: Chain, scheme: Literal["imgt", "kabat", "chothia", "cgg"] = "imgt"
+        chain: Chain,
+        scheme: Literal["imgt", "kabat", "chothia", "cgg"] = "imgt",
     ) -> Chain:
         # chain_type = get_chain_type(chain)
         for domain in chain.domains:
