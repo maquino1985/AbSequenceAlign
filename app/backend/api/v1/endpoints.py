@@ -8,9 +8,13 @@ from backend.annotation.sequence_processor import SequenceProcessor
 from backend.data_store import data_store
 from backend.logger import logger
 from backend.models.models import (
-    AlignmentRequest, AnnotationRequest,
-    APIResponse, AlignmentResult, SequenceInput,
-    MSACreationRequest, MSAAnnotationRequest, MSAJobStatus
+    AlignmentRequest,
+    AnnotationRequest,
+    APIResponse,
+    AlignmentResult,
+    SequenceInput,
+    MSACreationRequest,
+    MSAAnnotationRequest,
 )
 from backend.jobs.job_manager import job_manager
 
@@ -22,11 +26,7 @@ alignment_engine = AlignmentEngine()
 
 @router.get("/")
 async def root():
-    return {
-        "message": "AbSequenceAlign API",
-        "version": "0.1.0",
-        "status": "running"
-    }
+    return {"message": "AbSequenceAlign API", "version": "0.1.0", "status": "running"}
 
 
 @router.get("/health")
@@ -36,8 +36,7 @@ async def health_check():
 
 @router.post("/upload", response_model=APIResponse)
 async def upload_sequences(
-        file: Optional[UploadFile] = File(None),
-        sequences: Optional[str] = Form(None)
+    file: Optional[UploadFile] = File(None), sequences: Optional[str] = Form(None)
 ):
     try:
         fasta_content = ""
@@ -45,11 +44,13 @@ async def upload_sequences(
             if not file.filename.endswith((".fasta", ".fa", ".txt")):
                 raise HTTPException(status_code=400, detail="File must be FASTA format")
             fasta_content = await file.read()
-            fasta_content = fasta_content.decode('utf-8')
+            fasta_content = fasta_content.decode("utf-8")
         elif sequences:
             fasta_content = sequences
         else:
-            raise HTTPException(status_code=400, detail="Either file or sequences must be provided")
+            raise HTTPException(
+                status_code=400, detail="Either file or sequences must be provided"
+            )
         try:
             records = sequence_processor.parse_fasta(fasta_content)
             sequences_list = [str(record.seq) for record in records]
@@ -57,7 +58,10 @@ async def upload_sequences(
             raise HTTPException(status_code=400, detail=f"Invalid FASTA format: {e}")
         valid_sequences, errors = sequence_processor.validate_sequences(sequences_list)
         if not valid_sequences:
-            raise HTTPException(status_code=400, detail=f"Sequence validation failed: {'; '.join(errors)}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Sequence validation failed: {'; '.join(errors)}",
+            )
         if errors:
             logger.warning(f"Some sequences had validation issues: {'; '.join(errors)}")
         dataset_id = data_store.create_dataset(valid_sequences)
@@ -68,8 +72,8 @@ async def upload_sequences(
             data={
                 "dataset_id": dataset_id,
                 "statistics": stats,
-                "validation_errors": errors
-            }
+                "validation_errors": errors,
+            },
         )
     except HTTPException:
         raise
@@ -83,8 +87,7 @@ async def annotate_sequences(request: AnnotationRequest):
     try:
         # Validation is already done by the SequenceInput model
         annotation_result = annotate_sequences_with_processor(
-            sequences=request.sequences,
-            numbering_scheme=request.numbering_scheme
+            sequences=request.sequences, numbering_scheme=request.numbering_scheme
         )
         return APIResponse(
             success=True,
@@ -94,9 +97,9 @@ async def annotate_sequences(request: AnnotationRequest):
                 "statistics": {
                     "chain_types": annotation_result.chain_types,
                     "isotypes": annotation_result.isotypes,
-                    "species": annotation_result.species
-                }
-            }
+                    "species": annotation_result.species,
+                },
+            },
         )
     except HTTPException:
         raise
@@ -117,23 +120,20 @@ async def align_sequences(request: AlignmentRequest):
             numbering_scheme=request.numbering_scheme,
             gap_open=request.gap_open,
             gap_extend=request.gap_extend,
-            matrix=request.matrix
+            matrix=request.matrix,
         )
         result = AlignmentResult(
             dataset_id=request.dataset_id,
             method=request.method,
             alignment=alignment_result["alignment"],
             statistics=alignment_result,
-            numbering_scheme=request.numbering_scheme
+            numbering_scheme=request.numbering_scheme,
         )
         data_store.store_alignment_result(request.dataset_id, result)
         return APIResponse(
             success=True,
             message=f"Successfully aligned {len(sequences)} sequences using {request.method.value}",
-            data={
-                "alignment_result": result.dict(),
-                "statistics": alignment_result
-            }
+            data={"alignment_result": result.dict(), "statistics": alignment_result},
         )
     except Exception as e:
         logger.error(f"Alignment failed: {e}")
@@ -149,13 +149,15 @@ async def get_alignment(dataset_id: str):
         return APIResponse(
             success=True,
             message="Alignment retrieved successfully",
-            data=alignment_result.dict()
+            data=alignment_result.dict(),
         )
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to retrieve alignment: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve alignment: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve alignment: {e}"
+        )
 
 
 @router.get("/dataset/{dataset_id}")
@@ -167,7 +169,7 @@ async def get_dataset(dataset_id: str):
         return APIResponse(
             success=True,
             message="Dataset retrieved successfully",
-            data=dataset_info.dict()
+            data=dataset_info.dict(),
         )
     except HTTPException:
         raise
@@ -186,8 +188,8 @@ async def list_datasets():
             message=f"Retrieved {len(datasets)} datasets",
             data={
                 "datasets": [dataset.dict() for dataset in datasets],
-                "statistics": stats
-            }
+                "statistics": stats,
+            },
         )
     except Exception as e:
         logger.error(f"Failed to list datasets: {e}")
@@ -201,8 +203,7 @@ async def delete_dataset(dataset_id: str):
         if not success:
             raise HTTPException(status_code=404, detail="Dataset not found")
         return APIResponse(
-            success=True,
-            message=f"Dataset {dataset_id} deleted successfully"
+            success=True, message=f"Dataset {dataset_id} deleted successfully"
         )
     except HTTPException:
         raise
@@ -213,10 +214,10 @@ async def delete_dataset(dataset_id: str):
 
 # MSA Viewer Endpoints
 
+
 @router.post("/msa-viewer/upload", response_model=APIResponse)
 async def upload_msa_sequences(
-    file: Optional[UploadFile] = File(None),
-    sequences: Optional[str] = Form(None)
+    file: Optional[UploadFile] = File(None), sequences: Optional[str] = Form(None)
 ):
     """Upload sequences for MSA analysis"""
     try:
@@ -225,41 +226,46 @@ async def upload_msa_sequences(
             if not file.filename.endswith((".fasta", ".fa", ".txt")):
                 raise HTTPException(status_code=400, detail="File must be FASTA format")
             fasta_content = await file.read()
-            fasta_content = fasta_content.decode('utf-8')
+            fasta_content = fasta_content.decode("utf-8")
         elif sequences:
             fasta_content = sequences
         else:
-            raise HTTPException(status_code=400, detail="Either file or sequences must be provided")
-        
+            raise HTTPException(
+                status_code=400, detail="Either file or sequences must be provided"
+            )
+
         try:
             records = sequence_processor.parse_fasta(fasta_content)
             sequences_list = [str(record.seq) for record in records]
         except ValueError as e:
             raise HTTPException(status_code=400, detail=f"Invalid FASTA format: {e}")
-        
+
         valid_sequences, errors = sequence_processor.validate_sequences(sequences_list)
         if not valid_sequences:
-            raise HTTPException(status_code=400, detail=f"Sequence validation failed: {'; '.join(errors)}")
-        
+            raise HTTPException(
+                status_code=400,
+                detail=f"Sequence validation failed: {'; '.join(errors)}",
+            )
+
         if errors:
             logger.warning(f"Some sequences had validation issues: {'; '.join(errors)}")
-        
+
         # Create SequenceInput objects
         sequence_inputs = []
         for i, (record, seq) in enumerate(zip(records, valid_sequences)):
             seq_input = SequenceInput(
                 name=record.id or f"Sequence_{i+1}",
-                heavy_chain=seq  # Assume heavy chain for now
+                heavy_chain=seq,  # Assume heavy chain for now
             )
             sequence_inputs.append(seq_input)
-        
+
         return APIResponse(
             success=True,
             message=f"Successfully uploaded {len(valid_sequences)} sequences for MSA",
             data={
                 "sequences": [seq.model_dump() for seq in sequence_inputs],
-                "validation_errors": errors
-            }
+                "validation_errors": errors,
+            },
         )
     except HTTPException:
         raise
@@ -273,54 +279,50 @@ async def create_msa(request: MSACreationRequest):
     """Create multiple sequence alignment"""
     try:
         # Determine if we should use background processing
-        total_sequences = sum(len(seq_input.get_all_chains()) for seq_input in request.sequences)
+        total_sequences = sum(
+            len(seq_input.get_all_chains()) for seq_input in request.sequences
+        )
         use_background = total_sequences > 10  # Use background for >10 sequences
-        
+
         if use_background:
             # Create background job
             job_id = job_manager.create_msa_job(request)
             return APIResponse(
                 success=True,
                 message=f"MSA job created for {total_sequences} sequences",
-                data={
-                    "job_id": job_id,
-                    "status": "pending",
-                    "use_background": True
-                }
+                data={"job_id": job_id, "status": "pending", "use_background": True},
             )
         else:
             # Process immediately for small datasets
             from backend.msa.msa_engine import MSAEngine
             from backend.msa.msa_annotation import MSAAnnotationEngine
-            
+
             msa_engine = MSAEngine()
             annotation_engine = MSAAnnotationEngine()
-            
+
             # Extract sequences
             sequences = []
             for seq_input in request.sequences:
                 chains = seq_input.get_all_chains()
                 for chain_name, sequence in chains.items():
                     sequences.append((f"{seq_input.name}_{chain_name}", sequence))
-            
+
             if not sequences:
                 raise ValueError("No valid sequences provided")
-            
+
             # Create MSA
             msa_result = msa_engine.create_msa(
-                sequences=sequences,
-                method=request.alignment_method
+                sequences=sequences, method=request.alignment_method
             )
-            
+
             # Annotate sequences
             annotation_result = annotation_engine.annotate_msa(
-                msa_result=msa_result,
-                numbering_scheme=request.numbering_scheme
+                msa_result=msa_result, numbering_scheme=request.numbering_scheme
             )
-            
+
             # Extract PSSM data from metadata
-            pssm_data = msa_result.metadata.get('pssm_data', {})
-            
+            pssm_data = msa_result.metadata.get("pssm_data", {})
+
             return APIResponse(
                 success=True,
                 message=f"Successfully created MSA for {len(sequences)} sequences with enhanced features",
@@ -329,12 +331,12 @@ async def create_msa(request: MSACreationRequest):
                     "annotation_result": annotation_result.model_dump(),
                     "pssm_data": pssm_data,
                     "consensus": msa_result.consensus,
-                    "conservation_scores": pssm_data.get('conservation_scores', []),
-                    "quality_scores": pssm_data.get('quality_scores', []),
-                    "use_background": False
-                }
+                    "conservation_scores": pssm_data.get("conservation_scores", []),
+                    "quality_scores": pssm_data.get("quality_scores", []),
+                    "use_background": False,
+                },
             )
-            
+
     except Exception as e:
         logger.error(f"MSA creation failed: {e}")
         raise HTTPException(status_code=500, detail=f"MSA creation failed: {e}")
@@ -346,14 +348,11 @@ async def annotate_msa(request: MSAAnnotationRequest):
     try:
         # For now, create a background job for annotation
         job_id = job_manager.create_annotation_job(request)
-        
+
         return APIResponse(
             success=True,
             message="MSA annotation job created",
-            data={
-                "job_id": job_id,
-                "status": "pending"
-            }
+            data={"job_id": job_id, "status": "pending"},
         )
     except Exception as e:
         logger.error(f"MSA annotation failed: {e}")
@@ -367,11 +366,11 @@ async def get_job_status(job_id: str):
         job_status = job_manager.get_job_status(job_id)
         if not job_status:
             raise HTTPException(status_code=404, detail="Job not found")
-        
+
         return APIResponse(
             success=True,
             message="Job status retrieved successfully",
-            data=job_status.model_dump()
+            data=job_status.model_dump(),
         )
     except HTTPException:
         raise
@@ -388,11 +387,9 @@ async def list_jobs():
         jobs = []
         for job_id, job_status in job_manager.jobs.items():
             jobs.append(job_status.model_dump())
-        
+
         return APIResponse(
-            success=True,
-            message=f"Retrieved {len(jobs)} jobs",
-            data={"jobs": jobs}
+            success=True, message=f"Retrieved {len(jobs)} jobs", data={"jobs": jobs}
         )
     except Exception as e:
         logger.error(f"Failed to list jobs: {e}")

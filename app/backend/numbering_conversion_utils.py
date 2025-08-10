@@ -6,37 +6,33 @@ from typing import List, Tuple, Literal
 NumberingScheme = Literal["imgt", "kabat", "chothia"]
 
 # Complete mapping for heavy chain (IMGT -> Kabat)
-IMGT_TO_KABAT_HEAVY = {i: (i, '') for i in range(1, 118)}
+IMGT_TO_KABAT_HEAVY = {i: (i, "") for i in range(1, 118)}
 # Insertions (example, real mapping may differ)
-IMGT_TO_KABAT_HEAVY.update({
-    32: (31, 'A'), 33: (31, 'B'), 38: (35, 'A'), 39: (35, 'B')
-})
+IMGT_TO_KABAT_HEAVY.update({32: (31, "A"), 33: (31, "B"), 38: (35, "A"), 39: (35, "B")})
 
 # Complete mapping for light chain (IMGT -> Kabat)
-IMGT_TO_KABAT_LIGHT = {i: (i, '') for i in range(1, 111)}
+IMGT_TO_KABAT_LIGHT = {i: (i, "") for i in range(1, 111)}
 # Insertions (example, real mapping may differ)
-IMGT_TO_KABAT_LIGHT.update({
-    27: (26, 'A'), 28: (26, 'B'), 38: (35, 'A'), 39: (35, 'B')
-})
+IMGT_TO_KABAT_LIGHT.update({27: (26, "A"), 28: (26, "B"), 38: (35, "A"), 39: (35, "B")})
 
 # Complete mapping for heavy chain (IMGT -> Chothia)
-IMGT_TO_CHOTHIA_HEAVY = {i: (i, '') for i in range(1, 118)}
+IMGT_TO_CHOTHIA_HEAVY = {i: (i, "") for i in range(1, 118)}
 # Insertions (example, real mapping may differ)
-IMGT_TO_CHOTHIA_HEAVY.update({
-    32: (31, 'A'), 33: (31, 'B'), 38: (35, 'A'), 39: (35, 'B')
-})
+IMGT_TO_CHOTHIA_HEAVY.update(
+    {32: (31, "A"), 33: (31, "B"), 38: (35, "A"), 39: (35, "B")}
+)
 
 # Complete mapping for light chain (IMGT -> Chothia)
-IMGT_TO_CHOTHIA_LIGHT = {i: (i, '') for i in range(1, 111)}
+IMGT_TO_CHOTHIA_LIGHT = {i: (i, "") for i in range(1, 111)}
 # Insertions (example, real mapping may differ)
-IMGT_TO_CHOTHIA_LIGHT.update({
-    27: (26, 'A'), 28: (26, 'B'), 38: (35, 'A'), 39: (35, 'B')
-})
+IMGT_TO_CHOTHIA_LIGHT.update(
+    {27: (26, "A"), 28: (26, "B"), 38: (35, "A"), 39: (35, "B")}
+)
+
 
 # For demonstration, only a partial mapping is provided. Real mapping is more complex.
 def convert_imgt_to_kabat(
-    imgt_numbering: List[Tuple[Tuple[int, str], str]],
-    chain_type: str = "H"
+    imgt_numbering: List[Tuple[Tuple[int, str], str]], chain_type: str = "H"
 ) -> List[Tuple[Tuple[int, str], str]]:
     if chain_type == "L":
         mapping = IMGT_TO_KABAT_LIGHT
@@ -51,9 +47,9 @@ def convert_imgt_to_kabat(
             kabat_numbering.append(((imgt_pos, imgt_ins), aa))
     return kabat_numbering
 
+
 def convert_imgt_to_chothia(
-    imgt_numbering: List[Tuple[Tuple[int, str], str]],
-    chain_type: str = "H"
+    imgt_numbering: List[Tuple[Tuple[int, str], str]], chain_type: str = "H"
 ) -> List[Tuple[Tuple[int, str], str]]:
     if chain_type == "L":
         mapping = IMGT_TO_CHOTHIA_LIGHT
@@ -68,11 +64,12 @@ def convert_imgt_to_chothia(
             chothia_numbering.append(((imgt_pos, imgt_ins), aa))
     return chothia_numbering
 
+
 def convert_numbering(
     numbering: List[Tuple[Tuple[int, str], str]],
     from_scheme: str,
     to_scheme: str,
-    chain_type: str = "H"
+    chain_type: str = "H",
 ) -> List[Tuple[Tuple[int, str], str]]:
     if from_scheme == to_scheme:
         return numbering
@@ -80,4 +77,6 @@ def convert_numbering(
         return convert_imgt_to_kabat(numbering, chain_type)
     if from_scheme == "imgt" and to_scheme == "chothia":
         return convert_imgt_to_chothia(numbering, chain_type)
-    raise NotImplementedError(f"Conversion from {from_scheme} to {to_scheme} not implemented.")
+    raise NotImplementedError(
+        f"Conversion from {from_scheme} to {to_scheme} not implemented."
+    )

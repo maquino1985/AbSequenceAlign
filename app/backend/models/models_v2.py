@@ -48,4 +48,3 @@ class AnnotationResult(BaseModel):
     sequences: List[Sequence]
     numbering_scheme: str
     total_sequences: int
-

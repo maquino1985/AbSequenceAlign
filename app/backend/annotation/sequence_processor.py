@@ -16,13 +16,13 @@ class SequenceProcessor:
     def parse_fasta(self, fasta_content: str) -> List[SeqRecord]:
         """
         Parse FASTA content and return list of SeqRecord objects
-        
+
         Args:
             fasta_content: String containing FASTA format sequences
-            
+
         Returns:
             List of BioPython SeqRecord objects
-            
+
         Raises:
             ValueError: If FASTA parsing fails
         """
@@ -41,10 +41,10 @@ class SequenceProcessor:
     def validate_sequence(self, sequence: str) -> Tuple[bool, str]:
         """
         Validate if a sequence contains valid amino acids
-        
+
         Args:
             sequence: Protein sequence string
-            
+
         Returns:
             Tuple of (is_valid, error_message)
         """
@@ -61,17 +61,20 @@ class SequenceProcessor:
 
         # Check minimum length (sequences should be at least 15 AA for HMMER3 compatibility)
         if len(clean_seq) < 15:
-            return False, f"Sequence too short ({len(clean_seq)} AA). Minimum 15 AA required."
+            return (
+                False,
+                f"Sequence too short ({len(clean_seq)} AA). Minimum 15 AA required.",
+            )
 
         return True, ""
 
     def validate_sequences(self, sequences: List[str]) -> Tuple[List[str], List[str]]:
         """
         Validate a list of sequences
-        
+
         Args:
             sequences: List of protein sequences
-            
+
         Returns:
             Tuple of (valid_sequences, error_messages)
         """
@@ -90,24 +93,26 @@ class SequenceProcessor:
     def extract_sequences_from_fasta(self, fasta_content: str) -> List[str]:
         """
         Extract sequences from FASTA content
-        
+
         Args:
             fasta_content: FASTA format string
-            
+
         Returns:
             List of sequence strings
         """
         records = self.parse_fasta(fasta_content)
         return [str(record.seq) for record in records]
 
-    def format_fasta(self, sequences: List[str], names: Optional[List[str]] = None) -> str:
+    def format_fasta(
+        self, sequences: List[str], names: Optional[List[str]] = None
+    ) -> str:
         """
         Format sequences as FASTA string
-        
+
         Args:
             sequences: List of protein sequences
             names: Optional list of sequence names
-            
+
         Returns:
             FASTA format string
         """
@@ -119,17 +124,17 @@ class SequenceProcessor:
             fasta_lines.append(f">{name}")
             # Split long sequences into lines of 80 characters
             for i in range(0, len(seq), 80):
-                fasta_lines.append(seq[i:i + 80])
+                fasta_lines.append(seq[i : i + 80])
 
         return "\n".join(fasta_lines)
 
     def get_sequence_statistics(self, sequences: List[str]) -> Dict[str, Any]:
         """
         Calculate basic statistics for a set of sequences
-        
+
         Args:
             sequences: List of protein sequences
-            
+
         Returns:
             Dictionary with sequence statistics
         """
@@ -143,5 +148,5 @@ class SequenceProcessor:
             "min_length": min(lengths),
             "max_length": max(lengths),
             "avg_length": sum(lengths) / len(lengths),
-            "total_length": sum(lengths)
+            "total_length": sum(lengths),
         }

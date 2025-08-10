@@ -18,4 +18,3 @@ HMM_MODEL_PATH = os.path.join(HMM_MODEL_DIR, HMM_MODEL_FILE)
 ISOTYPE_HMM_DIR = os.getenv("ISOTYPE_HMM_DIR", os.path.join(DATA_DIR, "isotype_hmms"))
 
 # Add other config constants as needed
-

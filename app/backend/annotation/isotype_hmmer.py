@@ -14,7 +14,7 @@ def detect_isotype_with_hmmer(sequence: str, hmm_dir: str = None) -> Optional[st
         Best-matching isotype (e.g., 'IGHG1', 'IGHA1', etc.) or None if no confident match
     """
     import tempfile
-    
+
     # Use default HMM directory from config if not specified
     if hmm_dir is None:
         hmm_dir = ISOTYPE_HMM_DIR
@@ -37,7 +37,7 @@ def detect_isotype_with_hmmer(sequence: str, hmm_dir: str = None) -> Optional[st
                     "--noali",
                     # "--tblout=-",
                     hmm_path,
-                    fasta_path
+                    fasta_path,
                 ]
                 result = subprocess.run(cmd, capture_output=True, text=True)
                 target = ""
@@ -50,7 +50,7 @@ def detect_isotype_with_hmmer(sequence: str, hmm_dir: str = None) -> Optional[st
                     if fields[0] == "Query:":
                         # Extract the target name from fields[1] (should end with .aln or .ALN)
                         target = fields[1]
-                        if target.lower().endswith('.aln'):
+                        if target.lower().endswith(".aln"):
                             target = target[:-4]
                         continue
                     elif len(fields) < 6:
@@ -65,7 +65,9 @@ def detect_isotype_with_hmmer(sequence: str, hmm_dir: str = None) -> Optional[st
                         # score = float(fields[4])
                     except ValueError:
                         continue
-                    if score > best_score or (score == best_score and evalue < best_evalue):
+                    if score > best_score or (
+                        score == best_score and evalue < best_evalue
+                    ):
                         best_score = score
                         best_evalue = evalue
                         best_isotype = target

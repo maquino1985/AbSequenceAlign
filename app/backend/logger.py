@@ -14,7 +14,9 @@ logger.setLevel(logging.DEBUG)
 if not logger.handlers:
     stream_handler = logging.StreamHandler()
     file_handler = logging.FileHandler(LOG_FILE)
-    formatter = logging.Formatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s")
+    formatter = logging.Formatter(
+        "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
+    )
     stream_handler.setFormatter(formatter)
     file_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
