@@ -26,7 +26,9 @@ def test_hmmer_isotype_detection(isotype, seq):
     # hmm_dir = os.path.join(os.path.dirname(__file__), "..", "data", "isotype_hmms")
     detected = detect_isotype_with_hmmer(seq, hmm_dir=hmm_dir)
     assert detected is not None, f"No isotype detected for {isotype}"
-    assert detected.upper() == isotype.upper(), f"Expected {isotype}, got {detected}"
+    assert (
+        detected.upper() == isotype.upper()
+    ), f"Expected {isotype}, got {detected}"
 
 
 def test_hmmer_isotype_detection_debug():
@@ -38,7 +40,9 @@ def test_hmmer_isotype_detection_debug():
     # Run HMMER manually and log output
     import tempfile
 
-    with tempfile.NamedTemporaryFile("w", delete=False, suffix=".fasta") as fasta:
+    with tempfile.NamedTemporaryFile(
+        "w", delete=False, suffix=".fasta"
+    ) as fasta:
         fasta.write(">query\n" + KIH_SEQ + "\n")
         fasta_path = fasta.name
     try:

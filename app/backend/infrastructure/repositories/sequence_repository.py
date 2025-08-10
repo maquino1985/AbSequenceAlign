@@ -10,7 +10,7 @@ import os
 
 from backend.core.interfaces import Repository
 from backend.domain.entities import AntibodySequence
-from backend.domain.value_objects import SequenceIdentifier
+
 from backend.logger import logger
 
 
@@ -63,7 +63,9 @@ class SequenceRepository(Repository[AntibodySequence]):
             return sequence
 
         except Exception as e:
-            error_msg = f"Failed to find sequence with ID {entity_id}: {str(e)}"
+            error_msg = (
+                f"Failed to find sequence with ID {entity_id}: {str(e)}"
+            )
             logger.error(error_msg)
             return None
 
@@ -96,7 +98,9 @@ class SequenceRepository(Repository[AntibodySequence]):
             file_path = self._get_file_path(entity_id)
 
             if not os.path.exists(file_path):
-                logger.debug(f"Sequence with ID {entity_id} not found for deletion")
+                logger.debug(
+                    f"Sequence with ID {entity_id} not found for deletion"
+                )
                 return False
 
             os.remove(file_path)
@@ -104,7 +108,9 @@ class SequenceRepository(Repository[AntibodySequence]):
             return True
 
         except Exception as e:
-            error_msg = f"Failed to delete sequence with ID {entity_id}: {str(e)}"
+            error_msg = (
+                f"Failed to delete sequence with ID {entity_id}: {str(e)}"
+            )
             logger.error(error_msg)
             return False
 
@@ -168,9 +174,7 @@ class SequenceRepository(Repository[AntibodySequence]):
             return matching_sequences
 
         except Exception as e:
-            error_msg = (
-                f"Failed to find sequences by domain type {domain_type}: {str(e)}"
-            )
+            error_msg = f"Failed to find sequences by domain type {domain_type}: {str(e)}"
             logger.error(error_msg)
             return []
 
@@ -181,7 +185,11 @@ class SequenceRepository(Repository[AntibodySequence]):
                 return 0
 
             count = len(
-                [f for f in os.listdir(self.storage_path) if f.endswith(".json")]
+                [
+                    f
+                    for f in os.listdir(self.storage_path)
+                    if f.endswith(".json")
+                ]
             )
             logger.debug(f"Total sequence count: {count}")
             return count
@@ -255,7 +263,10 @@ class SequenceRepository(Repository[AntibodySequence]):
             AntibodyDomain,
             AntibodyRegion,
         )
-        from backend.domain.value_objects import AminoAcidSequence, RegionBoundary
+        from backend.domain.value_objects import (
+            AminoAcidSequence,
+            RegionBoundary,
+        )
         from backend.domain.models import (
             ChainType,
             DomainType,
@@ -271,7 +282,9 @@ class SequenceRepository(Repository[AntibodySequence]):
             for domain_data in chain_data.get("domains", []):
                 # Reconstruct regions
                 regions = {}
-                for name, region_data in domain_data.get("regions", {}).items():
+                for name, region_data in domain_data.get(
+                    "regions", {}
+                ).items():
                     boundary = RegionBoundary(
                         start=region_data["boundary"]["start"],
                         end=region_data["boundary"]["end"],
@@ -291,7 +304,9 @@ class SequenceRepository(Repository[AntibodySequence]):
                 domain = AntibodyDomain(
                     domain_type=DomainType(domain_data["domain_type"]),
                     sequence=AminoAcidSequence(domain_data["sequence"]),
-                    numbering_scheme=NumberingScheme(domain_data["numbering_scheme"]),
+                    numbering_scheme=NumberingScheme(
+                        domain_data["numbering_scheme"]
+                    ),
                     regions=regions,
                 )
                 domains.append(domain)

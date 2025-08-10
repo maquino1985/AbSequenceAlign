@@ -156,7 +156,9 @@ class MSAEngine:
 
             # Run MAFFT with proper command line
             cmd = ["mafft", "--auto", temp_in_path]
-            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+            result = subprocess.run(
+                cmd, check=True, capture_output=True, text=True
+            )
             aligned_sequences = result.stdout.strip().split("\n")
             # Filter out header lines and join sequences
             sequences = []
@@ -246,7 +248,9 @@ class MSAEngine:
             # Align current sequence with the first aligned sequence
             aligner = Align.PairwiseAligner()
             aligner.mode = "global"
-            aligner.substitution_matrix = substitution_matrices.load("BLOSUM62")
+            aligner.substitution_matrix = substitution_matrices.load(
+                "BLOSUM62"
+            )
             aligner.open_gap_score = -10
             aligner.extend_gap_score = -0.5
 
@@ -273,7 +277,9 @@ class MSAEngine:
             # Align current sequence with the first aligned sequence
             aligner = Align.PairwiseAligner()
             aligner.mode = "local"
-            aligner.substitution_matrix = substitution_matrices.load("BLOSUM62")
+            aligner.substitution_matrix = substitution_matrices.load(
+                "BLOSUM62"
+            )
             aligner.open_gap_score = -10
             aligner.extend_gap_score = -0.5
 
@@ -288,7 +294,9 @@ class MSAEngine:
 
         return aligned_sequences
 
-    def _create_alignment_matrix(self, aligned_sequences: List[str]) -> List[List[str]]:
+    def _create_alignment_matrix(
+        self, aligned_sequences: List[str]
+    ) -> List[List[str]]:
         """Create 2D alignment matrix"""
         if not aligned_sequences:
             return []
@@ -309,7 +317,9 @@ class MSAEngine:
 
         # Find the maximum length of any sequence
         max_length = (
-            max(len(seq) for seq in alignment_matrix) if alignment_matrix else 0
+            max(len(seq) for seq in alignment_matrix)
+            if alignment_matrix
+            else 0
         )
 
         for col in range(max_length):

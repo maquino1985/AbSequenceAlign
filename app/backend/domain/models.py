@@ -134,9 +134,11 @@ class RegionCalculator:
         return RegionBoundary(start, end)
 
     @staticmethod
-    def extract_region_sequence(sequence: str, boundary: RegionBoundary) -> str:
+    def extract_region_sequence(
+        sequence: str, boundary: RegionBoundary
+    ) -> str:
         """Extract a region sequence from a larger sequence"""
-        return sequence[boundary.start : boundary.end + 1]
+        return sequence[boundary.start:boundary.end + 1]
 
     @staticmethod
     def calculate_region_overlap(
@@ -153,5 +155,6 @@ class RegionCalculator:
     ) -> bool:
         """Check if two regions are adjacent"""
         return (
-            boundary1.end + 1 == boundary2.start or boundary2.end + 1 == boundary1.start
+            boundary1.end + 1 == boundary2.start
+            or boundary2.end + 1 == boundary1.start
         )

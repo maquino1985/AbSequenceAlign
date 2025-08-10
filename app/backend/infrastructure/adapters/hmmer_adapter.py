@@ -239,7 +239,9 @@ class HmmerAdapter(AbstractExternalToolAdapter):
                 tool_name=self.tool_name,
             )
 
-    def _parse_hmmsearch_output(self, output: str, isotype: str) -> Dict[str, Any]:
+    def _parse_hmmsearch_output(
+        self, output: str, isotype: str
+    ) -> Dict[str, Any]:
         """Parse hmmsearch domain table output"""
         lines = output.strip().split("\n")
 
@@ -295,7 +297,9 @@ class HmmerAdapter(AbstractExternalToolAdapter):
             }
 
         except (ValueError, IndexError) as e:
-            self._logger.warning(f"Failed to parse hmmsearch output for {isotype}: {e}")
+            self._logger.warning(
+                f"Failed to parse hmmsearch output for {isotype}: {e}"
+            )
             return {
                 "isotype": isotype,
                 "score": float("-inf"),

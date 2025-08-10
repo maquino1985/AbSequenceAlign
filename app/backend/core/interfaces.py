@@ -124,7 +124,9 @@ class PipelineStep(ABC):
         self.next_step = step
         return step
 
-    def _process_next(self, context: "ProcessingContext") -> "ProcessingContext":
+    def _process_next(
+        self, context: "ProcessingContext"
+    ) -> "ProcessingContext":
         """Helper method to process the next step if it exists"""
         if self.next_step:
             return self.next_step.process(context)

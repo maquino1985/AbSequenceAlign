@@ -68,7 +68,9 @@ class SequenceProcessor:
 
         return True, ""
 
-    def validate_sequences(self, sequences: List[str]) -> Tuple[List[str], List[str]]:
+    def validate_sequences(
+        self, sequences: List[str]
+    ) -> Tuple[List[str], List[str]]:
         """
         Validate a list of sequences
 
@@ -124,7 +126,7 @@ class SequenceProcessor:
             fasta_lines.append(f">{name}")
             # Split long sequences into lines of 80 characters
             for i in range(0, len(seq), 80):
-                fasta_lines.append(seq[i : i + 80])
+                fasta_lines.append(seq[i:i + 80])
 
         return "\n".join(fasta_lines)
 

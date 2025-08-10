@@ -142,7 +142,9 @@ class AntibodySequenceValidationStep(SequenceValidationStep):
 
         # Check for common antibody patterns
         if not self._has_antibody_patterns(sequence_str):
-            warnings.append("Sequence does not contain typical antibody patterns")
+            warnings.append(
+                "Sequence does not contain typical antibody patterns"
+            )
 
         # Check for CDR-like regions (simplified check)
         if not self._has_cdr_like_regions(sequence_str):
@@ -150,7 +152,9 @@ class AntibodySequenceValidationStep(SequenceValidationStep):
 
         # Check for constant region patterns
         if not self._has_constant_region_patterns(sequence_str):
-            warnings.append("Sequence does not contain constant region patterns")
+            warnings.append(
+                "Sequence does not contain constant region patterns"
+            )
 
         # Check for proper cysteine patterns
         if not self._has_proper_cysteine_patterns(sequence_str):

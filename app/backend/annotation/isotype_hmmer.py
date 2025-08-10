@@ -5,7 +5,9 @@ from typing import Optional
 from backend.config import ISOTYPE_HMM_DIR
 
 
-def detect_isotype_with_hmmer(sequence: str, hmm_dir: str = None) -> Optional[str]:
+def detect_isotype_with_hmmer(
+    sequence: str, hmm_dir: str = None
+) -> Optional[str]:
     """
     Detect antibody isotype using HMMER against isotype HMMs.
     Args:
@@ -21,7 +23,9 @@ def detect_isotype_with_hmmer(sequence: str, hmm_dir: str = None) -> Optional[st
         hmm_dir = ISOTYPE_HMM_DIR
 
     # Write sequence to temp FASTA
-    with tempfile.NamedTemporaryFile("w", delete=False, suffix=".fasta") as fasta:
+    with tempfile.NamedTemporaryFile(
+        "w", delete=False, suffix=".fasta"
+    ) as fasta:
         fasta.write(">query\n" + sequence + "\n")
         fasta_path = fasta.name
 

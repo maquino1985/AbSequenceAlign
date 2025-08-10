@@ -268,7 +268,9 @@ class TestProcessingService:
 
     @patch("backend.application.services.annotation_service.AnarciAdapter")
     @patch("backend.application.services.annotation_service.HmmerAdapter")
-    def test_processing_service_process_sequence(self, mock_hmmer, mock_anarci):
+    def test_processing_service_process_sequence(
+        self, mock_hmmer, mock_anarci
+    ):
         """Test processing a single sequence"""
         # Mock ANARCI adapter
         mock_anarci_instance = Mock()
@@ -310,7 +312,9 @@ class TestProcessingService:
 
     @patch("backend.application.services.annotation_service.AnarciAdapter")
     @patch("backend.application.services.annotation_service.HmmerAdapter")
-    def test_processing_service_batch_processing(self, mock_hmmer, mock_anarci):
+    def test_processing_service_batch_processing(
+        self, mock_hmmer, mock_anarci
+    ):
         """Test batch processing of sequences"""
         # Mock ANARCI adapter
         mock_anarci_instance = Mock()
@@ -467,7 +471,9 @@ class TestProcessingServiceFactory:
     def test_create_service_with_observers(self):
         """Test creating service with observers"""
         observer = ProgressTrackingObserver()
-        service = ProcessingServiceFactory.create_service_with_observers([observer])
+        service = ProcessingServiceFactory.create_service_with_observers(
+            [observer]
+        )
 
         assert service is not None
         # Note: We can't easily test observer attachment without exposing internal state
@@ -479,8 +485,10 @@ class TestProcessingServiceFactory:
             return create_custom_pipeline(["sequence_validation"], kwargs)
 
         custom_pipelines = {"custom": custom_pipeline}
-        service = ProcessingServiceFactory.create_service_with_custom_pipelines(
-            custom_pipelines
+        service = (
+            ProcessingServiceFactory.create_service_with_custom_pipelines(
+                custom_pipelines
+            )
         )
 
         assert service is not None

@@ -53,7 +53,9 @@ class AnnotationPipeline(AbstractProcessingSubject):
         for i in range(len(self._steps) - 1):
             self._steps[i].set_next(self._steps[i + 1])
 
-        self._logger.info(f"Annotation pipeline setup with {len(self._steps)} steps")
+        self._logger.info(
+            f"Annotation pipeline setup with {len(self._steps)} steps"
+        )
 
     def process_sequence(
         self,
@@ -87,7 +89,9 @@ class AnnotationPipeline(AbstractProcessingSubject):
 
             # Check for errors
             if final_context.errors:
-                error_msg = f"Pipeline failed with {len(final_context.errors)} errors"
+                error_msg = (
+                    f"Pipeline failed with {len(final_context.errors)} errors"
+                )
                 self._logger.error(error_msg)
                 self.notify_error(error_msg)
                 return ProcessingResult(
@@ -97,7 +101,9 @@ class AnnotationPipeline(AbstractProcessingSubject):
                 )
 
             # Extract annotated sequence from context
-            annotated_sequence = self._extract_annotated_sequence(final_context)
+            annotated_sequence = self._extract_annotated_sequence(
+                final_context
+            )
 
             self.notify_step_completed("pipeline_complete", 1.0)
             self._logger.info(
@@ -142,7 +148,9 @@ class AnnotationPipeline(AbstractProcessingSubject):
                 try:
                     result = self.process_sequence(sequence, numbering_scheme)
                     if result.success:
-                        annotated_sequences.append(result.data["annotated_sequence"])
+                        annotated_sequences.append(
+                            result.data["annotated_sequence"]
+                        )
                     else:
                         errors.append(
                             {"sequence": sequence.name, "error": result.error}
@@ -184,7 +192,9 @@ class AnnotationPipeline(AbstractProcessingSubject):
             self.notify_error(error_msg)
             return ProcessingResult(success=False, error=error_msg)
 
-    def _extract_annotated_sequence(self, context: PipelineContext) -> AntibodySequence:
+    def _extract_annotated_sequence(
+        self, context: PipelineContext
+    ) -> AntibodySequence:
         """Extract the annotated sequence from the pipeline context"""
         # The annotated sequence should be in the context after processing
         # For now, return the original sequence (this would be enhanced in real implementation)
@@ -216,7 +226,9 @@ class AnnotationPipeline(AbstractProcessingSubject):
                 self._rechain_steps()
                 return
 
-        raise PipelineError(f"Step not found: {step_name}", pipeline_name="annotation")
+        raise PipelineError(
+            f"Step not found: {step_name}", pipeline_name="annotation"
+        )
 
     def _rechain_steps(self):
         """Rechain the pipeline steps"""

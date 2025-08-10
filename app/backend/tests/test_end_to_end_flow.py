@@ -18,7 +18,7 @@ def test_fasta_to_annotation_flow():
     # Simulate FASTA input like what comes from the frontend
     fasta_content = """>Heavy_Chain_Patient_A
 EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK
->Light_Chain_Patient_A  
+>Light_Chain_Patient_A
 DIQMTQSPSSLSASVGDRVTITCRASQGIRNYLAWYQQKPGKAPKLLIYAASTLQSGVPSRFSGSGSGTDFTLTISSLQPEDFATYYCQRYNRAPYTFGQGTKVEIK"""
 
     print(f"\n1. Original FASTA content:")
@@ -39,17 +39,27 @@ DIQMTQSPSSLSASVGDRVTITCRASQGIRNYLAWYQQKPGKAPKLLIYAASTLQSGVPSRFSGSGSGTDFTLTISSLQP
         # This simulates how the frontend creates SequenceInput objects
         sequence_input = SequenceInput(
             name=record.id,  # This should preserve the FASTA header
-            heavy_chain=(str(record.seq) if "heavy" in record.id.lower() else None),
-            light_chain=(str(record.seq) if "light" in record.id.lower() else None),
+            heavy_chain=(
+                str(record.seq) if "heavy" in record.id.lower() else None
+            ),
+            light_chain=(
+                str(record.seq) if "light" in record.id.lower() else None
+            ),
         )
         sequence_inputs.append(sequence_input)
         print(f"\n3. SequenceInput {i + 1}:")
         print(f"   name: {sequence_input.name}")
-        print(f"   heavy_chain: {'Yes' if sequence_input.heavy_chain else 'No'}")
-        print(f"   light_chain: {'Yes' if sequence_input.light_chain else 'No'}")
+        print(
+            f"   heavy_chain: {'Yes' if sequence_input.heavy_chain else 'No'}"
+        )
+        print(
+            f"   light_chain: {'Yes' if sequence_input.light_chain else 'No'}"
+        )
 
     # Run annotation
-    result = annotate_sequences_with_processor(sequence_inputs, NumberingScheme.IMGT)
+    result = annotate_sequences_with_processor(
+        sequence_inputs, NumberingScheme.IMGT
+    )
 
     print(f"\n4. Annotation results:")
     print(f"   Total sequences: {len(result.sequences)}")
@@ -59,7 +69,9 @@ DIQMTQSPSSLSASVGDRVTITCRASQGIRNYLAWYQQKPGKAPKLLIYAASTLQSGVPSRFSGSGSGTDFTLTISSLQP
         print(f"     name: {seq.name}")
         print(f"     chain_type: {seq.chain_type}")
         print(f"     sequence length: {len(seq.sequence)}")
-        print(f"     regions: {list(seq.regions.keys()) if seq.regions else 'None'}")
+        print(
+            f"     regions: {list(seq.regions.keys()) if seq.regions else 'None'}"
+        )
 
     # Verify that names are preserved
     original_names = [record.id for record in records]

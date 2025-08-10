@@ -44,7 +44,9 @@ class TestJsonToFasta:
         assert len(header_lines) == 4  # Should have 4 headers
 
         # Check that sequence lines don't start with >
-        sequence_lines = [line for line in lines if line and not line.startswith(">")]
+        sequence_lines = [
+            line for line in lines if line and not line.startswith(">")
+        ]
         assert len(sequence_lines) == 4  # Should have 4 sequence lines
 
     def test_json_seqs_to_fasta_with_names(self):
@@ -92,7 +94,9 @@ class TestJsonToFasta:
         )  # Should have 6 headers (2 sequences × 3 chains each)
 
         # Check that sequence lines don't start with >
-        sequence_lines = [line for line in lines if line and not line.startswith(">")]
+        sequence_lines = [
+            line for line in lines if line and not line.startswith(">")
+        ]
         assert len(sequence_lines) == 6  # Should have 6 sequence lines
 
     def test_json_seqs_to_fasta_empty_input(self):

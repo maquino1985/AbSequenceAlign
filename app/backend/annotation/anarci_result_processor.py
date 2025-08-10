@@ -101,8 +101,12 @@ class AnarciResultProcessor:
                 seq_hits = hit_tables[0]
 
                 # Process hit tables for germline info
-                hit_table_header = seq_hits[0] if seq_hits and len(seq_hits) > 0 else []
-                hit_table_rows = seq_hits[1:] if seq_hits and len(seq_hits) > 1 else []
+                hit_table_header = (
+                    seq_hits[0] if seq_hits and len(seq_hits) > 0 else []
+                )
+                hit_table_rows = (
+                    seq_hits[1:] if seq_hits and len(seq_hits) > 1 else []
+                )
                 best_hits_by_chain = {}
 
                 if hit_table_header and hit_table_rows:
@@ -119,7 +123,9 @@ class AnarciResultProcessor:
                     for key, group in itertools.groupby(
                         sorted(hit_table_rows, key=lambda row: row[id_idx]),
                         key=lambda row: (
-                            row[id_idx].split("_")[0] + "_" + row[id_idx].split("_")[1]
+                            row[id_idx].split("_")[0]
+                            + "_"
+                            + row[id_idx].split("_")[1]
                             if id_idx is not None
                             else None
                         ),
@@ -127,7 +133,9 @@ class AnarciResultProcessor:
                         best_row = max(
                             list(group),
                             key=lambda row: (
-                                row[bitscore_idx] if bitscore_idx is not None else 0
+                                row[bitscore_idx]
+                                if bitscore_idx is not None
+                                else 0
                             ),
                         )
                         best_hits_by_chain[key] = best_row
@@ -145,7 +153,9 @@ class AnarciResultProcessor:
 
                     domain_start = domain_alignment.get("query_start", 0)
                     domain_end = domain_alignment.get("query_end", 0)
-                    domain_positions.append((dom_idx, domain_start, domain_end))
+                    domain_positions.append(
+                        (dom_idx, domain_start, domain_end)
+                    )
 
                 # Sort domains by their start position to maintain sequence order
                 domain_positions.sort(key=lambda x: x[1])
@@ -218,7 +228,9 @@ class AnarciResultProcessor:
                     # Attach annotation scheme and annotate regions
                     domain.domain_type = "V"  # Mark as variable domain
                     domain.annotation_scheme = used_scheme
-                    AntibodyRegionAnnotator.annotate_domain(domain, scheme=used_scheme)
+                    AntibodyRegionAnnotator.annotate_domain(
+                        domain, scheme=used_scheme
+                    )
                     # Shift region coordinates to absolute positions within the original sequence
                     if hasattr(domain, "regions") and domain.regions:
                         absolute_regions = {}
@@ -263,7 +275,9 @@ class AnarciResultProcessor:
                                 germlines=None,
                             )
                             constant_domain.domain_type = "C"
-                            constant_domain.constant_region_info = constant_info
+                            constant_domain.constant_region_info = (
+                                constant_info
+                            )
                             # Add constant region directly to the domain
                             constant_domain.regions = {
                                 "CONSTANT": {

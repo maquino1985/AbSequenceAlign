@@ -76,9 +76,7 @@ class AntibodyRegion(DomainEntity):
     @property
     def id(self) -> str:
         """Get unique identifier for this region"""
-        return (
-            f"{self.name}_{self.region_type}_{self.boundary.start}_{self.boundary.end}"
-        )
+        return f"{self.name}_{self.region_type}_{self.boundary.start}_{self.boundary.end}"
 
     @property
     def start(self) -> int:
@@ -153,7 +151,9 @@ class AntibodyDomain(DomainEntity):
 
     def __post_init__(self):
         if not self.domain_type:
-            raise ValidationError("Domain type cannot be empty", field="domain_type")
+            raise ValidationError(
+                "Domain type cannot be empty", field="domain_type"
+            )
 
         # Validate that all regions are within the domain sequence
         for region_name, region in self.regions.items():
@@ -199,7 +199,9 @@ class AntibodyDomain(DomainEntity):
         """Get a region by name"""
         return self.regions.get(region_name)
 
-    def get_regions_by_type(self, region_type: RegionType) -> List[AntibodyRegion]:
+    def get_regions_by_type(
+        self, region_type: RegionType
+    ) -> List[AntibodyRegion]:
         """Get all regions of a specific type"""
         return [
             region
@@ -209,11 +211,17 @@ class AntibodyDomain(DomainEntity):
 
     def get_cdr_regions(self) -> List[AntibodyRegion]:
         """Get all CDR regions"""
-        return [region for region in self.regions.values() if region.is_cdr_region()]
+        return [
+            region
+            for region in self.regions.values()
+            if region.is_cdr_region()
+        ]
 
     def get_fr_regions(self) -> List[AntibodyRegion]:
         """Get all FR regions"""
-        return [region for region in self.regions.values() if region.is_fr_region()]
+        return [
+            region for region in self.regions.values() if region.is_fr_region()
+        ]
 
     def has_region(self, region_name: str) -> bool:
         """Check if domain has a specific region"""
@@ -274,7 +282,9 @@ class AntibodyChain(DomainEntity):
             raise ValidationError("Chain name cannot be empty", field="name")
 
         # Validate that all domains are within the chain sequence
-        total_domain_length = sum(len(domain.sequence) for domain in self.domains)
+        total_domain_length = sum(
+            len(domain.sequence) for domain in self.domains
+        )
         if total_domain_length > len(self.sequence):
             raise ValidationError(
                 f"Total domain length ({total_domain_length}) exceeds chain length "
@@ -298,7 +308,7 @@ class AntibodyChain(DomainEntity):
         # Validate domain sequence is part of chain sequence
         if str(domain.sequence) not in str(self.sequence):
             raise ValidationError(
-                f"Domain sequence is not part of chain sequence",
+                "Domain sequence is not part of chain sequence",
                 field="domain",
                 value={
                     "domain_sequence": str(domain.sequence),
@@ -308,9 +318,15 @@ class AntibodyChain(DomainEntity):
 
         self.domains.append(domain)
 
-    def get_domains_by_type(self, domain_type: DomainType) -> List[AntibodyDomain]:
+    def get_domains_by_type(
+        self, domain_type: DomainType
+    ) -> List[AntibodyDomain]:
         """Get all domains of a specific type"""
-        return [domain for domain in self.domains if domain.domain_type == domain_type]
+        return [
+            domain
+            for domain in self.domains
+            if domain.domain_type == domain_type
+        ]
 
     def get_variable_domain(self) -> Optional[AntibodyDomain]:
         """Get the variable domain (V) if it exists"""
@@ -353,7 +369,9 @@ class AntibodyChain(DomainEntity):
             regions.extend(domain.regions.values())
         return regions
 
-    def get_regions_by_type(self, region_type: RegionType) -> List[AntibodyRegion]:
+    def get_regions_by_type(
+        self, region_type: RegionType
+    ) -> List[AntibodyRegion]:
         """Get all regions of a specific type from all domains"""
         return [
             region
@@ -377,7 +395,9 @@ class AntibodySequence(DomainEntity):
 
     def __post_init__(self):
         if not self.name:
-            raise ValidationError("Sequence name cannot be empty", field="name")
+            raise ValidationError(
+                "Sequence name cannot be empty", field="name"
+            )
 
     @property
     def id(self) -> str:
@@ -397,7 +417,9 @@ class AntibodySequence(DomainEntity):
 
         self.chains.append(chain)
 
-    def get_chain_by_type(self, chain_type: ChainType) -> Optional[AntibodyChain]:
+    def get_chain_by_type(
+        self, chain_type: ChainType
+    ) -> Optional[AntibodyChain]:
         """Get a chain by type"""
         for chain in self.chains:
             if chain.chain_type == chain_type:
@@ -410,7 +432,9 @@ class AntibodySequence(DomainEntity):
 
     def get_light_chain(self) -> Optional[AntibodyChain]:
         """Get the light chain if it exists"""
-        light_chains = [chain for chain in self.chains if chain.is_light_chain()]
+        light_chains = [
+            chain for chain in self.chains if chain.is_light_chain()
+        ]
         return light_chains[0] if light_chains else None
 
     def has_heavy_chain(self) -> bool:
@@ -440,7 +464,9 @@ class AntibodySequence(DomainEntity):
             domains.extend(chain.domains)
         return domains
 
-    def get_domains_by_type(self, domain_type: DomainType) -> List[AntibodyDomain]:
+    def get_domains_by_type(
+        self, domain_type: DomainType
+    ) -> List[AntibodyDomain]:
         """Get all domains of a specific type from all chains"""
         return [
             domain
@@ -455,7 +481,9 @@ class AntibodySequence(DomainEntity):
             regions.extend(chain.get_all_regions())
         return regions
 
-    def get_regions_by_type(self, region_type: RegionType) -> List[AntibodyRegion]:
+    def get_regions_by_type(
+        self, region_type: RegionType
+    ) -> List[AntibodyRegion]:
         """Get all regions of a specific type from all chains"""
         return [
             region

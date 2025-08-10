@@ -9,7 +9,9 @@ import os
 import json
 from unittest.mock import Mock, patch, MagicMock
 
-from backend.infrastructure.repositories.sequence_repository import SequenceRepository
+from backend.infrastructure.repositories.sequence_repository import (
+    SequenceRepository,
+)
 from backend.infrastructure.dependency_container import (
     DependencyContainer,
     get_container,
@@ -24,9 +26,18 @@ from backend.infrastructure.adapters.base_adapter import (
     BaseExternalToolAdapter,
     ToolConfiguration,
 )
-from backend.domain.entities import AntibodySequence, AntibodyChain, AntibodyDomain
+from backend.domain.entities import (
+    AntibodySequence,
+    AntibodyChain,
+    AntibodyDomain,
+)
 from backend.domain.value_objects import AminoAcidSequence, RegionBoundary
-from backend.domain.models import ChainType, DomainType, RegionType, NumberingScheme
+from backend.domain.models import (
+    ChainType,
+    DomainType,
+    RegionType,
+    NumberingScheme,
+)
 
 
 class TestSequenceRepository:
@@ -345,7 +356,9 @@ class TestToolConfiguration:
 
     def test_add_environment_variable(self):
         """Test adding environment variable"""
-        config = ToolConfiguration().add_environment_variable("TEST_VAR", "test_value")
+        config = ToolConfiguration().add_environment_variable(
+            "TEST_VAR", "test_value"
+        )
         assert config.environment_variables["TEST_VAR"] == "test_value"
 
     def test_add_argument(self):

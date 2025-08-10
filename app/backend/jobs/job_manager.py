@@ -35,7 +35,9 @@ class JobManager:
         )
 
         # Create thread before acquiring lock
-        thread = threading.Thread(target=self._process_msa_job, args=(job_id, request))
+        thread = threading.Thread(
+            target=self._process_msa_job, args=(job_id, request)
+        )
         thread.daemon = True
 
         # Add job to dictionary under lock
@@ -102,14 +104,18 @@ class JobManager:
             time.sleep(0.1)
 
             # Update status to running
-            self._update_job_status(job_id, "running", 0.1, "Starting MSA creation...")
+            self._update_job_status(
+                job_id, "running", 0.1, "Starting MSA creation..."
+            )
 
             # Extract sequences
             sequences = []
             for seq_input in request.sequences:
                 chains = seq_input.get_all_chains()
                 for chain_name, sequence in chains.items():
-                    sequences.append((f"{seq_input.name}_{chain_name}", sequence))
+                    sequences.append(
+                        (f"{seq_input.name}_{chain_name}", sequence)
+                    )
 
             if not sequences:
                 raise ValueError("No valid sequences provided")
@@ -151,7 +157,9 @@ class JobManager:
                     self.jobs[job_id].result = result
                     self.jobs[job_id].status = "completed"
                     self.jobs[job_id].progress = 1.0
-                    self.jobs[job_id].message = "MSA creation completed successfully"
+                    self.jobs[job_id].message = (
+                        "MSA creation completed successfully"
+                    )
                     self.jobs[job_id].completed_at = datetime.now().isoformat()
 
         except Exception as e:
@@ -164,21 +172,27 @@ class JobManager:
                     self.jobs[job_id].completed_at = datetime.now().isoformat()
             print(f"Error in MSA job {job_id}: {e}")
 
-    def _process_annotation_job(self, job_id: str, request: MSAAnnotationRequest):
+    def _process_annotation_job(
+        self, job_id: str, request: MSAAnnotationRequest
+    ):
         """Process annotation job in background"""
         try:
             # Add a small delay to ensure the job is created before we start processing
             time.sleep(0.1)
 
             # Update status to running
-            self._update_job_status(job_id, "running", 0.1, "Starting annotation...")
+            self._update_job_status(
+                job_id, "running", 0.1, "Starting annotation..."
+            )
 
             # For now, we'll need to retrieve the MSA result from storage
             # This would typically come from a database or cache
             # For now, we'll simulate this
 
             # Update progress
-            self._update_job_status(job_id, "running", 0.5, "Annotating sequences...")
+            self._update_job_status(
+                job_id, "running", 0.5, "Annotating sequences..."
+            )
 
             # Simulate annotation (in real implementation, retrieve MSA from storage)
             # annotation_result = self.annotation_engine.annotate_msa(
@@ -200,7 +214,9 @@ class JobManager:
                     self.jobs[job_id].result = result
                     self.jobs[job_id].status = "completed"
                     self.jobs[job_id].progress = 1.0
-                    self.jobs[job_id].message = "Annotation completed successfully"
+                    self.jobs[job_id].message = (
+                        "Annotation completed successfully"
+                    )
                     self.jobs[job_id].completed_at = datetime.now().isoformat()
 
         except Exception as e:
@@ -222,7 +238,9 @@ class JobManager:
             for job_id, job in self.jobs.items():
                 if job.status in ["completed", "failed"]:
                     try:
-                        job_time = datetime.fromisoformat(job.created_at).timestamp()
+                        job_time = datetime.fromisoformat(
+                            job.created_at
+                        ).timestamp()
                         if job_time < cutoff_time:
                             jobs_to_remove.append(job_id)
                     except Exception:

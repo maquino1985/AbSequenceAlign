@@ -162,7 +162,9 @@ class AlignmentService(AbstractProcessingSubject):
             )
 
             if not alignments:
-                raise AlignmentError("No alignment found", step="pairwise_alignment")
+                raise AlignmentError(
+                    "No alignment found", step="pairwise_alignment"
+                )
 
             # Get best alignment
             best_alignment = alignments[0]
@@ -197,7 +199,9 @@ class AlignmentService(AbstractProcessingSubject):
             return {
                 "type": "multiple",
                 "score": alignment_result.get("score", 0),
-                "aligned_sequences": alignment_result.get("aligned_sequences", []),
+                "aligned_sequences": alignment_result.get(
+                    "aligned_sequences", []
+                ),
                 "consensus": alignment_result.get("consensus", ""),
                 "length": alignment_result.get("length", 0),
             }
@@ -231,7 +235,9 @@ class AlignmentService(AbstractProcessingSubject):
                 "type": "region_specific",
                 "region_type": region_type.value,
                 "score": alignment_result.get("score", 0),
-                "aligned_sequences": alignment_result.get("aligned_sequences", []),
+                "aligned_sequences": alignment_result.get(
+                    "aligned_sequences", []
+                ),
                 "region_info": alignment_result.get("region_info", {}),
             }
 
@@ -241,7 +247,9 @@ class AlignmentService(AbstractProcessingSubject):
                 step="region_alignment",
             )
 
-    def _run_muscle_alignment(self, sequences: List[str], **kwargs) -> Dict[str, Any]:
+    def _run_muscle_alignment(
+        self, sequences: List[str], **kwargs
+    ) -> Dict[str, Any]:
         """Run MUSCLE alignment"""
         try:
             # For now, use a simplified approach
@@ -280,7 +288,9 @@ class AlignmentService(AbstractProcessingSubject):
             region_sequences = [region["sequence"] for region in regions]
 
             # Perform multiple alignment on regions
-            alignment_result = self._run_muscle_alignment(region_sequences, **kwargs)
+            alignment_result = self._run_muscle_alignment(
+                region_sequences, **kwargs
+            )
 
             # Add region information
             alignment_result["region_info"] = {
@@ -344,7 +354,9 @@ class AlignmentService(AbstractProcessingSubject):
 
         for pos in range(length):
             # Count amino acids at this position
-            amino_acids = [seq[pos] for seq in aligned_sequences if pos < len(seq)]
+            amino_acids = [
+                seq[pos] for seq in aligned_sequences if pos < len(seq)
+            ]
             amino_acids = [aa for aa in amino_acids if aa != "-"]
 
             if not amino_acids:
@@ -360,7 +372,9 @@ class AlignmentService(AbstractProcessingSubject):
 
         return consensus
 
-    def _calculate_alignment_score(self, aligned_sequences: List[str]) -> float:
+    def _calculate_alignment_score(
+        self, aligned_sequences: List[str]
+    ) -> float:
         """Calculate alignment score"""
         if not aligned_sequences or len(aligned_sequences) < 2:
             return 0.0
@@ -370,7 +384,9 @@ class AlignmentService(AbstractProcessingSubject):
 
         for pos in range(length):
             # Get amino acids at this position
-            amino_acids = [seq[pos] for seq in aligned_sequences if pos < len(seq)]
+            amino_acids = [
+                seq[pos] for seq in aligned_sequences if pos < len(seq)
+            ]
             amino_acids = [aa for aa in amino_acids if aa != "-"]
 
             if len(amino_acids) < 2:

@@ -35,7 +35,9 @@ def test_custom_chains_preserve_names():
         )
 
     # Run annotation
-    result = annotate_sequences_with_processor(sequence_inputs, NumberingScheme.IMGT)
+    result = annotate_sequences_with_processor(
+        sequence_inputs, NumberingScheme.IMGT
+    )
 
     print(f"\n2. Annotation results:")
     print(f"   Total sequences: {len(result.sequences)}")

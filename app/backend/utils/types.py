@@ -7,7 +7,9 @@ HitTableType = Optional[List[List[Any]]]
 
 
 class Chain:
-    def __init__(self, name: str, sequence: str, domains: List["Domain"]) -> None:
+    def __init__(
+        self, name: str, sequence: str, domains: List["Domain"]
+    ) -> None:
         self.name: str = name
         self.sequence: str = sequence
         self.domains: List["Domain"] = domains
@@ -15,9 +17,7 @@ class Chain:
             domain.chain = self
 
     def __repr__(self) -> str:
-        return (
-            f"Chain(name={self.name}, sequence={self.sequence}, domains={self.domains})"
-        )
+        return f"Chain(name={self.name}, sequence={self.sequence}, domains={self.domains})"
 
 
 class Domain:

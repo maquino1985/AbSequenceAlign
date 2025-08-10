@@ -20,7 +20,9 @@ class DependencyContainer:
         self._config: Dict[str, Any] = {}
         logger.info("Dependency container initialized")
 
-    def register_service(self, service_name: str, service_instance: Any) -> None:
+    def register_service(
+        self, service_name: str, service_instance: Any
+    ) -> None:
         """Register a service instance"""
         self._services[service_name] = service_instance
         logger.debug(f"Registered service: {service_name}")
@@ -97,9 +99,13 @@ class DependencyContainer:
                 if param_name not in resolved_kwargs and param_name != "self":
                     # Try to get from container
                     if self.has_service(param_name):
-                        resolved_kwargs[param_name] = self.get_service(param_name)
+                        resolved_kwargs[param_name] = self.get_service(
+                            param_name
+                        )
                     elif self.has_config(param_name):
-                        resolved_kwargs[param_name] = self.get_config(param_name)
+                        resolved_kwargs[param_name] = self.get_config(
+                            param_name
+                        )
 
             return func(*args, **resolved_kwargs)
 
@@ -236,13 +242,21 @@ def configure_default_services(container: DependencyContainer) -> None:
     container.register_factory("hmmer_adapter", lambda: HmmerAdapter())
 
     # Register application services
-    from backend.application.services.annotation_service import AnnotationService
+    from backend.application.services.annotation_service import (
+        AnnotationService,
+    )
     from backend.application.services.alignment_service import AlignmentService
-    from backend.application.services.processing_service import ProcessingService
+    from backend.application.services.processing_service import (
+        ProcessingService,
+    )
 
-    container.register_factory("annotation_service", lambda: AnnotationService())
+    container.register_factory(
+        "annotation_service", lambda: AnnotationService()
+    )
     container.register_factory("alignment_service", lambda: AlignmentService())
-    container.register_factory("processing_service", lambda: ProcessingService())
+    container.register_factory(
+        "processing_service", lambda: ProcessingService()
+    )
 
     # Register pipeline builders
     from backend.application.pipelines.pipeline_builder import (

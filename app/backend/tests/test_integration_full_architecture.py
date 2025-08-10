@@ -13,7 +13,9 @@ from backend.infrastructure.dependency_container import (
     configure_default_services,
     configure_development_services,
 )
-from backend.infrastructure.repositories.sequence_repository import SequenceRepository
+from backend.infrastructure.repositories.sequence_repository import (
+    SequenceRepository,
+)
 from backend.application.services.processing_service import ProcessingService
 from backend.application.services.annotation_service import AnnotationService
 from backend.application.services.alignment_service import AlignmentService
@@ -21,9 +23,18 @@ from backend.application.pipelines.pipeline_builder import (
     create_annotation_pipeline,
     create_alignment_pipeline,
 )
-from backend.domain.entities import AntibodySequence, AntibodyChain, AntibodyDomain
+from backend.domain.entities import (
+    AntibodySequence,
+    AntibodyChain,
+    AntibodyDomain,
+)
 from backend.domain.value_objects import AminoAcidSequence, RegionBoundary
-from backend.domain.models import ChainType, DomainType, RegionType, NumberingScheme
+from backend.domain.models import (
+    ChainType,
+    DomainType,
+    RegionType,
+    NumberingScheme,
+)
 from backend.core.interfaces import ProcessingResult
 from backend.core.exceptions import ProcessingError, ValidationError
 
@@ -146,7 +157,9 @@ class TestFullArchitectureIntegration:
 
             # Test domain type queries
             var_sequences = repository.find_by_domain_type("V")
-            assert len(var_sequences) == 2  # Both sequences have variable domains
+            assert (
+                len(var_sequences) == 2
+            )  # Both sequences have variable domains
         finally:
             import shutil
 
@@ -162,7 +175,9 @@ class TestFullArchitectureIntegration:
             result = repository.find_by_id("non_existent_id")
             assert result is None  # Should return None, not raise exception
         except Exception as e:
-            pytest.fail(f"Repository should handle missing IDs gracefully: {e}")
+            pytest.fail(
+                f"Repository should handle missing IDs gracefully: {e}"
+            )
 
     def test_service_lifecycle_management(self):
         """Test service lifecycle management in container"""
@@ -207,7 +222,9 @@ class TestFullArchitectureIntegration:
         # Create a sequence with invalid data
         try:
             # This should trigger domain validation
-            invalid_sequence = AntibodySequence(name="")  # Empty name should fail
+            invalid_sequence = AntibodySequence(
+                name=""
+            )  # Empty name should fail
             pytest.fail("Should have raised ValidationError for empty name")
         except ValidationError:
             # Expected behavior
@@ -271,7 +288,9 @@ class TestFullArchitectureIntegration:
 
         # 3. Process through application service
         processing_service = self.container.get_service("processing_service")
-        result = processing_service.process_sequence(saved_sequence, "annotation")
+        result = processing_service.process_sequence(
+            saved_sequence, "annotation"
+        )
 
         # 4. Verify workflow completed
         assert isinstance(result, ProcessingResult)

@@ -36,13 +36,17 @@ class AbstractProcessingSubject(ProcessingSubject):
         """Attach an observer to this subject"""
         if observer not in self._observers:
             self._observers.append(observer)
-            self._logger.debug(f"Attached observer: {observer.__class__.__name__}")
+            self._logger.debug(
+                f"Attached observer: {observer.__class__.__name__}"
+            )
 
     def detach(self, observer: ProcessingObserver) -> None:
         """Detach an observer from this subject"""
         if observer in self._observers:
             self._observers.remove(observer)
-            self._logger.debug(f"Detached observer: {observer.__class__.__name__}")
+            self._logger.debug(
+                f"Detached observer: {observer.__class__.__name__}"
+            )
 
     def notify_step_completed(self, step_name: str, progress: float) -> None:
         """Notify all observers of a step completion"""
@@ -105,7 +109,9 @@ class AbstractExternalToolAdapter(ExternalToolAdapter):
 
     def __init__(self, tool_name: str):
         self.tool_name = tool_name
-        self._logger = logging.getLogger(f"{self.__class__.__name__}.{tool_name}")
+        self._logger = logging.getLogger(
+            f"{self.__class__.__name__}.{tool_name}"
+        )
         self._available = None  # Cache for availability check
 
     def is_available(self) -> bool:
@@ -275,7 +281,9 @@ class AbstractFactory(ABC, Generic[T]):
             self._logger.debug(f"Created instance of {cls.__name__}")
             return instance
         except Exception as e:
-            self._logger.error(f"Failed to create instance of {cls.__name__}: {e}")
+            self._logger.error(
+                f"Failed to create instance of {cls.__name__}: {e}"
+            )
             raise
 
 

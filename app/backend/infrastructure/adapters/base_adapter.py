@@ -3,7 +3,7 @@ Base adapter interface for external tools.
 Defines the contract that all external tool adapters must implement.
 """
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Dict, Any, Optional, List
 import subprocess
 import os
@@ -62,9 +62,7 @@ class BaseExternalToolAdapter(AbstractExternalToolAdapter):
 
             # Check for errors
             if result.returncode != 0:
-                error_msg = (
-                    f"Tool execution failed with return code {result.returncode}"
-                )
+                error_msg = f"Tool execution failed with return code {result.returncode}"
                 if result.stderr:
                     error_msg += f": {result.stderr}"
                 raise ExternalToolError(error_msg, tool_name=self.tool_name)
@@ -77,7 +75,9 @@ class BaseExternalToolAdapter(AbstractExternalToolAdapter):
             return parsed_result
 
         except subprocess.TimeoutExpired:
-            error_msg = f"Tool execution timed out after {self._get_timeout()} seconds"
+            error_msg = (
+                f"Tool execution timed out after {self._get_timeout()} seconds"
+            )
             logger.error(error_msg)
             raise ExternalToolError(error_msg, tool_name=self.tool_name)
 
@@ -128,7 +128,10 @@ class BaseExternalToolAdapter(AbstractExternalToolAdapter):
 
             # Try -v flag
             result = subprocess.run(
-                [self.executable_path, "-v"], capture_output=True, text=True, timeout=30
+                [self.executable_path, "-v"],
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
 
             if result.returncode == 0:
@@ -137,7 +140,9 @@ class BaseExternalToolAdapter(AbstractExternalToolAdapter):
             return None
 
         except Exception as e:
-            logger.warning(f"Could not get version for {self.tool_name}: {str(e)}")
+            logger.warning(
+                f"Could not get version for {self.tool_name}: {str(e)}"
+            )
             return None
 
     def is_available(self) -> bool:
@@ -177,7 +182,9 @@ class ToolConfiguration:
         self.working_directory = directory
         return self
 
-    def add_environment_variable(self, key: str, value: str) -> "ToolConfiguration":
+    def add_environment_variable(
+        self, key: str, value: str
+    ) -> "ToolConfiguration":
         """Add an environment variable"""
         self.environment_variables[key] = value
         return self
