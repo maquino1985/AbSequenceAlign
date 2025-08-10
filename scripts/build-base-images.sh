@@ -18,6 +18,9 @@ FRONTEND_BASE_IMAGE="absequencealign-frontend-base"
 BACKEND_TAG="latest"
 FRONTEND_TAG="latest"
 
+# Get the project root directory
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 print_header() {
     echo -e "${BLUE}=== $1 ===${NC}"
 }
@@ -86,10 +89,10 @@ build_backend_base() {
     if needs_rebuild "app/backend" "$BACKEND_BASE_IMAGE"; then
         print_status "Dependencies changed or image missing. Building backend base image..."
         
-        docker build -f app/backend/Dockerfile.base -t "$BACKEND_BASE_IMAGE:$BACKEND_TAG" .
+        docker build -f "$PROJECT_ROOT/app/backend/Dockerfile.base" -t "$BACKEND_BASE_IMAGE:$BACKEND_TAG" "$PROJECT_ROOT"
         
         # Store the new hash
-        calculate_dependency_hash "app/backend" > .dependency-hash
+        calculate_dependency_hash "app/backend" > "$PROJECT_ROOT/app/backend/.dependency-hash"
         
         print_status "Backend base image built successfully!"
         cd ../..
@@ -105,13 +108,12 @@ build_frontend_base() {
     if needs_rebuild "app/frontend" "$FRONTEND_BASE_IMAGE"; then
         print_status "Dependencies changed or image missing. Building frontend base image..."
         
-        docker build -f app/frontend/Dockerfile.base -t "$FRONTEND_BASE_IMAGE:$FRONTEND_TAG" app/frontend
+        docker build -f "$PROJECT_ROOT/app/frontend/Dockerfile.base" -t "$FRONTEND_BASE_IMAGE:$FRONTEND_TAG" "$PROJECT_ROOT/app/frontend"
         
         # Store the new hash
-        calculate_dependency_hash "app/frontend" > .dependency-hash
+        calculate_dependency_hash "app/frontend" > "$PROJECT_ROOT/app/frontend/.dependency-hash"
         
         print_status "Frontend base image built successfully!"
-        cd ../..
     else
         print_status "Frontend base image is up to date."
     fi
