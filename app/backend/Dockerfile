@@ -10,14 +10,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Set working directory
 WORKDIR /app
 
-# Copy backend source code
-COPY app/backend ./
+# Copy backend source code with proper package structure
+COPY app/backend ./backend
 
 # Copy data directory from project root
-COPY data ./data
+COPY data/ ./data/
 
 # Install additional Python dependencies if needed
 RUN conda run -n AbSequenceAlign pip install --no-cache-dir uvicorn[standard] gunicorn
+
+# Create a writable directory for pytest cache
+RUN mkdir -p /tmp/pytest_cache && chmod 777 /tmp/pytest_cache
 
 # Switch to appuser (user already exists in base image)
 USER appuser
@@ -30,4 +33,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD conda run -n AbSequenceAlign python -c "import requests; requests.get('http://localhost:8000/health')" || exit 1
 
 # Start the application
-CMD ["conda", "run", "-n", "AbSequenceAlign", "gunicorn", "main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--timeout", "120"]
+CMD ["conda", "run", "-n", "AbSequenceAlign", "gunicorn", "backend.main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--timeout", "120"]

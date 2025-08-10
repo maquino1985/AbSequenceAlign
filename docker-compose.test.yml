@@ -12,11 +12,11 @@ services:
       - ENVIRONMENT=test
       - PYTEST_ADDOPTS=-v --tb=short
     volumes:
-      - ./app/backend:/app:ro
+      - ./app/backend:/app/backend:ro
       - ./data:/app/data:ro
     command: >
       sh -c "
-        conda run -n AbSequenceAlign python -m pytest tests/ -v --cov=backend --cov-report=xml --cov-report=term-missing
+        conda run -n AbSequenceAlign python -m pytest backend/tests/ -v --cov=backend --cov-report=xml --cov-report=term-missing
       "
     networks:
       - test-network
@@ -75,12 +75,13 @@ services:
     environment:
       - PYTHONPATH=/app
       - ENVIRONMENT=test
+      - PYTEST_ADDOPTS=-v
     volumes:
-      - ./app/backend:/app:ro
+      - ./app/backend:/app/backend:ro
       - ./data:/app/data:ro
     command: >
       sh -c "
-        conda run -n AbSequenceAlign python -m pytest tests/test_integration.py -v
+        conda run -n AbSequenceAlign python -m pytest backend/tests/test_integration.py -v
       "
     networks:
       - test-network
