@@ -29,7 +29,7 @@ export const ColorSchemeSelector: React.FC<ColorSchemeSelectorProps> = ({
   compact = false,
   label = "Color Scheme"
 }) => {
-  const handleSchemeChange = (event: any) => {
+  const handleSchemeChange = (event: { target: { value: string } }) => {
     const newScheme = COLOR_SCHEMES[event.target.value as ColorSchemeType];
     onSchemeChange(newScheme);
   };

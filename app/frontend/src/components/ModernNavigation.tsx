@@ -23,7 +23,7 @@ import {
   Brightness4,
   Brightness7,
 } from '@mui/icons-material';
-import { useModuleContext } from '../modules/shared/context/ModuleContext';
+import { useModuleContext } from '../modules/shared/context';
 import { ModuleSelector } from '../modules/shared/components/ModuleSelector';
 import { IgGMolecule } from './IgGMolecule';
 

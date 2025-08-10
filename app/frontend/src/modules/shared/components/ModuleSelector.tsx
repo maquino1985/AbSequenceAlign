@@ -8,7 +8,7 @@ import {
   Chip
 } from '@mui/material';
 import { KeyboardArrowDown } from '@mui/icons-material';
-import { useModuleContext } from '../context/ModuleContext';
+import { useModuleContext } from '../context';
 
 export const ModuleSelector: React.FC = () => {
   const { modules, currentModule, setCurrentModule, getCurrentModule } = useModuleContext();
@@ -74,8 +74,8 @@ export const ModuleSelector: React.FC = () => {
         }}
       >
         {modules
-          .filter(module => module.enabled)
-          .sort((a, b) => a.order - b.order)
+          .filter((module) => module.enabled)
+          .sort((a, b) => (a.order || 0) - (b.order || 0))
           .map((module) => (
             <MenuItem
               key={module.id}

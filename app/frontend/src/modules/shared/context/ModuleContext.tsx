@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import type { ModuleContextType, ModuleDefinition } from '../types/module';
-
-const ModuleContext = createContext<ModuleContextType | undefined>(undefined);
+import { ModuleContext } from './ModuleContextInstance';
 
 interface ModuleProviderProps {
   children: React.ReactNode;
@@ -43,10 +42,6 @@ export const ModuleProvider: React.FC<ModuleProviderProps> = ({
   );
 };
 
-export const useModuleContext = (): ModuleContextType => {
-  const context = useContext(ModuleContext);
-  if (!context) {
-    throw new Error('useModuleContext must be used within a ModuleProvider');
-  }
-  return context;
-};
+
+
+
