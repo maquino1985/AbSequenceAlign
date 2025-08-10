@@ -58,8 +58,11 @@ def test_pairwise_global_alignment(alignment_engine):
         mock_instance = MagicMock()
         mock_alignment = MagicMock()
         mock_alignment.score = 100.0
+        # Mock the Biopython alignment format
         mock_alignment.__str__.return_value = (
-            f"{sequences[0]}\n{sequences[0]}\n"  # Add newline
+            f"target            0 {sequences[0]} {len(sequences[0])}\n"
+            f"                  0 {'|' * len(sequences[0])} {len(sequences[0])}\n"
+            f"query             0 {sequences[0]} {len(sequences[0])}\n"
         )
         mock_instance.align.return_value = [mock_alignment]
         mock_aligner.return_value = mock_instance

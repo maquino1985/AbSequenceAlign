@@ -114,8 +114,10 @@ class AlignmentEngine:
 
         # Get best alignment
         best_alignment = alignments[0]
-        aligned_seqs = str(best_alignment).split("\n")[:2]  # Get aligned sequences
-        seq_a, seq_b = aligned_seqs[0], aligned_seqs[1]
+        alignment_str = str(best_alignment)
+        
+        # Parse alignment string to extract sequences
+        seq_a, seq_b = self._parse_alignment_string(alignment_str)
 
         # Calculate statistics
         score = best_alignment.score
@@ -160,8 +162,10 @@ class AlignmentEngine:
 
         # Get best alignment
         best_alignment = alignments[0]
-        aligned_seqs = str(best_alignment).split("\n")[:2]  # Get aligned sequences
-        seq_a, seq_b = aligned_seqs[0], aligned_seqs[1]
+        alignment_str = str(best_alignment)
+        
+        # Parse alignment string to extract sequences
+        seq_a, seq_b = self._parse_alignment_string(alignment_str)
 
         # Calculate statistics
         score = best_alignment.score
@@ -289,6 +293,26 @@ class AlignmentEngine:
         return self._external_msa_alignment(
             sequences, AlignmentMethod.MUSCLE, gap_open, gap_extend, matrix
         )
+
+    def _parse_alignment_string(self, alignment_str: str) -> tuple[str, str]:
+        """Parse Biopython alignment string to extract sequences"""
+        lines = alignment_str.split("\n")
+        if len(lines) >= 3:
+            # Check if it's the detailed format (Docker/CI)
+            if "target" in lines[0] and "query" in lines[2]:
+                # Format: "target            0 ABCDEF 6"
+                seq_a = lines[0].split()[-2]  # Get the sequence part
+                seq_b = lines[2].split()[-2]  # Get the sequence part
+            else:
+                # Format: "ABCDEF\n||||||\nABCDEF" (local)
+                seq_a = lines[0]
+                seq_b = lines[2]
+        else:
+            # Fallback to old format
+            aligned_seqs = lines[:2]
+            seq_a, seq_b = aligned_seqs[0], aligned_seqs[1]
+        
+        return seq_a, seq_b
 
     def _calculate_identity(self, seq1: str, seq2: str) -> float:
         """Calculate sequence identity between two aligned sequences"""
