@@ -1,0 +1,30 @@
+# E2E Test Dockerfile with Cypress
+FROM cypress/included:14.5.4
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Set environment variables
+ENV CI=true
+ENV CYPRESS_baseUrl=http://localhost:5679
+ENV CYPRESS_backendPort=8000
+
+# Expose ports
+EXPOSE 5679
+
+# Default command
+CMD ["npm", "run", "cypress:run"]

@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # Backend Test Environment
+  backend-test:
+    build:
+      context: .
+      dockerfile: ./app/backend/Dockerfile
+    container_name: absequencealign-backend-test
+    environment:
+      - PYTHONPATH=/app
+      - ENVIRONMENT=test
+      - PYTEST_ADDOPTS=-v --tb=short
+    volumes:
+      - ./app/backend:/app:ro
+      - ./data:/app/data:ro
+    command: >
+      sh -c "
+        conda run -n AbSequenceAlign python -m pytest tests/ -v --cov=backend --cov-report=xml --cov-report=term-missing
+      "
+    networks:
+      - test-network
+
+  # Frontend Test Environment
+  frontend-test:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile.test
+    container_name: absequencealign-frontend-test
+    environment:
+      - CI=true
+      - NODE_ENV=test
+    volumes:
+      - ./app/frontend:/app:ro
+    command: >
+      sh -c "
+        npm ci &&
+        npm run test &&
+        npm run type-check &&
+        npm run lint
+      "
+    networks:
+      - test-network
+
+  # E2E Test Environment
+  e2e-test:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile.e2e
+    container_name: absequencealign-e2e-test
+    environment:
+      - CI=true
+      - CYPRESS_baseUrl=http://frontend:5679
+      - CYPRESS_backendPort=8000
+    volumes:
+      - ./app/frontend:/app:ro
+      - /tmp/cypress:/tmp/cypress
+    depends_on:
+      - backend-test
+      - frontend-test
+    command: >
+      sh -c "
+        npm ci &&
+        npm run cypress:run
+      "
+    networks:
+      - test-network
+
+  # Integration Test Environment
+  integration-test:
+    build:
+      context: .
+      dockerfile: ./app/backend/Dockerfile
+    container_name: absequencealign-integration-test
+    environment:
+      - PYTHONPATH=/app
+      - ENVIRONMENT=test
+    volumes:
+      - ./app/backend:/app:ro
+      - ./data:/app/data:ro
+    command: >
+      sh -c "
+        conda run -n AbSequenceAlign python -m pytest tests/test_integration.py -v
+      "
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge
+
+volumes:
+  cypress-videos:
+  cypress-screenshots:

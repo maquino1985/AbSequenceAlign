@@ -1,0 +1,35 @@
+# Frontend Test Dockerfile
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+# Set environment variables for Chromium
+ENV CHROME_BIN=/usr/bin/chromium-browser
+ENV CHROME_PATH=/usr/lib/chromium/
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Expose port
+EXPOSE 5679
+
+# Default command
+CMD ["npm", "run", "test"]
