@@ -10,11 +10,12 @@ echo "Using backend port: $BACKEND_PORT"
 # Kill any existing processes
 cleanup() {
   echo "Cleaning up processes..."
-  sudo lsof -ti:$VITE_PORT,$BACKEND_PORT | xargs kill -9 2>/dev/null || true
-  pkill -f vite
-  pkill -f node
-  pkill -f python
-  pkill -f uvicorn
+  # Use lsof without sudo to find processes
+  lsof -ti:$VITE_PORT 2>/dev/null | xargs kill -9 2>/dev/null || true
+  lsof -ti:$BACKEND_PORT 2>/dev/null | xargs kill -9 2>/dev/null || true
+  pkill -f vite 2>/dev/null || true
+  pkill -f "node.*vite" 2>/dev/null || true
+  pkill -f "python.*uvicorn" 2>/dev/null || true
   sleep 2
 }
 
@@ -26,7 +27,7 @@ cleanup
 
 # Start backend server
 cd ../backend
-PYTHONPATH=/Users/aquinmx3/repos/AbSequenceAlign/app python -m uvicorn main:app --port $BACKEND_PORT &
+PYTHONPATH=/Users/aquinmx3/repos/AbSequenceAlign/app conda run -n AbSequenceAlign python -m uvicorn main:app --port $BACKEND_PORT &
 BACKEND_PID=$!
 
 # Wait for backend to be ready

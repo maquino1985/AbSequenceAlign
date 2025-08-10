@@ -215,6 +215,17 @@ class AnarciResultProcessor:
                             )
                             constant_domain.domain_type = 'C'
                             constant_domain.constant_region_info = constant_info
+                            # Add constant region directly to the domain
+                            constant_domain.regions = {
+                                'CONSTANT': {
+                                    'name': 'CONSTANT',
+                                    'start': constant_info['start'],
+                                    'stop': constant_info['end'],
+                                    'sequence': constant_info['sequence'],
+                                    'domain_type': 'C',
+                                    'isotype': constant_info['isotype']
+                                }
+                            }
                             domains.append(constant_domain)
                             prev_domain_end = constant_info['end']
                         else:

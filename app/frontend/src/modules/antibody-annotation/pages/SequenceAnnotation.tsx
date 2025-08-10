@@ -58,10 +58,53 @@ export const SequenceAnnotation: React.FC = () => {
 
       // Prepare request for API
       const request: AnnotationRequestV2 = {
-        sequences: parsedSequences.map(seq => ({
-          name: seq.id || `Sequence_${seq.sequence.substring(0, 10)}`,
-          scfv: seq.sequence
-        })),
+        sequences: parsedSequences.map(seq => {
+          // Determine sequence type based on FASTA header or sequence characteristics
+          const header = seq.id.toLowerCase();
+          let sequenceType = 'scfv'; // default
+          
+          // Check header first
+          if (header.includes('heavy') || header.includes('h_chain') || header.includes('vh')) {
+            sequenceType = 'heavy_chain';
+          } else if (header.includes('light') || header.includes('l_chain') || header.includes('vl')) {
+            sequenceType = 'light_chain';
+          } else if (header.includes('kappa') || header.includes('k_chain')) {
+            sequenceType = 'light_chain';
+          } else if (header.includes('lambda') || header.includes('l_chain')) {
+            sequenceType = 'light_chain';
+          } else if (header.includes('scfv') || header.includes('single')) {
+            sequenceType = 'scfv';
+          } else {
+            // If header doesn't give us a clue, analyze sequence content
+            const sequence = seq.sequence.toUpperCase();
+            
+            // Check for linker patterns (GGGGS is common in scFv)
+            if (sequence.includes('GGGGS') || sequence.includes('GGGGG')) {
+              sequenceType = 'scfv';
+            }
+            // Check for typical heavy chain patterns (longer sequences, specific motifs)
+            else if (sequence.length > 400) {
+              sequenceType = 'heavy_chain';
+            }
+            // Check for typical light chain patterns (shorter sequences)
+            else if (sequence.length < 250) {
+              sequenceType = 'light_chain';
+            }
+          }
+          
+          // Create the appropriate chain object based on type
+          const chainObject: any = { name: seq.id || `Sequence_${seq.sequence.substring(0, 10)}` };
+          
+          if (sequenceType === 'heavy_chain') {
+            chainObject.heavy_chain = seq.sequence;
+          } else if (sequenceType === 'light_chain') {
+            chainObject.light_chain = seq.sequence;
+          } else {
+            chainObject.scfv = seq.sequence;
+          }
+          
+          return chainObject;
+        }),
         numbering_scheme: numberingScheme
       };
 
@@ -220,7 +263,14 @@ export const SequenceAnnotation: React.FC = () => {
                                          {sequence.chains.map((chain) => (
                       <Paper key={chain.id} sx={{ p: 3, mb: 3 }}>
                         <Typography variant="h6" gutterBottom>
-                          {chain.type} Chain
+                          {chain.type === 'scfv' ? 'scFv Chain' : 
+                           chain.type === 'heavy_chain' ? 'Heavy Chain' :
+                           chain.type === 'light_chain' ? 'Light Chain' :
+                           chain.type === 'heavy_chain_1' ? 'Heavy Chain 1' :
+                           chain.type === 'heavy_chain_2' ? 'Heavy Chain 2' :
+                           chain.type === 'light_chain_1' ? 'Light Chain 1' :
+                           chain.type === 'light_chain_2' ? 'Light Chain 2' :
+                           `${chain.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Chain`}
                         </Typography>
                         
                         {/* Domain Structure Visualization */}
