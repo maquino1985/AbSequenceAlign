@@ -16,7 +16,7 @@ export default defineConfig({
     'process.env': {},
   },
   optimizeDeps: {
-    include: ['react', 'react-dom'],
+    include: ['react', 'react-dom', './src/polyfills.ts'],
     exclude: ['crypto'],
   },
   server: {
@@ -31,6 +31,12 @@ export default defineConfig({
       crypto: 'crypto-browserify',
       stream: 'stream-browserify',
       buffer: 'buffer',
+    },
+  },
+  // Add polyfills for Node.js modules
+  build: {
+    rollupOptions: {
+      external: [],
     },
   },
 })
