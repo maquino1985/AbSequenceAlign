@@ -1,11 +1,31 @@
 version: '3.8'
 
 services:
+  # Backend Base Image (built separately)
+  backend-base:
+    build:
+      context: ./app/backend
+      dockerfile: Dockerfile.base
+    image: absequencealign-backend-base:latest
+    profiles:
+      - build
+
+  # Frontend Base Image (built separately)
+  frontend-base:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile.base
+    image: absequencealign-frontend-base:latest
+    profiles:
+      - build
+
   # Backend Test Environment
   backend-test:
     build:
       context: .
       dockerfile: ./app/backend/Dockerfile
+    depends_on:
+      - backend-base
     container_name: absequencealign-backend-test
     environment:
       - PYTHONPATH=/app
@@ -26,6 +46,8 @@ services:
     build:
       context: ./app/frontend
       dockerfile: Dockerfile.test
+    depends_on:
+      - frontend-base
     container_name: absequencealign-frontend-test
     environment:
       - CI=true

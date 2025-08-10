@@ -36,6 +36,10 @@ jobs:
           conda activate AbSequenceAlign
           pip install git+https://github.com/oxpig/ANARCI.git
 
+      - name: Build base Docker images
+        run: |
+          ./scripts/build-base-images.sh
+
       - name: Run backend tests
         shell: bash -l {0}
         run: |

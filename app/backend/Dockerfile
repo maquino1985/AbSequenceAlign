@@ -1,5 +1,5 @@
-# Backend Dockerfile - Python FastAPI with microconda
-FROM continuumio/miniconda3:latest
+# Backend Dockerfile - Uses base image with dependencies pre-installed
+FROM absequencealign-backend-base:latest
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -9,24 +9,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # Set working directory
 WORKDIR /app
-
-# Update system packages
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    wget \
-    curl \
-    git \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy environment file
-COPY app/backend/environment.yml .
-
-# Create conda environment
-RUN conda env create -f environment.yml && \
-    conda clean -afy
-
-# Activate environment
-SHELL ["conda", "run", "-n", "AbSequenceAlign", "/bin/bash", "-c"]
 
 # Copy backend source code
 COPY app/backend ./

@@ -134,6 +134,16 @@ fi
 # Initial cleanup
 cleanup
 
+# Build base images first
+print_header "Building Base Images"
+print_status "Building backend and frontend base images..."
+if ! docker compose -f docker-compose.test.yml --profile build up --build backend-base frontend-base; then
+    print_error "Failed to build base images!"
+    cleanup
+    exit 1
+fi
+print_status "Base images built successfully!"
+
 # Backend Tests
 if [ "$RUN_BACKEND" = true ]; then
     print_header "Running Backend Tests in Docker"

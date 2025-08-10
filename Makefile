@@ -69,7 +69,11 @@ test-coverage: ## Run all tests with coverage
 	@echo "$(GREEN)Running tests with coverage...$(NC)"
 	./scripts/test.sh --coverage
 
-test-docker: ## Run all tests in Docker containers
+build-base-images: ## Build base Docker images with dependencies
+	@echo "$(GREEN)Building base Docker images...$(NC)"
+	./scripts/build-base-images.sh
+
+test-docker: build-base-images ## Run all tests in Docker containers
 	@echo "$(GREEN)Running tests in Docker containers...$(NC)"
 	./scripts/test-docker.sh
 
