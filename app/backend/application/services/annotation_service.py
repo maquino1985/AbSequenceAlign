@@ -728,10 +728,13 @@ class AnnotationService(AbstractProcessingSubject):
                     )
                     domains.append(domain)
                 
+                # Determine chain type based on name
+                chain_type = self._detect_chain_type_from_name(chain_data.name)
+                
                 # Create chain
                 chain = AntibodyChain(
                     name=chain_data.name,
-                    chain_type=ChainType(chain_data.chain_type.upper()),
+                    chain_type=chain_type,
                     sequence=AminoAcidSequence(chain_data.sequence),
                     domains=domains,
                     metadata={}
@@ -803,6 +806,22 @@ class AnnotationService(AbstractProcessingSubject):
             metadata={"fallback": True},
             confidence_score=None
         )
+
+    def _detect_chain_type_from_name(self, chain_name: str) -> ChainType:
+        """Detect chain type from chain name."""
+        from backend.domain.models import ChainType
+        
+        chain_name_upper = chain_name.upper()
+        
+        if chain_name_upper in ["H", "HEAVY"]:
+            return ChainType.HEAVY
+        elif chain_name_upper in ["L", "LIGHT", "K", "KAPPA"]:
+            return ChainType.KAPPA
+        elif chain_name_upper in ["LAMBDA", "LAM"]:
+            return ChainType.LAMBDA
+        else:
+            # Default to HEAVY for unknown chain types
+            return ChainType.HEAVY
 
     def _map_region_type(self, region_name: str) -> RegionType:
         """Map region name to RegionType enum."""

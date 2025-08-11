@@ -348,7 +348,13 @@ class BiologicService:
         self, db_session: AsyncSession, biologic_id: UUID, update_data: BiologicUpdate
     ) -> BiologicResponse:
         """Update a biologic entity."""
-        biologic = await self.get_biologic(db_session, biologic_id)
+        # Get the ORM model
+        stmt = select(Biologic).where(Biologic.id == biologic_id)
+        result = await db_session.execute(stmt)
+        biologic = result.scalar_one_or_none()
+        
+        if not biologic:
+            raise EntityNotFoundError(f"Biologic with ID {biologic_id} not found")
         
         # Update fields if provided
         if update_data.name is not None:
@@ -371,7 +377,14 @@ class BiologicService:
         self, db_session: AsyncSession, biologic_id: UUID
     ) -> None:
         """Delete a biologic entity."""
-        biologic = await self.get_biologic(db_session, biologic_id)
+        # Get the ORM model
+        stmt = select(Biologic).where(Biologic.id == biologic_id)
+        result = await db_session.execute(stmt)
+        biologic = result.scalar_one_or_none()
+        
+        if not biologic:
+            raise EntityNotFoundError(f"Biologic with ID {biologic_id} not found")
+        
         await db_session.delete(biologic)
         await db_session.commit()
 
