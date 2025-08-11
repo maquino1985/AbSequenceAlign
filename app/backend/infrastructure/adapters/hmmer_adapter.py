@@ -9,7 +9,7 @@ import os
 from typing import Dict, Any, List, Optional
 import logging
 
-from ...core.base_classes import AbstractExternalToolAdapter
+from ...core.interfaces import AbstractExternalToolAdapter
 from ...core.exceptions import (
     HmmerError,
 )
@@ -34,7 +34,7 @@ class HmmerAdapter(AbstractExternalToolAdapter):
             "IGHM",
         ]
 
-    def _check_availability(self) -> bool:
+    def is_available(self) -> bool:
         """Check if HMMER is available on the system"""
         try:
             result = subprocess.run(
@@ -47,6 +47,22 @@ class HmmerAdapter(AbstractExternalToolAdapter):
         except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
             self._logger.warning("HMMER not available via command line")
             return False
+
+    def validate_output(self, output: Dict[str, Any]) -> bool:
+        """Validate HMMER output"""
+        if not output or not isinstance(output, dict):
+            return False
+
+        # Check for required keys in HMMER output
+        required_keys = ["success", "data"]
+        if not all(key in output for key in required_keys):
+            return False
+
+        return output.get("success", False)
+
+    def _check_availability(self) -> bool:
+        """Check if HMMER is available on the system"""
+        return self.is_available()
 
     def execute(self, input_data: str) -> Dict[str, Any]:
         """Execute HMMER on the input sequence"""

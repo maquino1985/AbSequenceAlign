@@ -6,7 +6,7 @@ from backend.numbering.cgg import CGG_REGIONS
 from backend.numbering.chothia import CHOTHIA_REGIONS
 from backend.numbering.imgt import IMGT_REGIONS
 from backend.numbering.kabat import KABAT_REGIONS
-from backend.utils.types import Chain, Domain
+from backend.utils.sequence_types import Chain, Domain
 
 
 @dataclass

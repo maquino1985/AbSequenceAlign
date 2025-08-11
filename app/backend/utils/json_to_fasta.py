@@ -58,7 +58,7 @@ def json_seqs_to_fasta(
     return "\n".join(fasta_lines)
 
 
-def json_seqs_to_fasta_simple(json_sequences: List[Dict[str, Any]]) -> str:
+def json_seqs_to_fasta_simple(json_sequences: Dict[str, Any]) -> str:
     """
     Convert JSON sequences to FASTA format with simple chain labels as headers.
 

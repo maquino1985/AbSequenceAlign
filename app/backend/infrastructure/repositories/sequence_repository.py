@@ -9,12 +9,12 @@ import json
 import os
 
 from backend.core.interfaces import Repository
-from backend.domain.entities import AntibodySequence
+from backend.domain.entities import BiologicEntity
 
 from backend.logger import logger
 
 
-class SequenceRepository(Repository[AntibodySequence]):
+class SequenceRepository(Repository[BiologicEntity]):
     """Repository for antibody sequence data persistence"""
 
     def __init__(self, storage_path: str = "data/sequences"):
@@ -24,7 +24,7 @@ class SequenceRepository(Repository[AntibodySequence]):
             f"Sequence repository initialized with storage path: {storage_path}"
         )
 
-    def save(self, entity: AntibodySequence) -> AntibodySequence:
+    def save(self, entity: BiologicEntity) -> BiologicEntity:
         """Save an antibody sequence"""
         try:
             # Use the entity's computed ID
@@ -46,7 +46,7 @@ class SequenceRepository(Repository[AntibodySequence]):
             logger.error(error_msg)
             raise
 
-    def find_by_id(self, entity_id: str) -> Optional[AntibodySequence]:
+    def find_by_id(self, entity_id: str) -> Optional[BiologicEntity]:
         """Find a sequence by its ID"""
         try:
             file_path = self._get_file_path(entity_id)
@@ -69,7 +69,7 @@ class SequenceRepository(Repository[AntibodySequence]):
             logger.error(error_msg)
             return None
 
-    def find_all(self) -> List[AntibodySequence]:
+    def find_all(self) -> List[BiologicEntity]:
         """Find all sequences"""
         try:
             sequences = []
@@ -114,7 +114,7 @@ class SequenceRepository(Repository[AntibodySequence]):
             logger.error(error_msg)
             return False
 
-    def find_by_name(self, name: str) -> Optional[AntibodySequence]:
+    def find_by_name(self, name: str) -> Optional[BiologicEntity]:
         """Find a sequence by its name"""
         try:
             sequences = self.find_all()
@@ -131,7 +131,7 @@ class SequenceRepository(Repository[AntibodySequence]):
             logger.error(error_msg)
             return None
 
-    def find_by_chain_type(self, chain_type: str) -> List[AntibodySequence]:
+    def find_by_chain_type(self, chain_type: str) -> List[BiologicEntity]:
         """Find sequences containing specific chain types"""
         try:
             sequences = self.find_all()
@@ -139,7 +139,7 @@ class SequenceRepository(Repository[AntibodySequence]):
 
             for sequence in sequences:
                 for chain in sequence.chains:
-                    if chain.chain_type.value == chain_type:
+                    if chain.chain_type == chain_type:
                         matching_sequences.append(sequence)
                         break
 
@@ -153,7 +153,7 @@ class SequenceRepository(Repository[AntibodySequence]):
             logger.error(error_msg)
             return []
 
-    def find_by_domain_type(self, domain_type: str) -> List[AntibodySequence]:
+    def find_by_domain_type(self, domain_type: str) -> List[BiologicEntity]:
         """Find sequences containing specific domain types"""
         try:
             sequences = self.find_all()
@@ -161,9 +161,12 @@ class SequenceRepository(Repository[AntibodySequence]):
 
             for sequence in sequences:
                 for chain in sequence.chains:
-                    for domain in chain.domains:
-                        if domain.domain_type.value == domain_type:
-                            matching_sequences.append(sequence)
+                    for sequence_obj in chain.sequences:
+                        for domain in sequence_obj.domains:
+                            if domain.domain_type == domain_type:
+                                matching_sequences.append(sequence)
+                                break
+                        if sequence in matching_sequences:
                             break
                     if sequence in matching_sequences:
                         break
@@ -216,7 +219,7 @@ class SequenceRepository(Repository[AntibodySequence]):
         """Get the file path for a sequence ID"""
         return os.path.join(self.storage_path, f"{entity_id}.json")
 
-    def _entity_to_dict(self, entity: AntibodySequence) -> Dict[str, Any]:
+    def _entity_to_dict(self, entity: BiologicEntity) -> Dict[str, Any]:
         """Convert an entity to a dictionary for storage"""
         return {
             "id": getattr(entity, "id", None),
@@ -224,28 +227,23 @@ class SequenceRepository(Repository[AntibodySequence]):
             "chains": [
                 {
                     "name": chain.name,
-                    "chain_type": chain.chain_type.value,
-                    "sequence": str(chain.sequence),
-                    "domains": [
+                    "chain_type": chain.chain_type,
+                    "sequences": [
                         {
-                            "domain_type": domain.domain_type.value,
-                            "sequence": str(domain.sequence),
-                            "numbering_scheme": domain.numbering_scheme.value,
-                            "regions": {
-                                name: {
-                                    "name": region.name,
-                                    "region_type": region.region_type.value,
-                                    "boundary": {
-                                        "start": region.boundary.start,
-                                        "end": region.boundary.end,
-                                    },
-                                    "sequence": str(region.sequence),
-                                    "numbering_scheme": region.numbering_scheme.value,
+                            "sequence_type": seq.sequence_type,
+                            "sequence_data": seq.sequence_data,
+                            "description": seq.description,
+                            "domains": [
+                                {
+                                    "domain_type": domain.domain_type,
+                                    "start_position": domain.start_position,
+                                    "end_position": domain.end_position,
+                                    "confidence_score": domain.confidence_score,
                                 }
-                                for name, region in domain.regions.items()
-                            },
+                                for domain in seq.domains
+                            ],
                         }
-                        for domain in chain.domains
+                        for seq in chain.sequences
                     ],
                 }
                 for chain in entity.chains
@@ -254,74 +252,55 @@ class SequenceRepository(Repository[AntibodySequence]):
             "created_at": datetime.now().isoformat(),
         }
 
-    def _dict_to_entity(self, data: Dict[str, Any]) -> AntibodySequence:
+    def _dict_to_entity(self, data: Dict[str, Any]) -> BiologicEntity:
         """Convert a dictionary to an entity"""
         # This is a simplified conversion - in a real implementation,
         # you'd need to properly reconstruct all the domain objects
         from backend.domain.entities import (
-            AntibodyChain,
-            AntibodyDomain,
-            AntibodyRegion,
-        )
-        from backend.domain.value_objects import (
-            AminoAcidSequence,
-            RegionBoundary,
-        )
-        from backend.domain.models import (
-            ChainType,
-            DomainType,
-            RegionType,
-            NumberingScheme,
+            BiologicChain,
+            BiologicDomain,
+            BiologicFeature,
         )
 
         # Reconstruct chains
         chains = []
         for chain_data in data.get("chains", []):
-            # Reconstruct domains
-            domains = []
-            for domain_data in chain_data.get("domains", []):
-                # Reconstruct regions
-                regions = {}
-                for name, region_data in domain_data.get(
-                    "regions", {}
-                ).items():
-                    boundary = RegionBoundary(
-                        start=region_data["boundary"]["start"],
-                        end=region_data["boundary"]["end"],
-                    )
-
-                    region = AntibodyRegion(
-                        name=region_data["name"],
-                        region_type=RegionType(region_data["region_type"]),
-                        boundary=boundary,
-                        sequence=AminoAcidSequence(region_data["sequence"]),
-                        numbering_scheme=NumberingScheme(
-                            region_data["numbering_scheme"]
-                        ),
-                    )
-                    regions[name] = region
-
-                domain = AntibodyDomain(
-                    domain_type=DomainType(domain_data["domain_type"]),
-                    sequence=AminoAcidSequence(domain_data["sequence"]),
-                    numbering_scheme=NumberingScheme(
-                        domain_data["numbering_scheme"]
-                    ),
-                    regions=regions,
-                )
-                domains.append(domain)
-
-            chain = AntibodyChain(
+            # Create biologic chain
+            chain = BiologicChain(
                 name=chain_data["name"],
-                chain_type=ChainType(chain_data["chain_type"]),
-                sequence=AminoAcidSequence(chain_data["sequence"]),
+                chain_type=chain_data["chain_type"],
             )
-            for domain in domains:
-                chain.add_domain(domain)
+
+            # Add sequences to chain if present
+            if "sequences" in chain_data:
+                for seq_data in chain_data["sequences"]:
+                    from backend.domain.entities import BiologicSequence
+
+                    sequence = BiologicSequence(
+                        sequence_type=seq_data.get("sequence_type", "PROTEIN"),
+                        sequence_data=seq_data.get("sequence_data", ""),
+                        description=seq_data.get("description"),
+                    )
+
+                    # Add domains to sequence if present
+                    if "domains" in seq_data:
+                        for domain_data in seq_data["domains"]:
+                            domain = BiologicDomain(
+                                domain_type=domain_data["domain_type"],
+                                start_position=domain_data["start_position"],
+                                end_position=domain_data["end_position"],
+                                confidence_score=domain_data[
+                                    "confidence_score"
+                                ],
+                            )
+                            sequence.domains.append(domain)
+
+                    chain.add_sequence(sequence)
+
             chains.append(chain)
 
         # Create sequence
-        sequence = AntibodySequence(name=data["name"])
+        sequence = BiologicEntity(name=data["name"], biologic_type="antibody")
         for chain in chains:
             sequence.add_chain(chain)
 

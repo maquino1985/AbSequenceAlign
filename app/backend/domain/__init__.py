@@ -16,10 +16,11 @@ from .value_objects import (
 # Export domain entities
 from .entities import (
     DomainEntity,
-    AntibodyRegion,
-    AntibodyDomain,
-    AntibodyChain,
-    AntibodySequence,
+    BiologicEntity,
+    BiologicChain,
+    BiologicSequence,
+    BiologicDomain,
+    BiologicFeature,
 )
 
 # Export enums and domain services
@@ -42,10 +43,11 @@ __all__ = [
     "AnnotationMetadata",
     # Domain entities
     "DomainEntity",
-    "AntibodyRegion",
-    "AntibodyDomain",
-    "AntibodyChain",
-    "AntibodySequence",
+    "BiologicEntity",
+    "BiologicChain",
+    "BiologicSequence",
+    "BiologicDomain",
+    "BiologicFeature",
     # Enums and services
     "ChainType",
     "DomainType",

@@ -13,7 +13,7 @@ from backend.core.interfaces import (
     ProcessingObserver,
 )
 from backend.core.exceptions import ProcessingError, ValidationError
-from backend.domain.entities import AntibodySequence
+from backend.domain.entities import BiologicEntity
 from backend.application.pipelines.pipeline_builder import (
     ProcessingPipeline,
     create_annotation_pipeline,
@@ -58,7 +58,7 @@ class ProcessingService(AbstractProcessingSubject):
 
     def process_sequence(
         self,
-        sequence: AntibodySequence,
+        sequence: BiologicEntity,
         processing_type: str = "annotation",
         **kwargs,
     ) -> ProcessingResult:
@@ -109,12 +109,12 @@ class ProcessingService(AbstractProcessingSubject):
         except Exception as e:
             error_msg = f"{processing_type} processing failed for sequence {sequence.name}: {str(e)}"
             logger.error(error_msg)
-            self.notify_error(error_msg)
+            self.notify_processing_failed(error_msg)
             return ProcessingResult(success=False, error=error_msg)
 
     def process_sequences_batch(
         self,
-        sequences: List[AntibodySequence],
+        sequences: List[BiologicEntity],
         processing_type: str = "annotation",
         parallel: bool = False,
         **kwargs,
@@ -178,7 +178,7 @@ class ProcessingService(AbstractProcessingSubject):
         except Exception as e:
             error_msg = f"Batch processing failed: {str(e)}"
             logger.error(error_msg)
-            self.notify_error(error_msg)
+            self.notify_processing_failed(error_msg)
             return ProcessingResult(success=False, error=error_msg)
 
     def create_pipeline(
@@ -206,7 +206,7 @@ class ProcessingService(AbstractProcessingSubject):
 
     def _execute_pipeline(
         self,
-        sequence: AntibodySequence,
+        sequence: BiologicEntity,
         pipeline: ProcessingPipeline,
         **kwargs,
     ) -> ProcessingResult:
@@ -256,7 +256,7 @@ class ProcessingService(AbstractProcessingSubject):
         """Get list of available processing types"""
         return list(self._processing_strategies.keys())
 
-    def _validate_sequence(self, sequence: AntibodySequence) -> bool:
+    def _validate_sequence(self, sequence: BiologicEntity) -> bool:
         """Validate sequence for processing"""
         if not sequence or not sequence.name:
             return False
@@ -292,7 +292,13 @@ class ProgressTrackingObserver(ProcessingObserver):
             {"error": error, "timestamp": datetime.now().isoformat()}
         )
 
-    def on_processing_complete(self, result: Any) -> None:
+    def on_processing_failed(self, error: str) -> None:
+        """Called when processing fails"""
+        self.errors.append(
+            {"error": error, "timestamp": datetime.now().isoformat()}
+        )
+
+    def on_processing_completed(self, result: Any) -> None:
         """Called when processing is completely finished"""
         self.completed = True
         self.final_result = result

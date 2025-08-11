@@ -25,21 +25,13 @@ from .base import (
     UUIDv7,
 )
 from .models import (
-    # Lookup tables
-    ChainType,
-    DomainType,
-    NumberingScheme,
-    RegionType,
-    FeatureType,
-    JobType,
-    JobStatus,
-    # Main entity tables
-    AntibodySequence,
-    AntibodyChain,
-    AntibodyDomain,
-    AntibodyRegion,
-    AntibodyFeature,
-    ProcessingJob,
+    Biologic,
+    BiologicAlias,
+    Chain,
+    Sequence,
+    ChainSequence,
+    SequenceDomain,
+    DomainFeature,
 )
 
 __all__ = [
@@ -61,19 +53,12 @@ __all__ = [
     "UUIDMixin",
     "SoftDeleteMixin",
     "UUIDv7",
-    # Lookup tables
-    "ChainType",
-    "DomainType",
-    "NumberingScheme",
-    "RegionType",
-    "FeatureType",
-    "JobType",
-    "JobStatus",
-    # Database models
-    "AntibodySequence",
-    "AntibodyChain",
-    "AntibodyDomain",
-    "AntibodyRegion",
-    "AntibodyFeature",
-    "ProcessingJob",
+    # New biologic entity models
+    "Biologic",
+    "BiologicAlias",
+    "Chain",
+    "Sequence",
+    "ChainSequence",
+    "SequenceDomain",
+    "DomainFeature",
 ]
