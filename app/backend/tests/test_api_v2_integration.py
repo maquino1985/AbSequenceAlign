@@ -7,6 +7,13 @@ import pytest
 from fastapi.testclient import TestClient
 from backend.main import app
 from backend.logger import logger
+from backend.domain.models import (
+    BiologicType,
+    ChainType,
+    DomainType,
+    FeatureType,
+    NumberingScheme,
+)
 
 client = TestClient(app)
 
@@ -38,7 +45,7 @@ def test_v2_annotate_scfv_structure():
                 "scfv": SCFV_SEQ
             }
         ],
-        "numbering_scheme": "imgt"
+        "numbering_scheme": NumberingScheme.IMGT.value
     }
     
     response = client.post("/api/v2/annotate", json=request_data)
@@ -63,7 +70,7 @@ def test_v2_annotate_scfv_structure():
     # Verify sequence data structure
     sequence_data = result["data"]["sequence"]
     assert sequence_data["name"] == "test_scfv"
-    assert sequence_data["biologic_type"] == "antibody"
+    assert sequence_data["biologic_type"] == BiologicType.ANTIBODY.value
     assert "chains" in sequence_data
     assert len(sequence_data["chains"]) > 0
     
@@ -89,7 +96,7 @@ def test_v2_annotate_scfv_structure():
     assert "features" in domain
     
     # Check for species and germline fields (should be present for non-LINKER domains)
-    if domain["domain_type"] != "LINKER":
+    if domain["domain_type"] != DomainType.LINKER.value:
         # These fields should be present but may be None
         assert "species" in domain
         assert "germline" in domain
@@ -114,7 +121,7 @@ def test_v2_annotate_heavy_light_structure():
                 "light_chain": LIGHT_CHAIN_SEQ
             }
         ],
-        "numbering_scheme": "imgt"
+        "numbering_scheme": NumberingScheme.IMGT.value
     }
     
     response = client.post("/api/v2/annotate", json=request_data)
@@ -140,7 +147,7 @@ def test_v2_annotate_heavy_light_structure():
             
             # Verify domains have species and germline
             for domain in sequence["domains"]:
-                if domain["domain_type"] != "LINKER":
+                if domain["domain_type"] != DomainType.LINKER.value:
                     assert "species" in domain
                     assert "germline" in domain
 
@@ -159,7 +166,7 @@ def test_v2_annotate_multiple_sequences():
                 "light_chain": LIGHT_CHAIN_SEQ
             }
         ],
-        "numbering_scheme": "imgt"
+        "numbering_scheme": NumberingScheme.IMGT.value
     }
     
     response = client.post("/api/v2/annotate", json=request_data)
@@ -188,7 +195,7 @@ def test_v2_annotate_case_insensitive_numbering():
                 "scfv": SCFV_SEQ
             }
         ],
-        "numbering_scheme": "ImGt"  # Mixed case
+        "numbering_scheme": "ImGt"  # Mixed case - testing case insensitivity
     }
     
     response = client.post("/api/v2/annotate", json=request_data)
@@ -236,7 +243,7 @@ def test_v2_annotate_empty_sequences():
     """Test that empty sequences list returns error"""
     request_data = {
         "sequences": [],
-        "numbering_scheme": "imgt"
+        "numbering_scheme": NumberingScheme.IMGT.value
     }
     
     response = client.post("/api/v2/annotate", json=request_data)
@@ -246,7 +253,7 @@ def test_v2_annotate_empty_sequences():
 def test_v2_annotate_missing_sequences():
     """Test that missing sequences field returns error"""
     request_data = {
-        "numbering_scheme": "imgt"
+        "numbering_scheme": NumberingScheme.IMGT.value
     }
     
     response = client.post("/api/v2/annotate", json=request_data)
@@ -262,7 +269,7 @@ def test_v2_annotate_response_completeness():
                 "scfv": SCFV_SEQ
             }
         ],
-        "numbering_scheme": "imgt"
+        "numbering_scheme": NumberingScheme.IMGT.value
     }
     
     response = client.post("/api/v2/annotate", json=request_data)
