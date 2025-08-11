@@ -36,13 +36,12 @@ dependencies:
   - curl
   # Additional production dependencies
   - gunicorn
-  # Database dependencies
-  - sqlalchemy
-  - asyncpg
-  - psycopg2
-  - alembic
-  - greenlet
   # Pip packages (not available in conda)
   - pip
   - pip:
       - git+https://github.com/oxpig/ANARCI.git
+      - sqlalchemy==2.0.23
+      - asyncpg==0.29.0
+      - psycopg2-binary==2.9.9
+      - alembic==1.13.1
+      - greenlet==3.0.1
