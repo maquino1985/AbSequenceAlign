@@ -36,6 +36,12 @@ dependencies:
   - curl
   # Additional production dependencies
   - gunicorn
+  # Database dependencies
+  - sqlalchemy
+  - asyncpg
+  - psycopg2
+  - alembic
+  - greenlet
   # Pip packages (not available in conda)
   - pip
   - pip:
