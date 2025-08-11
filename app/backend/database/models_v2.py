@@ -411,6 +411,10 @@ class SequenceDomain(Base):
     end_position = Column(Integer, nullable=False)
     length = Column(Integer, nullable=False)
 
+    # Species and germline information
+    species = Column(String(50), nullable=True, index=True)  # e.g., "human", "mouse", "rat"
+    germline = Column(String(100), nullable=True, index=True)  # e.g., "IGHV1-2*02", "IGHG1*01"
+    
     # Confidence and quality
     confidence_score = Column(Float, nullable=True)
     quality_metrics = Column(JSONB, nullable=True)

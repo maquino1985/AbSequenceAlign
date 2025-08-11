@@ -552,25 +552,44 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
         """Create a Sequence ORM model from an AntibodyDomain domain entity."""
         try:
             # Create sequence ORM model
+            metadata_json = {
+                "domain_entity_id": biologic_domain.id,
+                "domain_type": biologic_domain.domain_type,
+                "feature_count": len(biologic_domain.features),
+            }
+            
             sequence = Sequence(
                 chain_id=chain.id,
                 sequence_type="PROTEIN",
                 sequence_data=biologic_domain.sequence_data,
                 length=len(biologic_domain.sequence_data),
                 description=f"{biologic_domain.domain_type} domain",
+                metadata_json=metadata_json,
+            )
+
+            # Create a single SequenceDomain for the entire domain with species/germline info
+            sequence_domain = SequenceDomain(
+                chain_sequence_id=sequence.id,  # This will be set after sequence is saved
+                domain_type=biologic_domain.domain_type.value,
+                start_position=biologic_domain.start_position,
+                end_position=biologic_domain.end_position,
+                species=biologic_domain.metadata.get("species"),
+                germline=biologic_domain.metadata.get("germline"),
+                confidence_score=biologic_domain.confidence_score,
                 metadata_json={
                     "domain_entity_id": biologic_domain.id,
                     "domain_type": biologic_domain.domain_type,
-                    "feature_count": len(biologic_domain.features),
                 },
             )
 
-            # Create domains for each feature
+            # Create features for each feature in the domain
             for feature in biologic_domain.features:
-                sequence_domain = self._create_sequence_domain_from_feature(
-                    sequence, feature
+                domain_feature = self._create_domain_feature_from_feature(
+                    sequence_domain, feature
                 )
-                sequence.domains.append(sequence_domain)
+                sequence_domain.features.append(domain_feature)
+
+            sequence.domains = [sequence_domain]
 
             return sequence
 
@@ -609,6 +628,34 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
         except Exception as e:
             self._logger.error(
                 f"Error creating antibody domain from sequence: {e}"
+            )
+            raise
+
+    def _create_domain_feature_from_feature(
+        self, sequence_domain: SequenceDomain, biologic_feature: BiologicFeature
+    ) -> DomainFeature:
+        """Create a DomainFeature ORM model from a BiologicFeature domain entity."""
+        try:
+            # Create domain feature ORM model
+            domain_feature = DomainFeature(
+                sequence_domain_id=sequence_domain.id,  # This will be set after sequence_domain is saved
+                feature_type=biologic_feature.feature_type.value,
+                name=biologic_feature.name,
+                value=biologic_feature.value,
+                start_position=biologic_feature.start_position,
+                end_position=biologic_feature.end_position,
+                confidence_score=biologic_feature.confidence_score,
+                metadata_json={
+                    "feature_entity_id": biologic_feature.id,
+                    "feature_type": biologic_feature.feature_type,
+                },
+            )
+
+            return domain_feature
+
+        except Exception as e:
+            self._logger.error(
+                f"Error creating domain feature from feature: {e}"
             )
             raise
 
