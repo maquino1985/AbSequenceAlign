@@ -142,6 +142,8 @@ export const useSequenceData = () => {
                     details: {
                       isotype: undefined,
                       domain_type: domain.domain_type,
+                      species: domain.species,
+                      germline: domain.germline,
                     }
                   });
                 });
@@ -156,11 +158,23 @@ export const useSequenceData = () => {
             };
           });
 
+          // Extract species from the first domain that has it
+          let sequenceSpecies: string | undefined;
+          for (const chain of chains) {
+            for (const annotation of chain.annotations) {
+              if (annotation.details.species) {
+                sequenceSpecies = annotation.details.species;
+                break;
+              }
+            }
+            if (sequenceSpecies) break;
+          }
+
           sequences.push({
             id: seqInfo.name || `seq_${seqIndex}`,
             name: seqInfo.name || `Sequence ${seqIndex + 1}`,
             chains,
-            species: undefined
+            species: sequenceSpecies
           });
         }
       });
