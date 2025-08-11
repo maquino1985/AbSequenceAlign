@@ -3,7 +3,6 @@ Service for creating API responses from annotation results.
 Handles conversion between domain entities and API response models.
 """
 
-from typing import Dict, Any, List
 
 from backend.annotation.anarci_result_processor import AnarciResultProcessor
 from backend.models.models_v2 import (
@@ -171,7 +170,7 @@ class AnnotationResponseService:
         self, processor: AnarciResultProcessor
     ) -> Dict[str, int]:
         """Calculate chain type statistics from processor results."""
-        chain_types = {}
+        chain_types: Dict[str, int] = {}
         for result in processor.results:
             for chain in result.chains:
                 chain_type = chain.name
@@ -182,7 +181,7 @@ class AnnotationResponseService:
         self, processor: AnarciResultProcessor
     ) -> Dict[str, int]:
         """Calculate isotype statistics from processor results."""
-        isotypes = {}
+        isotypes: Dict[str, int] = {}
         for result in processor.results:
             for chain in result.chains:
                 for domain in chain.domains:
@@ -195,7 +194,7 @@ class AnnotationResponseService:
         self, processor: AnarciResultProcessor
     ) -> Dict[str, int]:
         """Calculate species statistics from processor results."""
-        species = {}
+        species: Dict[str, int] = {}
         for result in processor.results:
             for chain in result.chains:
                 for domain in chain.domains:

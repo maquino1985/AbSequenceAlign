@@ -3,8 +3,6 @@ Service for handling processor integration and conversion.
 Bridges the gap between processor results and domain entities.
 """
 
-from typing import Dict, Any, Optional
-
 from backend.annotation.anarci_result_processor import AnarciResultProcessor
 from backend.domain.entities import (
     BiologicEntity,
@@ -13,8 +11,6 @@ from backend.domain.entities import (
     BiologicDomain,
     BiologicFeature,
 )
-from backend.domain.value_objects import AminoAcidSequence
-from backend.domain.models import (
     ChainType,
     DomainType,
     RegionType,

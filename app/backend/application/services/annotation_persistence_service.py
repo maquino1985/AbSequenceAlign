@@ -6,9 +6,7 @@ Manages the integration between annotation services and biologic persistence.
 from typing import Dict, Any, Optional
 
 from backend.annotation.anarci_result_processor import AnarciResultProcessor
-from backend.domain.entities import BiologicEntity
 from backend.application.factories.biologic_factory import create_biologic_service
-from backend.logger import logger
 
 
 class AnnotationPersistenceService:

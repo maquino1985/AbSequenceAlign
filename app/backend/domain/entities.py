@@ -4,27 +4,14 @@ Entities have identity and lifecycle, and contain business logic.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Set, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from backend.domain.entities import AntibodyFeature
 from abc import ABC, abstractmethod
 
-from backend.domain.value_objects import (
-    AminoAcidSequence,
-    RegionBoundary,
-    SequenceIdentifier,
-    ConfidenceScore,
     AnnotationMetadata,
 )
-from backend.domain.models import (
-    ChainType,
-    DomainType,
-    RegionType,
-    NumberingScheme,
     FeatureType,
 )
-from backend.core.exceptions import ValidationError, DomainError
 
 
 class DomainEntity(ABC):

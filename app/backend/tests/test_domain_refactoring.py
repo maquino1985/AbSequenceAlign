@@ -17,15 +17,10 @@ from backend.domain.entities import (
     BiologicDomain,
     BiologicFeature,
 )
-from backend.domain.models import (
-    ChainType,
-    DomainType,
-    RegionType,
     NumberingScheme,
     SequenceValidator,
     RegionCalculator,
 )
-from backend.core.exceptions import ValidationError, DomainError
 
 
 class TestValueObjects:

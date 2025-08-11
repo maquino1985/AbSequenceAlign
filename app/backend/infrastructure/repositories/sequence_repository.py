@@ -256,7 +256,6 @@ class SequenceRepository(Repository[BiologicEntity]):
         """Convert a dictionary to an entity"""
         # This is a simplified conversion - in a real implementation,
         # you'd need to properly reconstruct all the domain objects
-        from backend.domain.entities import (
             BiologicChain,
             BiologicDomain,
             BiologicFeature,

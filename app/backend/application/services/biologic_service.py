@@ -4,12 +4,8 @@ Implements the Service pattern with Observer pattern for processing notification
 """
 
 from typing import Dict, Any, List, Optional
-from uuid import UUID
-from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from backend.core.base_classes import AbstractProcessingSubject
 from backend.core.interfaces import (
@@ -19,40 +15,27 @@ from backend.core.interfaces import (
     ProcessingResult,
 )
 from backend.core.exceptions import ValidationError, EntityNotFoundError
-from backend.database.models import (
-    Biologic,
-    BiologicAlias,
     Chain,
     Sequence,
     ChainSequence,
     SequenceDomain,
     DomainFeature,
 )
-from backend.domain.entities import (
     BiologicEntity,
     BiologicChain,
     BiologicSequence,
     BiologicDomain,
     BiologicFeature,
 )
-from backend.domain.value_objects import (
-    AminoAcidSequence,
-    RegionBoundary,
     ConfidenceScore,
 )
-from backend.models.biologic_models import (
-    BiologicResponse,
-    BiologicCreate,
-    BiologicUpdate,
     ChainResponse,
     ChainCreate,
     SequenceResponse,
     SequenceCreate,
 )
-from backend.infrastructure.repositories.biologic_repository import (
     BiologicRepositoryImpl,
 )
-from backend.application.processors.biologic_processor import (
     BiologicProcessorImpl,
 )
 from backend.application.converters.biologic_converter import (
@@ -682,7 +665,7 @@ class CachedBiologicServiceImpl(BiologicServiceImpl):
         processor: BiologicProcessor = None,
     ):
         super().__init__(repository, processor)
-        self._cache = {}
+        self._cache: Dict[str, BiologicResponse] = {}
 
     async def get_biologic(self, biologic_id: str) -> BiologicResponse:
         """Get a biologic entity by ID with caching."""

@@ -6,7 +6,6 @@ from backend.database.engine import get_db_session
 from backend.jobs.job_manager import job_manager
 from backend.logger import logger
 from backend.models.models import MSACreationRequest, MSAAnnotationRequest
-from backend.models.models_v2 import AnnotationResult as V2AnnotationResult
 from backend.models.biologic_models import BiologicResponse
 from backend.models.requests_v2 import AnnotationRequestV2
 from backend.msa.msa_annotation import MSAAnnotationEngine

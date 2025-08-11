@@ -2,7 +2,6 @@ import logging
 from collections import Counter
 from typing import List, Dict, Any
 
-import numpy as np
 
 logger = logging.getLogger(__name__)
 

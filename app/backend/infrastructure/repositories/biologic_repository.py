@@ -6,12 +6,8 @@ Implements the Repository pattern with async operations.
 import uuid
 from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_
 from sqlalchemy.orm import selectinload
 
-from backend.database.models import (
-    Biologic,
-    BiologicAlias,
     Chain,
     Sequence,
     ChainSequence,
@@ -19,8 +15,6 @@ from backend.database.models import (
     DomainFeature,
 )
 from backend.core.interfaces import BiologicRepository
-from backend.core.exceptions import EntityNotFoundError, ValidationError
-from backend.logger import logger
 
 
 class BiologicRepositoryImpl(BiologicRepository[Biologic]):

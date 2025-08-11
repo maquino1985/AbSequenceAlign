@@ -10,15 +10,15 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 # Import all models to ensure they are registered with SQLAlchemy
-from backend.database.models import (
+from backend.database.models import (  # noqa: F401
     # New biologic entity models
-    Biologic,
-    BiologicAlias,
-    Chain,
-    Sequence,
-    ChainSequence,
-    SequenceDomain,
-    DomainFeature,
+    Biologic,  # noqa: F401
+    BiologicAlias,  # noqa: F401
+    Chain,  # noqa: F401
+    Sequence,  # noqa: F401
+    ChainSequence,  # noqa: F401
+    SequenceDomain,  # noqa: F401
+    DomainFeature,  # noqa: F401
 )
 from backend.database.base import Base
 from backend.database.config import get_database_url

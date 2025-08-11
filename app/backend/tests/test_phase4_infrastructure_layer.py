@@ -6,13 +6,10 @@ Tests repository pattern, dependency injection, and external tool adapters.
 import pytest
 import tempfile
 import os
-import json
-from unittest.mock import Mock, patch, MagicMock
 
 from backend.infrastructure.repositories.sequence_repository import (
     SequenceRepository,
 )
-from backend.infrastructure.dependency_container import (
     DependencyContainer,
     get_container,
     register_service,
@@ -26,18 +23,12 @@ from backend.infrastructure.adapters.base_adapter import (
     BaseExternalToolAdapter,
     ToolConfiguration,
 )
-from backend.domain.entities import (
     BiologicEntity,
     BiologicChain,
     BiologicSequence,
     BiologicDomain,
     BiologicFeature,
 )
-from backend.domain.value_objects import AminoAcidSequence, RegionBoundary
-from backend.domain.models import (
-    ChainType,
-    DomainType,
-    RegionType,
     NumberingScheme,
 )
 

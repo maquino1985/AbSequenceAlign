@@ -18,21 +18,16 @@ from backend.application.services.processing_service import (
     ProgressTrackingObserver,
     ProcessingServiceFactory,
 )
-from backend.core.interfaces import (
     ProcessingResult,
     ProcessingObserver,
 )
 from backend.core.base_classes import PipelineContext
-from backend.domain.entities import (
     BiologicEntity,
     BiologicChain,
     BiologicSequence,
     BiologicDomain,
     BiologicFeature,
 )
-from backend.domain.value_objects import AminoAcidSequence
-from backend.domain.models import ChainType, DomainType, NumberingScheme
-from backend.core.exceptions import ProcessingError, ValidationError
 
 
 class TestPipelineBuilder:

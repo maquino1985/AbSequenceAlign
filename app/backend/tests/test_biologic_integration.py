@@ -3,32 +3,15 @@ Tests for biologic integration with annotation service.
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
-from uuid import uuid4
 
 from backend.application.services.biologic_service import BiologicServiceImpl
 from backend.application.services.annotation_service import AnnotationService
-from backend.domain.entities import (
-    BiologicEntity,
-    BiologicChain,
-    BiologicSequence,
-    BiologicDomain,
     BiologicFeature,
 )
-from backend.domain.value_objects import (
-    AminoAcidSequence,
-    RegionBoundary,
     ConfidenceScore,
 )
-from backend.domain.models import (
-    ChainType,
-    DomainType,
-    RegionType,
     NumberingScheme,
 )
-from backend.database.models import (
-    Biologic,
-    Chain,
     Sequence,
     ChainSequence,
     SequenceDomain,

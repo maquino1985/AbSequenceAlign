@@ -32,7 +32,6 @@ class AnarciAdapter(AbstractExternalToolAdapter):
         """Check if ANARCI is available on the system"""
         try:
             # Try to import ANARCI
-            import anarci  # noqa: F401
 
             return True
         except ImportError:

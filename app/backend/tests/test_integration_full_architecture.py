@@ -5,8 +5,6 @@ Tests the integration between Domain, Application, and Infrastructure layers.
 
 import pytest
 import tempfile
-import os
-from unittest.mock import Mock, patch
 
 from backend.infrastructure.dependency_container import (
     DependencyContainer,
@@ -16,29 +14,20 @@ from backend.infrastructure.dependency_container import (
 from backend.infrastructure.repositories.sequence_repository import (
     SequenceRepository,
 )
-from backend.application.services.processing_service import ProcessingService
-from backend.application.services.annotation_service import AnnotationService
-from backend.application.services.alignment_service import AlignmentService
 from backend.application.pipelines.pipeline_builder import (
     create_annotation_pipeline,
     create_alignment_pipeline,
 )
-from backend.domain.entities import (
     BiologicEntity,
     BiologicChain,
     BiologicSequence,
     BiologicDomain,
     BiologicFeature,
 )
-from backend.domain.value_objects import AminoAcidSequence, RegionBoundary
-from backend.domain.models import (
-    ChainType,
-    DomainType,
     RegionType,
     NumberingScheme,
 )
 from backend.core.interfaces import ProcessingResult
-from backend.core.exceptions import ProcessingError, ValidationError
 
 
 class TestFullArchitectureIntegration:

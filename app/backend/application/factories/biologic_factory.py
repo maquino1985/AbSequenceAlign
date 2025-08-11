@@ -3,7 +3,6 @@ Factory for creating biologic services, processors, converters, and strategies.
 Implements the Factory pattern for flexible component creation.
 """
 
-from typing import Dict, Any, Optional, Type, List
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.base_classes import AbstractServiceFactory

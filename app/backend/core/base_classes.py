@@ -4,12 +4,9 @@ These classes implement the Template Method pattern and provide shared behavior.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Generic, TypeVar, Optional
 from dataclasses import dataclass, field
 import logging
 
-from .interfaces import (
-    ProcessingObserver,
     ProcessingSubject,
     ProcessingContext,
     ProcessingResult,
