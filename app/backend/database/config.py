@@ -37,7 +37,9 @@ class DatabaseConfig:
             "test": {
                 "host": os.getenv("DB_HOST", "localhost"),
                 "port": int(os.getenv("DB_PORT", "5433")),
-                "database": os.getenv("DB_NAME", "absequencealign_test"),  # Allow override for test environment
+                "database": os.getenv(
+                    "DB_NAME", "absequencealign_test"
+                ),  # Allow override for test environment
                 "username": os.getenv("DB_USER", "postgres"),
                 "password": os.getenv("DB_PASSWORD", "password"),
                 "pool_size": 5,  # Smaller pool for tests
