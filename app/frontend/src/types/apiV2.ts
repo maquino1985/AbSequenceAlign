@@ -88,7 +88,7 @@ export interface AnnotationResultV2 {
                   features: Array<{
                     name: string;
                     feature_type: string;
-                    value: any;
+                    value: string | number | boolean | null;
                     start_position: number;
                     end_position: number;
                   }>;

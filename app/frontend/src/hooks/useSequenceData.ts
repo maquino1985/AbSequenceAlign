@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import type { SequenceData, Region, ColorScheme } from '../types/sequence';
 import type { AnnotationResult } from '../types/api';
-import type { AnnotationResultV2, SequenceV2, ChainV2, DomainV2, RegionV2 } from '../types/apiV2';
+import type { AnnotationResultV2 } from '../types/apiV2';
 import { COLOR_SCHEMES, getRegionColor } from '../utils/colorUtils';
 import { ColorSchemeType } from '../types/sequence';
 

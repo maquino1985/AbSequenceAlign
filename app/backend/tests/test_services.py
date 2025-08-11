@@ -278,6 +278,7 @@ class TestResponseService:
         domain.start_position = 1
         domain.end_position = 40
         domain.features = [mock_region]
+        domain.metadata = {"species": "human", "germline": "IGHV1-2*02"}
         return domain
 
     @pytest.fixture
