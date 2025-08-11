@@ -737,3 +737,7 @@ class ValidationBiologicServiceImpl(BiologicServiceImpl):
                 )
 
         # Add more validation rules as needed
+
+
+# Alias for backward compatibility
+BiologicService = BiologicServiceImpl
