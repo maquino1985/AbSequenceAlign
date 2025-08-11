@@ -23,11 +23,11 @@ from database.models import (
 )
 
 
-async def seed_lookup_tables():
+async def seed_lookup_tables(environment: str = "development"):
     """Seed lookup tables with initial data."""
-    print("Seeding lookup tables...")
+    print(f"Seeding lookup tables for environment: {environment}...")
 
-    engine = get_database_engine()
+    engine = get_database_engine(environment)
     async with engine.session_factory() as session:
         try:
             # Seed Chain Types
@@ -286,8 +286,13 @@ async def seed_lookup_tables():
 
 async def main():
     """Main function."""
+    import sys
+
+    # Get environment from command line argument or use default
+    environment = sys.argv[1] if len(sys.argv) > 1 else "development"
+
     try:
-        await seed_lookup_tables()
+        await seed_lookup_tables(environment)
     except Exception as e:
         print(f"❌ Failed to seed data: {e}")
         sys.exit(1)

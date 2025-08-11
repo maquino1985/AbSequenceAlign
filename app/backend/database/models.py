@@ -22,8 +22,6 @@ from .base import Base
 class ChainType(Base):
     """Chain type lookup table."""
 
-    __tablename__ = "chain_types"
-
     # Primary key inherited from Base
     code = Column(
         String(20), nullable=False, unique=True
@@ -42,8 +40,6 @@ class ChainType(Base):
 class DomainType(Base):
     """Domain type lookup table."""
 
-    __tablename__ = "domain_types"
-
     # Primary key inherited from Base
     code = Column(
         String(20), nullable=False, unique=True
@@ -61,8 +57,6 @@ class DomainType(Base):
 
 class NumberingScheme(Base):
     """Numbering scheme lookup table."""
-
-    __tablename__ = "numbering_schemes"
 
     # Primary key inherited from Base
     code = Column(
@@ -87,8 +81,6 @@ class NumberingScheme(Base):
 class RegionType(Base):
     """Region type lookup table."""
 
-    __tablename__ = "region_types"
-
     # Primary key inherited from Base
     code = Column(
         String(20), nullable=False, unique=True
@@ -106,8 +98,6 @@ class RegionType(Base):
 
 class FeatureType(Base):
     """Feature type lookup table."""
-
-    __tablename__ = "feature_types"
 
     # Primary key inherited from Base
     code = Column(
@@ -129,8 +119,6 @@ class FeatureType(Base):
 class JobType(Base):
     """Job type lookup table."""
 
-    __tablename__ = "job_types"
-
     # Primary key inherited from Base
     code = Column(
         String(20), nullable=False, unique=True
@@ -148,8 +136,6 @@ class JobType(Base):
 
 class JobStatus(Base):
     """Job status lookup table."""
-
-    __tablename__ = "job_statuses"
 
     # Primary key inherited from Base
     code = Column(
@@ -169,8 +155,6 @@ class JobStatus(Base):
 # Main Entity Tables
 class AntibodySequence(Base):
     """Antibody sequence model."""
-
-    __tablename__ = "antibody_sequences"
 
     # Primary key inherited from Base
     # id = Column(UUID(as_uuid=True), primary_key=True, default=UUIDv7())
@@ -208,8 +192,6 @@ class AntibodySequence(Base):
 
 class AntibodyChain(Base):
     """Antibody chain model."""
-
-    __tablename__ = "antibody_chains"
 
     # Primary key inherited from Base
 
@@ -253,8 +235,6 @@ class AntibodyChain(Base):
 class AntibodyDomain(Base):
     """Antibody domain model."""
 
-    __tablename__ = "antibody_domains"
-
     # Primary key inherited from Base
 
     # Foreign key to chain
@@ -291,8 +271,6 @@ class AntibodyDomain(Base):
 
 class AntibodyRegion(Base):
     """Antibody region model (FR1, CDR1, FR2, etc.)."""
-
-    __tablename__ = "antibody_regions"
 
     # Primary key inherited from Base
 
@@ -339,8 +317,6 @@ class AntibodyRegion(Base):
 class AntibodyFeature(Base):
     """Antibody feature model (mutations, post-translational modifications, etc.)."""
 
-    __tablename__ = "antibody_features"
-
     # Primary key inherited from Base
 
     # Foreign keys
@@ -384,8 +360,6 @@ class AntibodyFeature(Base):
 
 class ProcessingJob(Base):
     """Processing job model for tracking annotation and analysis jobs."""
-
-    __tablename__ = "processing_jobs"
 
     # Primary key inherited from Base
 
