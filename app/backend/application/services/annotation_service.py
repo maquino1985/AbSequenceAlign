@@ -8,11 +8,13 @@ from typing import Dict, Any, List, Optional
 from backend.core.base_classes import AbstractProcessingSubject
 from backend.core.interfaces import ProcessingResult
 from backend.core.exceptions import AnnotationError, ValidationError
+from backend.domain.models import (
     NumberingScheme,
     ChainType,
     DomainType,
     RegionType,
 )
+from backend.domain.entities import (
     BiologicEntity,
     BiologicChain,
     BiologicSequence,

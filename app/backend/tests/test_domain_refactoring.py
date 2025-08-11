@@ -17,6 +17,7 @@ from backend.domain.entities import (
     BiologicDomain,
     BiologicFeature,
 )
+from backend.domain.models import (
     NumberingScheme,
     SequenceValidator,
     RegionCalculator,

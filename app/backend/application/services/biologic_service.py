@@ -15,27 +15,33 @@ from backend.core.interfaces import (
     ProcessingResult,
 )
 from backend.core.exceptions import ValidationError, EntityNotFoundError
+from backend.database.models import (
     Chain,
     Sequence,
     ChainSequence,
     SequenceDomain,
     DomainFeature,
 )
+from backend.domain.entities import (
     BiologicEntity,
     BiologicChain,
     BiologicSequence,
     BiologicDomain,
     BiologicFeature,
 )
+from backend.domain.value_objects import (
     ConfidenceScore,
 )
+from backend.models.biologic_models import (
     ChainResponse,
     ChainCreate,
     SequenceResponse,
     SequenceCreate,
 )
+from backend.infrastructure.repositories.biologic_repository import (
     BiologicRepositoryImpl,
 )
+from backend.application.processors.biologic_processor import (
     BiologicProcessorImpl,
 )
 from backend.application.converters.biologic_converter import (

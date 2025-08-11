@@ -6,10 +6,14 @@ Entities have identity and lifecycle, and contain business logic.
 from dataclasses import dataclass, field
 
 if TYPE_CHECKING:
+    from backend.domain.entities import AntibodyFeature
+
 from abc import ABC, abstractmethod
 
+from backend.domain.value_objects import (
     AnnotationMetadata,
 )
+from backend.domain.models import (
     FeatureType,
 )
 

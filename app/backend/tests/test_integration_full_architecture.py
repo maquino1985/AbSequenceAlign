@@ -18,12 +18,14 @@ from backend.application.pipelines.pipeline_builder import (
     create_annotation_pipeline,
     create_alignment_pipeline,
 )
+from backend.domain.entities import (
     BiologicEntity,
     BiologicChain,
     BiologicSequence,
     BiologicDomain,
     BiologicFeature,
 )
+from backend.domain.models import (
     RegionType,
     NumberingScheme,
 )

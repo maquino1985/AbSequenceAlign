@@ -10,6 +10,7 @@ import os
 from backend.infrastructure.repositories.sequence_repository import (
     SequenceRepository,
 )
+from backend.infrastructure.dependency_container import (
     DependencyContainer,
     get_container,
     register_service,
@@ -23,12 +24,14 @@ from backend.infrastructure.adapters.base_adapter import (
     BaseExternalToolAdapter,
     ToolConfiguration,
 )
+from backend.domain.entities import (
     BiologicEntity,
     BiologicChain,
     BiologicSequence,
     BiologicDomain,
     BiologicFeature,
 )
+from backend.domain.models import (
     NumberingScheme,
 )
 

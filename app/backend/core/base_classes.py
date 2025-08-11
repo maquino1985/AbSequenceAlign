@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 import logging
 
+from .interfaces import (
     ProcessingSubject,
     ProcessingContext,
     ProcessingResult,

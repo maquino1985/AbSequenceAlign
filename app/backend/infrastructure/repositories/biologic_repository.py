@@ -8,6 +8,8 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from backend.database.models import (
+    Biologic,
     Chain,
     Sequence,
     ChainSequence,

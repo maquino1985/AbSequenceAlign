@@ -18,10 +18,12 @@ from backend.application.services.processing_service import (
     ProgressTrackingObserver,
     ProcessingServiceFactory,
 )
+from backend.core.interfaces import (
     ProcessingResult,
     ProcessingObserver,
 )
 from backend.core.base_classes import PipelineContext
+from backend.domain.entities import (
     BiologicEntity,
     BiologicChain,
     BiologicSequence,

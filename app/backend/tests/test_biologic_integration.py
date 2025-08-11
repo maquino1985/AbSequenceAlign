@@ -6,12 +6,22 @@ import pytest
 
 from backend.application.services.biologic_service import BiologicServiceImpl
 from backend.application.services.annotation_service import AnnotationService
+from backend.domain.entities import (
+    BiologicEntity,
+    BiologicChain,
+    BiologicSequence,
+    BiologicDomain,
     BiologicFeature,
 )
+from backend.domain.value_objects import (
     ConfidenceScore,
 )
+from backend.domain.models import (
     NumberingScheme,
 )
+from backend.database.models import (
+    Biologic,
+    Chain,
     Sequence,
     ChainSequence,
     SequenceDomain,
