@@ -612,11 +612,22 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
                 )
                 regions[antibody_region.name] = antibody_region
 
-            # Create domain entity
+            # Create domain entity - use the first domain's type or default to VARIABLE
+            domain_type = "VARIABLE"  # Default
+            if sequence.domains:
+                # Get domain type from the first domain
+                first_domain = sequence.domains[0]
+                if hasattr(first_domain, 'domain_type'):
+                    domain_type = first_domain.domain_type
+                elif hasattr(first_domain, 'domain_name'):
+                    # Try to infer from domain name
+                    if 'constant' in first_domain.domain_name.lower():
+                        domain_type = "CONSTANT"
+                    elif 'linker' in first_domain.domain_name.lower():
+                        domain_type = "LINKER"
+            
             biologic_domain = BiologicDomain(
-                domain_type=sequence.metadata_json.get(
-                    "domain_type", "V"
-                ),  # Would need enum conversion
+                domain_type=domain_type,
                 start_position=0,
                 end_position=len(sequence.sequence_data),
                 confidence_score=1.0,

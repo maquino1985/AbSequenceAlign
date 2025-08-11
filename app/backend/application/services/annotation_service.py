@@ -93,7 +93,6 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
             return ProcessingResult(
                 success=True,
                 data=annotated_sequence,
-                message=f"Successfully annotated sequence: {sequence.name}",
             )
 
         except Exception as e:
