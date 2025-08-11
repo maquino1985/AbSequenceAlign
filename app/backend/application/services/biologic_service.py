@@ -5,7 +5,6 @@ Implements the Service pattern with Observer pattern for processing notification
 
 from typing import Dict, Any, List, Optional
 
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.base_classes import AbstractProcessingSubject
 from backend.core.interfaces import (
@@ -37,7 +36,11 @@ from backend.models.biologic_models import (
     ChainCreate,
     SequenceResponse,
     SequenceCreate,
+    BiologicCreate,
+    BiologicResponse,
+    BiologicUpdate,
 )
+from backend.database.models import Biologic
 from backend.infrastructure.repositories.biologic_repository import (
     BiologicRepositoryImpl,
 )
@@ -438,7 +441,6 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
 
     async def process_and_persist_biologic_entity(
         self,
-        db_session: AsyncSession,
         biologic_entity: BiologicEntity,
         organism: Optional[str] = None,
     ) -> BiologicResponse:

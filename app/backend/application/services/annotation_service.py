@@ -6,7 +6,10 @@ Focuses on domain annotation logic only.
 from typing import Dict, Any, List, Optional
 
 from backend.core.base_classes import AbstractProcessingSubject
-from backend.core.interfaces import ProcessingResult
+from backend.core.interfaces import (
+    ProcessingResult,
+    AnnotationService as IAnnotationService,
+)
 from backend.core.exceptions import AnnotationError, ValidationError
 from backend.domain.models import (
     NumberingScheme,
@@ -26,10 +29,11 @@ from backend.domain.value_objects import (
 )
 from backend.infrastructure.adapters.anarci_adapter import AnarciAdapter
 from backend.infrastructure.adapters.hmmer_adapter import HmmerAdapter
+from backend.utils.validation_utils import ValidationUtils
 from backend.logger import logger
 
 
-class AnnotationService(AbstractProcessingSubject):
+class AnnotationService(AbstractProcessingSubject, IAnnotationService):
     """Service for orchestrating biologic sequence annotation"""
 
     def __init__(self):
@@ -56,7 +60,7 @@ class AnnotationService(AbstractProcessingSubject):
             self.notify_step_completed("start", 0.0)
 
             # Validate sequence
-            if not self._validate_sequence(sequence):
+            if not ValidationUtils.validate_sequence(sequence):
                 raise ValidationError(
                     "Invalid biologic sequence", field="sequence"
                 )
@@ -440,51 +444,6 @@ class AnnotationService(AbstractProcessingSubject):
         except Exception as e:
             logger.warning(f"Error detecting chain type: {e}")
             return ChainType.HEAVY
-
-    def _validate_sequence(self, sequence: BiologicEntity) -> bool:
-        """Validate a biologic sequence"""
-        try:
-            if not sequence or not sequence.name:
-                return False
-
-            if not sequence.chains:
-                return False
-
-            for chain in sequence.chains:
-                if not self._validate_chain(chain):
-                    return False
-
-            return True
-
-        except Exception as e:
-            logger.error(f"Error validating sequence: {e}")
-            return False
-
-    def _validate_chain(self, chain: BiologicChain) -> bool:
-        """Validate a biologic chain"""
-        try:
-            if not chain or not chain.name:
-                return False
-
-            if not chain.sequences:
-                return False
-
-            for sequence in chain.sequences:
-                if not sequence.sequence_data:
-                    return False
-
-                if not sequence.domains:
-                    return False
-
-                for domain in sequence.domains:
-                    if not domain.domain_type:
-                        return False
-
-            return True
-
-        except Exception as e:
-            logger.error(f"Error validating chain: {e}")
-            return False
 
     def _detect_chain_type_from_name(self, chain_name: str) -> ChainType:
         """Detect chain type from chain name"""

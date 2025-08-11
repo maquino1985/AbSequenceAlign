@@ -245,10 +245,10 @@ def configure_default_services(container: DependencyContainer) -> None:
     from backend.application.services.annotation_service import (
         AnnotationService,
     )
-    from backend.application.services.alignment_service import AlignmentService
-    from backend.application.services.processing_service import (
-        ProcessingService,
+    from backend.application.services.validation_service import (
+        ValidationService,
     )
+    from backend.application.services.response_service import ResponseService
     from backend.application.factories.biologic_factory import (
         BiologicServiceFactory,
         create_biologic_service,
@@ -257,10 +257,10 @@ def configure_default_services(container: DependencyContainer) -> None:
     container.register_factory(
         "annotation_service", lambda: AnnotationService()
     )
-    container.register_factory("alignment_service", lambda: AlignmentService())
     container.register_factory(
-        "processing_service", lambda: ProcessingService()
+        "validation_service", lambda: ValidationService()
     )
+    container.register_factory("response_service", lambda: ResponseService())
     container.register_factory(
         "biologic_service_factory", lambda: BiologicServiceFactory()
     )
@@ -268,18 +268,7 @@ def configure_default_services(container: DependencyContainer) -> None:
         "biologic_service", lambda: create_biologic_service("default")
     )
 
-    # Register pipeline builders
-    from backend.application.pipelines.pipeline_builder import (
-        create_annotation_pipeline,
-        create_alignment_pipeline,
-    )
-
-    container.register_factory(
-        "annotation_pipeline_factory", lambda: create_annotation_pipeline
-    )
-    container.register_factory(
-        "alignment_pipeline_factory", lambda: create_alignment_pipeline
-    )
+    # Pipeline builders removed - using command pattern instead
 
     logger.info("Default services configured in dependency container")
 

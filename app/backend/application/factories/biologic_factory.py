@@ -238,20 +238,9 @@ class BiologicServiceFactory(
 
     def _create_validation_converter(self, **kwargs) -> BiologicConverter:
         """Create a biologic converter with enhanced validation."""
-        from backend.application.converters.validation_biologic_converter import (
-            ValidationBiologicConverterImpl,
-        )
-
-        base_converter = self._create_default_converter()
-        validation_strategies = {
-            "antibody": AntibodyValidationStrategy(),
-            "protein": ProteinValidationStrategy(),
-        }
-
-        return ValidationBiologicConverterImpl(
-            base_converter=base_converter,
-            validation_strategies=validation_strategies,
-        )
+        # Validation is now handled by ValidationService
+        # Return the default converter
+        return self._create_default_converter()
 
 
 class BiologicComponentFactory:

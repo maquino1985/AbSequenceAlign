@@ -4,7 +4,7 @@ These interfaces establish the contracts that implementations must follow.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional, Generic, TypeVar, Protocol
+from typing import List, Dict, Any, Optional, Generic, TypeVar, Protocol, Tuple
 from dataclasses import dataclass
 from datetime import datetime
 import logging
@@ -538,3 +538,261 @@ class BiologicResponse(Protocol):
     metadata: Optional[Dict[str, Any]]
     created_at: datetime
     updated_at: datetime
+
+
+# =============================================================================
+# ANNOTATION SERVICE INTERFACES
+# =============================================================================
+
+
+class AnnotationService(ProcessingSubject, ABC):
+    """Interface for annotation services"""
+
+    @abstractmethod
+    def process_sequence(
+        self, sequence: "BiologicEntity", numbering_scheme: str = "IMGT"
+    ) -> ProcessingResult:
+        """Process a sequence through annotation"""
+        pass
+
+    @abstractmethod
+    def annotate_sequence(
+        self, sequence: "BiologicEntity", numbering_scheme: str = "IMGT"
+    ) -> ProcessingResult:
+        """Annotate a complete biologic sequence"""
+        pass
+
+    @abstractmethod
+    def annotate_chain(
+        self, chain: "BiologicChain", numbering_scheme: str = "IMGT"
+    ) -> "BiologicChain":
+        """Annotate a single chain"""
+        pass
+
+    @abstractmethod
+    def annotate_domain(
+        self, domain: "BiologicDomain", numbering_scheme: str = "IMGT"
+    ) -> "BiologicDomain":
+        """Annotate a single domain"""
+        pass
+
+
+class AlignmentService(ProcessingSubject, ABC):
+    """Interface for alignment services"""
+
+    @abstractmethod
+    def align_sequences(
+        self, sequences: List["BiologicEntity"], strategy: str = "default"
+    ) -> ProcessingResult:
+        """Align multiple sequences"""
+        pass
+
+    @abstractmethod
+    def align_regions(
+        self, sequences: List["BiologicEntity"], region_type: str
+    ) -> ProcessingResult:
+        """Align specific regions of sequences"""
+        pass
+
+    @abstractmethod
+    def align_chains(
+        self, chains: List["BiologicChain"], strategy: str = "default"
+    ) -> ProcessingResult:
+        """Align multiple chains"""
+        pass
+
+
+class AnnotationProcessorService(ProcessingSubject, ABC):
+    """Interface for annotation processor services"""
+
+    @abstractmethod
+    def process_annotation_request(
+        self, request_data: Dict[str, Any]
+    ) -> ProcessingResult:
+        """Process an annotation request"""
+        pass
+
+    @abstractmethod
+    def validate_annotation_data(self, data: Dict[str, Any]) -> bool:
+        """Validate annotation input data"""
+        pass
+
+    @abstractmethod
+    def convert_annotation_data(
+        self, data: Dict[str, Any]
+    ) -> "BiologicEntity":
+        """Convert annotation data to domain entity"""
+        pass
+
+
+class AnnotationPersistenceService(ABC):
+    """Interface for annotation persistence services"""
+
+    @abstractmethod
+    async def save_annotation_result(self, result: ProcessingResult) -> str:
+        """Save annotation result to database"""
+        pass
+
+    @abstractmethod
+    async def get_annotation_result(
+        self, result_id: str
+    ) -> Optional[ProcessingResult]:
+        """Retrieve annotation result from database"""
+        pass
+
+    @abstractmethod
+    async def list_annotation_results(
+        self, limit: Optional[int] = None, offset: Optional[int] = None
+    ) -> List[ProcessingResult]:
+        """List annotation results"""
+        pass
+
+
+class AnnotationResponseService(ABC):
+    """Interface for annotation response services"""
+
+    @abstractmethod
+    def format_annotation_response(
+        self, result: ProcessingResult
+    ) -> Dict[str, Any]:
+        """Format annotation result for API response"""
+        pass
+
+    @abstractmethod
+    def create_error_response(self, error: str) -> Dict[str, Any]:
+        """Create error response"""
+        pass
+
+    @abstractmethod
+    def validate_response_data(self, data: Dict[str, Any]) -> bool:
+        """Validate response data"""
+        pass
+
+
+class ProcessingService(ProcessingSubject, ABC):
+    """Interface for processing services"""
+
+    @abstractmethod
+    def process_biologic_data(
+        self, data: "BiologicCreate"
+    ) -> ProcessingResult:
+        """Process biologic data"""
+        pass
+
+    @abstractmethod
+    def validate_processing_input(self, data: Dict[str, Any]) -> bool:
+        """Validate processing input"""
+        pass
+
+    @abstractmethod
+    def get_processing_status(self, job_id: str) -> str:
+        """Get processing status"""
+        pass
+
+
+# =============================================================================
+# REGION EXTRACTION INTERFACES
+# =============================================================================
+
+
+class RegionExtractionInterface(ABC):
+    """Interface for region extraction utilities"""
+
+    def __init__(self, numbering_scheme: str):
+        """
+        Initialize region extraction with a specific numbering scheme.
+
+        Args:
+            numbering_scheme: The numbering scheme to use (IMGT, KABAT, CHOTHIA)
+        """
+        self.numbering_scheme = numbering_scheme.upper()
+
+    @abstractmethod
+    def get_cdr_regions(self, chain_type: str) -> Dict[str, Tuple[int, int]]:
+        """
+        Get CDR region boundaries for a specific chain type.
+
+        Args:
+            chain_type: The chain type (H for heavy, L for light)
+
+        Returns:
+            Dictionary mapping CDR names to (start, end) positions
+        """
+        pass
+
+    @abstractmethod
+    def get_framework_regions(
+        self, chain_type: str
+    ) -> Dict[str, Tuple[int, int]]:
+        """
+        Get framework region boundaries for a specific chain type.
+
+        Args:
+            chain_type: The chain type (H for heavy, L for light)
+
+        Returns:
+            Dictionary mapping FR names to (start, end) positions
+        """
+        pass
+
+    @abstractmethod
+    def get_all_regions(self, chain_type: str) -> Dict[str, Tuple[int, int]]:
+        """
+        Get all region boundaries for a specific chain type.
+
+        Args:
+            chain_type: The chain type (H for heavy, L for light)
+
+        Returns:
+            Dictionary mapping region names to (start, end) positions
+        """
+        pass
+
+    @abstractmethod
+    def extract_region_sequence(
+        self,
+        numbered_sequence: List[Any],
+        start_position: int,
+        end_position: int,
+    ) -> Optional[str]:
+        """
+        Extract a region sequence from a numbered sequence.
+
+        Args:
+            numbered_sequence: The numbered sequence from ANARCI
+            start_position: Start position in numbering scheme
+            end_position: End position in numbering scheme
+
+        Returns:
+            The extracted sequence or None if extraction failed
+        """
+        pass
+
+    @abstractmethod
+    def find_position_in_sequence(
+        self, numbered_sequence: List[Any], position: int
+    ) -> Optional[int]:
+        """
+        Find the actual index in the numbered sequence for a given position number.
+
+        Args:
+            numbered_sequence: The numbered sequence from ANARCI
+            position: The position number to find
+
+        Returns:
+            Index in the numbered sequence or None if not found
+        """
+        pass
+
+    @abstractmethod
+    def detect_chain_type(self, sequence: str) -> str:
+        """
+        Detect chain type from sequence characteristics.
+
+        Args:
+            sequence: The amino acid sequence
+
+        Returns:
+            Chain type ("H" for heavy, "L" for light)
+        """
+        pass

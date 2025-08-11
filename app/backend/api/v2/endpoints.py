@@ -27,23 +27,48 @@ async def annotate_sequences_v2(
     db_session: AsyncSession = Depends(get_db_session),
 ):
     try:
-        # Use the unified annotation service to handle the conversion
+        # Use the command pattern for clean separation of concerns
+        from backend.application.commands import ProcessAnnotationCommand
+        from backend.application.handlers import WorkflowHandler
         from backend.application.services.annotation_service import (
             AnnotationService,
         )
+        from backend.application.services.validation_service import (
+            ValidationService,
+        )
+        from backend.application.services.response_service import (
+            ResponseService,
+        )
+        from backend.application.services.biologic_service import (
+            BiologicService,
+        )
 
-        # Convert request sequences to the format expected by AnarciResultProcessor
+        # Convert request sequences to the format expected by the service
         input_dict = {}
         for seq in request.sequences:
             chain_data = seq.get_all_chains()
             if chain_data:
                 input_dict[seq.name] = chain_data
 
-        # Use the service to process the annotation request
-        annotation_service = AnnotationService()
-        v2_result = annotation_service.process_annotation_request_for_api(
-            input_dict, request.numbering_scheme.value
+        # Create command and handler
+        command = ProcessAnnotationCommand(
+            {
+                "sequences": input_dict,
+                "numbering_scheme": request.numbering_scheme.value,
+                "persist_to_database": persist_to_database,
+            }
         )
+
+        handler = WorkflowHandler(
+            annotation_service=AnnotationService(),
+            validation_service=ValidationService(),
+            response_service=ResponseService(),
+            biologic_service=BiologicService(),
+        )
+
+        # Execute the workflow
+        result = await handler.handle(command)
+        v2_result = result["data"] if result["success"] else result
 
         return v2_result
     except HTTPException:
@@ -67,25 +92,47 @@ async def annotate_and_persist_sequences_v2(
     3. Return Pydantic models for API responses
     """
     try:
+        from backend.application.commands import ProcessAnnotationCommand
+        from backend.application.handlers import WorkflowHandler
         from backend.application.services.annotation_service import (
             AnnotationService,
         )
+        from backend.application.services.validation_service import (
+            ValidationService,
+        )
+        from backend.application.services.response_service import (
+            ResponseService,
+        )
+        from backend.application.services.biologic_service import (
+            BiologicService,
+        )
 
-        # Convert request sequences to the format expected by AnarciResultProcessor
+        # Convert request sequences to the format expected by the service
         input_dict = {}
         for seq in request.sequences:
             chain_data = seq.get_all_chains()
             if chain_data:
                 input_dict[seq.name] = chain_data
 
-        # Use the service to process the annotation request with persistence
-        annotation_service = AnnotationService()
-        result = await annotation_service.annotate_and_persist_sequence(
-            db_session=db_session,
-            input_dict=input_dict,
-            numbering_scheme=request.numbering_scheme.value,
-            organism=organism,
+        # Create command and handler for persistence workflow
+        command = ProcessAnnotationCommand(
+            {
+                "sequences": input_dict,
+                "numbering_scheme": request.numbering_scheme.value,
+                "persist_to_database": True,
+                "organism": organism,
+            }
         )
+
+        handler = WorkflowHandler(
+            annotation_service=AnnotationService(),
+            validation_service=ValidationService(),
+            response_service=ResponseService(),
+            biologic_service=BiologicService(),
+        )
+
+        # Execute the workflow with persistence
+        result = await handler.handle(command)
 
         return result
     except HTTPException:

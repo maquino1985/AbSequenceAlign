@@ -10,6 +10,7 @@ import logging
 
 from .interfaces import (
     ProcessingSubject,
+    ProcessingObserver,
     ProcessingContext,
     ProcessingResult,
     ProcessingStatus,

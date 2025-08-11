@@ -7,7 +7,7 @@ This script will remove unused imports and fix import-related issues.
 import os
 import ast
 from pathlib import Path
-from typing import Set, List, Tuple
+from typing import List, Tuple
 
 
 def find_unused_imports(file_path: str) -> List[Tuple[str, int, str]]:
