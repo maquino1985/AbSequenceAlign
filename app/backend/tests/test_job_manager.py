@@ -14,7 +14,7 @@ from backend.models.models import (
 class TestJobManager:
     """Test cases for JobManager"""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up test fixtures"""
         self.job_manager = JobManager()
 
@@ -38,7 +38,7 @@ class TestJobManager:
             msa_id="test-msa-123", numbering_scheme=NumberingScheme.IMGT
         )
 
-    def test_job_manager_initialization(self):
+    def test_job_manager_initialization(self) -> None:
         """Test JobManager initialization"""
         assert self.job_manager is not None
         assert hasattr(self.job_manager, "jobs")
@@ -46,7 +46,7 @@ class TestJobManager:
         assert hasattr(self.job_manager, "msa_engine")
         assert hasattr(self.job_manager, "annotation_engine")
 
-    def test_create_msa_job(self):
+    def test_create_msa_job(self) -> None:
         """Test creating MSA job"""
         job_id = self.job_manager.create_msa_job(self.test_msa_request)
 
@@ -63,7 +63,7 @@ class TestJobManager:
         assert job_status.message == "Job created"
         assert job_status.created_at is not None
 
-    def test_create_annotation_job(self):
+    def test_create_annotation_job(self) -> None:
         """Test creating annotation job"""
         job_id = self.job_manager.create_annotation_job(
             self.test_annotation_request
@@ -82,12 +82,12 @@ class TestJobManager:
         assert job_status.message == "Annotation job created"
         assert job_status.created_at is not None
 
-    def test_get_job_status_nonexistent(self):
+    def test_get_job_status_nonexistent(self) -> None:
         """Test getting status of nonexistent job"""
         job_status = self.job_manager.get_job_status("nonexistent-job-id")
         assert job_status is None
 
-    def test_update_job_status(self):
+    def test_update_job_status(self) -> None:
         """Test updating job status"""
         job_id = self.job_manager.create_msa_job(self.test_msa_request)
 
@@ -101,7 +101,7 @@ class TestJobManager:
         assert job_status.progress == 0.5
         assert job_status.message == "Processing..."
 
-    def test_update_job_status_completed(self):
+    def test_update_job_status_completed(self) -> None:
         """Test updating job status to completed"""
         job_id = self.job_manager.create_msa_job(self.test_msa_request)
 
@@ -116,7 +116,7 @@ class TestJobManager:
         assert job_status.message == "Job completed"
         assert job_status.completed_at is not None
 
-    def test_update_job_status_failed(self):
+    def test_update_job_status_failed(self) -> None:
         """Test updating job status to failed"""
         job_id = self.job_manager.create_msa_job(self.test_msa_request)
 
@@ -131,7 +131,7 @@ class TestJobManager:
         assert job_status.message == "Job failed"
         assert job_status.completed_at is not None
 
-    def test_update_job_status_nonexistent(self):
+    def test_update_job_status_nonexistent(self) -> None:
         """Test updating status of nonexistent job"""
         # Should not raise an exception
         self.job_manager._update_job_status(
@@ -142,7 +142,7 @@ class TestJobManager:
     @patch("backend.jobs.job_manager.MSAAnnotationEngine")
     def test_process_msa_job_success(
         self, mock_annotation_engine_class, mock_msa_engine_class
-    ):
+    ) -> None:
         """Test successful MSA job processing"""
         # Mock MSA engine
         mock_msa_engine = MagicMock()
@@ -180,7 +180,7 @@ class TestJobManager:
         assert job_status.result is not None
         assert job_status.result["job_type"] == "msa_creation"
 
-    def test_process_msa_job_failure(self):
+    def test_process_msa_job_failure(self) -> None:
         """Test MSA job processing with failure"""
         # Create a job
         job_id = self.job_manager.create_msa_job(self.test_msa_request)
@@ -208,7 +208,7 @@ class TestJobManager:
         assert job_status.progress == 0.0
         assert "Test error" in job_status.message
 
-    def test_process_msa_job_empty_sequences(self):
+    def test_process_msa_job_empty_sequences(self) -> None:
         """Test MSA job processing with empty sequences"""
         empty_request = MSACreationRequest(
             sequences=[],
@@ -226,7 +226,7 @@ class TestJobManager:
         assert job_status.status == "failed"
         assert "No valid sequences provided" in job_status.message
 
-    def test_process_annotation_job_success(self):
+    def test_process_annotation_job_success(self) -> None:
         """Test successful annotation job processing"""
         job_id = self.job_manager.create_annotation_job(
             self.test_annotation_request
@@ -245,7 +245,7 @@ class TestJobManager:
         assert job_status.result is not None
         assert job_status.result["job_type"] == "msa_annotation"
 
-    def test_process_annotation_job_failure(self):
+    def test_process_annotation_job_failure(self) -> None:
         """Test annotation job processing with failure"""
         job_id = self.job_manager.create_annotation_job(
             self.test_annotation_request
@@ -267,7 +267,7 @@ class TestJobManager:
             assert job_status.status == "failed"
             assert "Test error" in job_status.message
 
-    def test_cleanup_old_jobs(self):
+    def test_cleanup_old_jobs(self) -> None:
         """Test cleanup of old jobs"""
         # Create some jobs
         job_id_1 = self.job_manager.create_msa_job(self.test_msa_request)
@@ -296,7 +296,7 @@ class TestJobManager:
         assert self.job_manager.get_job_status(job_id_2) is None
         assert self.job_manager.get_job_status(job_id_3) is not None
 
-    def test_job_manager_thread_safety(self):
+    def test_job_manager_thread_safety(self) -> None:
         """Test that job manager is thread-safe"""
         import threading
 
@@ -325,7 +325,7 @@ class TestJobManager:
             assert job_status is not None
             assert job_status.status == "pending"
 
-    def test_job_manager_concurrent_updates(self):
+    def test_job_manager_concurrent_updates(self) -> None:
         """Test concurrent updates to job status"""
         import threading
 

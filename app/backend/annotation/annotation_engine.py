@@ -43,9 +43,9 @@ def annotate_sequences_with_processor(
         input_dict, numbering_scheme=numbering_scheme.value
     )
     all_sequence_infos = []
-    chain_types = {}
-    isotypes = {}
-    species_counts = {}
+    chain_types: Dict[str, str] = {}
+    isotypes: Dict[str, str] = {}
+    species_counts: Dict[str, int] = {}
 
     for result_obj in processor.results:
         for chain in result_obj.chains:

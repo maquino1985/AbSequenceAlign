@@ -6,10 +6,10 @@ Implements the AbstractPipelineStep interface.
 from typing import Any, List, Dict
 import logging
 
-from ...core.base_classes import AbstractPipelineStep
-from ...core.interfaces import PipelineContext
-from ...core.exceptions import ValidationError
-from ...domain.models import SequenceValidator
+from backend.core.base_classes import AbstractPipelineStep
+from backend.core.interfaces import PipelineContext
+from backend.core.exceptions import ValidationError
+from backend.domain.models import SequenceValidator
 
 
 class SequenceValidationStep(AbstractPipelineStep):

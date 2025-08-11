@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class PSSMCalculator:
     """Calculate Position-Specific Scoring Matrix from MSA alignment"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Standard amino acid alphabet
         self.amino_acids = list("ACDEFGHIKLMNPQRSTVWY")
         self.aa_to_idx = {aa: i for i, aa in enumerate(self.amino_acids)}

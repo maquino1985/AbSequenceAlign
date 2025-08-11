@@ -96,7 +96,8 @@ class AnnotationService(AbstractProcessingSubject):
             self.notify_processing_failed(str(e))
             logger.error(f"Error annotating sequence: {e}")
             raise AnnotationError(
-                f"Sequence annotation failed: {str(e)}", step="sequence_annotation"
+                f"Sequence annotation failed: {str(e)}",
+                step="sequence_annotation",
             )
 
     def annotate_chain(
@@ -127,9 +128,7 @@ class AnnotationService(AbstractProcessingSubject):
                             domain
                         )
                     elif domain.domain_type == DomainType.LINKER:
-                        annotated_domain = self._annotate_linker_domain(
-                            domain
-                        )
+                        annotated_domain = self._annotate_linker_domain(domain)
                     else:
                         raise AnnotationError(
                             f"Unknown domain type: {domain.domain_type}",
@@ -177,7 +176,7 @@ class AnnotationService(AbstractProcessingSubject):
         # Try to get sequence from metadata first (for test compatibility)
         if "sequence" in domain.metadata:
             return domain.metadata["sequence"]
-        
+
         # If not in metadata, try to extract from parent sequence
         # This would require the domain to have a reference to its parent sequence
         # For now, we'll raise an error if sequence is not available
@@ -193,7 +192,7 @@ class AnnotationService(AbstractProcessingSubject):
         try:
             # Get the sequence for this domain
             domain_sequence = self._get_domain_sequence(domain)
-            
+
             # Use ANARCI for variable domain annotation
             anarci_result = self._anarci_adapter.annotate_sequence(
                 domain_sequence, numbering_scheme
@@ -205,9 +204,7 @@ class AnnotationService(AbstractProcessingSubject):
                 )
 
             # Extract regions from ANARCI result
-            regions = self._extract_regions_from_anarci(
-                anarci_result, domain
-            )
+            regions = self._extract_regions_from_anarci(anarci_result, domain)
 
             # Create annotated domain
             annotated_domain = BiologicDomain(
@@ -237,7 +234,7 @@ class AnnotationService(AbstractProcessingSubject):
         try:
             # Get the sequence for this domain
             domain_sequence = self._get_domain_sequence(domain)
-            
+
             # Use HMMER for isotype detection
             hmmer_result = self._hmmer_adapter.detect_isotype(domain_sequence)
 
@@ -492,12 +489,19 @@ class AnnotationService(AbstractProcessingSubject):
     def _detect_chain_type_from_name(self, chain_name: str) -> ChainType:
         """Detect chain type from chain name"""
         chain_name_lower = chain_name.lower()
-        
-        if any(keyword in chain_name_lower for keyword in ["heavy", "h", "vh"]):
+
+        if any(
+            keyword in chain_name_lower for keyword in ["heavy", "h", "vh"]
+        ):
             return ChainType.HEAVY
-        elif any(keyword in chain_name_lower for keyword in ["light", "l", "vl", "kappa", "lambda"]):
+        elif any(
+            keyword in chain_name_lower
+            for keyword in ["light", "l", "vl", "kappa", "lambda"]
+        ):
             return ChainType.LIGHT
-        elif any(keyword in chain_name_lower for keyword in ["scfv", "single"]):
+        elif any(
+            keyword in chain_name_lower for keyword in ["scfv", "single"]
+        ):
             return ChainType.SCFV
         else:
             # Default to HEAVY if we can't determine

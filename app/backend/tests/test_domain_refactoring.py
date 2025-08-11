@@ -2,6 +2,8 @@
 Tests for domain refactoring with new biologic entities.
 """
 
+from backend.core.exceptions import ValidationError
+
 import pytest
 from backend.domain.value_objects import (
     AminoAcidSequence,

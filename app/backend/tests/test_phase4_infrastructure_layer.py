@@ -3,6 +3,14 @@ Tests for Phase 4: Infrastructure Layer
 Tests repository pattern, dependency injection, and external tool adapters.
 """
 
+from unittest.mock import Mock, patch, AsyncMock
+from backend.domain.models import (
+    ChainType,
+    DomainType,
+    NumberingScheme,
+    RegionType,
+)
+
 import pytest
 import tempfile
 import os

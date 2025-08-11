@@ -6,7 +6,9 @@ Manages the integration between annotation services and biologic persistence.
 from typing import Dict, Any, Optional
 
 from backend.annotation.anarci_result_processor import AnarciResultProcessor
-from backend.application.factories.biologic_factory import create_biologic_service
+from backend.application.factories.biologic_factory import (
+    create_biologic_service,
+)
 
 
 class AnnotationPersistenceService:
@@ -43,10 +45,13 @@ class AnnotationPersistenceService:
 
         # Step 2: Convert processor results to domain entities
         # This would be done by AnnotationProcessorService
-        from backend.application.services.annotation_processor_service import AnnotationProcessorService
+        from backend.application.services.annotation_processor_service import (
+            AnnotationProcessorService,
+        )
+
         processor_service = AnnotationProcessorService()
-        biologic_entity = processor_service.create_biologic_entity_from_processor(
-            processor
+        biologic_entity = (
+            processor_service.create_biologic_entity_from_processor(processor)
         )
 
         # Step 3: Use biologic service to persist as ORM models
@@ -58,10 +63,15 @@ class AnnotationPersistenceService:
 
         # Step 4: Return both the biologic response and the original annotation result
         # This would be done by AnnotationResponseService
-        from backend.application.services.annotation_response_service import AnnotationResponseService
+        from backend.application.services.annotation_response_service import (
+            AnnotationResponseService,
+        )
+
         response_service = AnnotationResponseService()
-        annotation_result = response_service.create_api_response_from_processor(
-            processor, numbering_scheme
+        annotation_result = (
+            response_service.create_api_response_from_processor(
+                processor, numbering_scheme
+            )
         )
 
         return {"biologic": biologic_response, "annotation": annotation_result}

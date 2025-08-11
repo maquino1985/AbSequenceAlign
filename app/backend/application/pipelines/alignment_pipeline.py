@@ -25,7 +25,7 @@ class AlignmentPipeline(AbstractProcessingSubject):
         self._steps = []
         self._setup_pipeline()
 
-    def _setup_pipeline(self):
+    def _setup_pipeline(self) -> None:
         """Setup the alignment pipeline steps"""
         # Step 1: Sequence validation
         validation_step = SequenceValidationStep()

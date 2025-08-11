@@ -12,7 +12,7 @@ from backend.msa.msa_annotation import MSAAnnotationEngine
 class TestMSAAnnotationEngine:
     """Test cases for MSAAnnotationEngine"""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up test fixtures"""
         self.annotation_engine = MSAAnnotationEngine()
 
@@ -51,13 +51,13 @@ class TestMSAAnnotationEngine:
             metadata={"num_sequences": 2, "alignment_length": 123},
         )
 
-    def test_annotation_engine_initialization(self):
+    def test_annotation_engine_initialization(self) -> None:
         """Test MSAAnnotationEngine initialization"""
         assert self.annotation_engine is not None
         assert hasattr(self.annotation_engine, "sequence_processor")
 
     @patch("backend.msa.msa_annotation.annotate_sequences_with_processor")
-    def test_annotate_msa_success(self, mock_annotate):
+    def test_annotate_msa_success(self, mock_annotate) -> None:
         """Test successful MSA annotation"""
         # Mock annotation result
         mock_annotation_result = MagicMock()
@@ -144,7 +144,7 @@ class TestMSAAnnotationEngine:
         assert "CDR3" in result.region_mappings
         assert "FR4" in result.region_mappings
 
-    def test_extract_annotations(self):
+    def test_extract_annotations(self) -> None:
         """Test _extract_annotations method"""
         # Create mock sequence info with regions
         mock_seq_info = MagicMock()
@@ -172,7 +172,7 @@ class TestMSAAnnotationEngine:
         assert annotations[1]["name"] == "CDR1"
         assert annotations[2]["name"] == "FR2"
 
-    def test_extract_annotations_no_regions(self):
+    def test_extract_annotations_no_regions(self) -> None:
         """Test _extract_annotations with no regions"""
         mock_seq_info = MagicMock()
         mock_seq_info.regions = None
@@ -183,7 +183,7 @@ class TestMSAAnnotationEngine:
 
         assert annotations == []
 
-    def test_get_region_color(self):
+    def test_get_region_color(self) -> None:
         """Test _get_region_color method"""
         # Test known regions
         assert self.annotation_engine._get_region_color("FR1") == "#FF6B6B"
@@ -197,7 +197,7 @@ class TestMSAAnnotationEngine:
         # Test unknown region
         assert self.annotation_engine._get_region_color("UNKNOWN") == "#CCCCCC"
 
-    def test_map_positions_to_alignment_exact_match(self):
+    def test_map_positions_to_alignment_exact_match(self) -> None:
         """Test _map_positions_to_alignment with exact match"""
         original_seq = "EVQLVESGGGLVQPGGSLRLSCAASGFTFSYFAMSWVRQAPGKGLEWVATISGGGGNTYYLDRVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCVRQTYGGFGYWGQGTLVTVSS"
         aligned_seq = "EVQLVESGGGLVQPGGSLRLSCAASGFTFSYFAMSWVRQAPGKGLEWVATISGGGGNTYYLDRVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCVRQTYGGFGYWGQGTLVTVSS"
@@ -211,7 +211,7 @@ class TestMSAAnnotationEngine:
         assert aligned_start == 0
         assert aligned_stop == 25
 
-    def test_map_positions_to_alignment_with_gaps(self):
+    def test_map_positions_to_alignment_with_gaps(self) -> None:
         """Test _map_positions_to_alignment with gaps"""
         original_seq = "EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK"
         aligned_seq = "EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK---"
@@ -225,7 +225,7 @@ class TestMSAAnnotationEngine:
         assert aligned_start == 0
         assert aligned_stop == 25
 
-    def test_map_positions_to_alignment_mismatch(self):
+    def test_map_positions_to_alignment_mismatch(self) -> None:
         """Test _map_positions_to_alignment with sequence mismatch"""
         original_seq = "EVQLVESGGGLVQPGGSLRLSCAASGFTFSYFAMSWVRQAPGKGLEWVATISGGGGNTYYLDRVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCVRQTYGGFGYWGQGTLVTVSS"
         aligned_seq = "EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK---"
@@ -240,7 +240,7 @@ class TestMSAAnnotationEngine:
         assert aligned_start == 0
         assert aligned_stop == 25
 
-    def test_map_positions_to_alignment_empty_sequences(self):
+    def test_map_positions_to_alignment_empty_sequences(self) -> None:
         """Test _map_positions_to_alignment with empty sequences"""
         aligned_start, aligned_stop = (
             self.annotation_engine._map_positions_to_alignment("", "", 0, 25)
@@ -249,7 +249,7 @@ class TestMSAAnnotationEngine:
         assert aligned_start == 0
         assert aligned_stop == 25
 
-    def test_get_region_positions_in_alignment(self):
+    def test_get_region_positions_in_alignment(self) -> None:
         """Test get_region_positions_in_alignment method"""
         # Create MSA result with annotations
         msa_result = MSAResult(
@@ -328,7 +328,7 @@ class TestMSAAnnotationEngine:
         assert region_positions[1]["original_stop"] == 32
         assert region_positions[1]["color"] == "#4ECDC4"
 
-    def test_get_region_positions_in_alignment_no_annotations(self):
+    def test_get_region_positions_in_alignment_no_annotations(self) -> None:
         """Test get_region_positions_in_alignment with no annotations"""
         msa_result = MSAResult(
             msa_id="test-msa-123",
@@ -358,7 +358,7 @@ class TestMSAAnnotationEngine:
 
         assert region_positions == []
 
-    def test_get_region_positions_in_alignment_region_not_found(self):
+    def test_get_region_positions_in_alignment_region_not_found(self) -> None:
         """Test get_region_positions_in_alignment with region not found"""
         msa_result = MSAResult(
             msa_id="test-msa-123",

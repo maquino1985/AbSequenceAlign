@@ -3,6 +3,10 @@ Integration tests for the complete refactored architecture.
 Tests the integration between Domain, Application, and Infrastructure layers.
 """
 
+from unittest.mock import Mock
+from backend.domain.models import ChainType
+from backend.core.exceptions import ValidationError
+
 import pytest
 import tempfile
 

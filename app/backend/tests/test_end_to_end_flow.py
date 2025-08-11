@@ -2,6 +2,10 @@
 End-to-end test to verify the complete flow from FASTA input to annotation result.
 """
 
+from backend.annotation.annotation_engine import *
+from backend.annotation.sequence_processor import *
+from backend.models.models import *
+
 from backend.annotation.annotation_engine import (
     annotate_sequences_with_processor,
 )
@@ -12,7 +16,7 @@ from backend.models.models import (
 )
 
 
-def test_fasta_to_annotation_flow():
+def test_fasta_to_annotation_flow() -> None:
     """Test the complete flow from FASTA string to annotation result."""
 
     # Simulate FASTA input like what comes from the frontend

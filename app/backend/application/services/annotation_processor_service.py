@@ -57,8 +57,10 @@ class AnnotationProcessorService:
                                     f"Error creating region {region_name}: {e}"
                                 )
                                 # Create fallback region
-                                region = self._create_fallback_biologic_feature(
-                                    region_name, domain_data.sequence
+                                region = (
+                                    self._create_fallback_biologic_feature(
+                                        region_name, domain_data.sequence
+                                    )
                                 )
                                 regions[region_name] = region
 
@@ -158,12 +160,19 @@ class AnnotationProcessorService:
     def _detect_chain_type_from_name(self, chain_name: str) -> ChainType:
         """Detect chain type from chain name."""
         chain_name_lower = chain_name.lower()
-        
-        if any(keyword in chain_name_lower for keyword in ["heavy", "h", "vh"]):
+
+        if any(
+            keyword in chain_name_lower for keyword in ["heavy", "h", "vh"]
+        ):
             return ChainType.HEAVY
-        elif any(keyword in chain_name_lower for keyword in ["light", "l", "vl", "kappa", "lambda"]):
+        elif any(
+            keyword in chain_name_lower
+            for keyword in ["light", "l", "vl", "kappa", "lambda"]
+        ):
             return ChainType.LIGHT
-        elif any(keyword in chain_name_lower for keyword in ["scfv", "single"]):
+        elif any(
+            keyword in chain_name_lower for keyword in ["scfv", "single"]
+        ):
             return ChainType.SCFV
         else:
             # Default to HEAVY if we can't determine

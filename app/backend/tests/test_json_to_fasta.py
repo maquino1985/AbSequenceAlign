@@ -2,6 +2,8 @@
 Tests for JSON to FASTA conversion utilities
 """
 
+from backend.utils.json_to_fasta import json_to_fasta
+
 from backend.utils.json_to_fasta import (
     json_seqs_to_fasta,
     json_seqs_to_fasta_simple,
@@ -11,7 +13,7 @@ from backend.utils.json_to_fasta import (
 class TestJsonToFasta:
     """Test cases for JSON to FASTA conversion"""
 
-    def test_json_seqs_to_fasta_simple(self):
+    def test_json_seqs_to_fasta_simple(self) -> None:
         """Test converting simple JSON sequences to FASTA"""
         json_data = {
             "heavy_chain_1": "ELQLQESGPGLVKPSETLSLTCAVSGVSFSDYHWAWIRDPPGKGLEWIGDINHRGHTNYNPSLKSRVTVSIDTSKNQFSLKLSSVTAADTAVYFCARDFPNFIFDFWGQGTLVTVSSASTKGPSVFPLAPSSKSTSGGTAALGCLVKDYFPEPVTVSWNSGALTSGVHTFPAVLQSSGLYSLSSVVTVPSSSLGTQTYICNVNHKPSNTKVDEKVEPDSCDKTHTCPPCPAPELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVKFNWYVDGVEVHNAKTKPREEQYNSTYRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTISKAKGQPREPQVCTLPPSREEMTKNQVSLSCAVKGFYPSDIAVEWESNGQPENNYKTTPPVLDSDGSFFLVSKLTVDKSRWQQGNVFSCSVMHEALHNHYTQKSLSLSPGK",
@@ -49,7 +51,7 @@ class TestJsonToFasta:
         ]
         assert len(sequence_lines) == 4  # Should have 4 sequence lines
 
-    def test_json_seqs_to_fasta_with_names(self):
+    def test_json_seqs_to_fasta_with_names(self) -> None:
         """Test converting JSON sequences with names to FASTA"""
         json_data = [
             {
@@ -99,12 +101,12 @@ class TestJsonToFasta:
         ]
         assert len(sequence_lines) == 6  # Should have 6 sequence lines
 
-    def test_json_seqs_to_fasta_empty_input(self):
+    def test_json_seqs_to_fasta_empty_input(self) -> None:
         """Test handling of empty input"""
-        empty_data = {}
+        empty_data: Dict[str, Any] = {}
         fasta_result = json_seqs_to_fasta_simple(empty_data)
         assert fasta_result == ""
 
-        empty_list = []
+        empty_list: List[Any] = []
         fasta_result = json_seqs_to_fasta(empty_list)
         assert fasta_result == ""

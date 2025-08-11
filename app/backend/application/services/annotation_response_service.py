@@ -3,7 +3,6 @@ Service for creating API responses from annotation results.
 Handles conversion between domain entities and API response models.
 """
 
-
 from typing import Dict, Any, List
 from backend.annotation.anarci_result_processor import AnarciResultProcessor
 from backend.models.models_v2 import (

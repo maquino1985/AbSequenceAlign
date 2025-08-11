@@ -18,7 +18,7 @@ from ...logger import logger
 class AlignmentService(AbstractProcessingSubject):
     """Service for orchestrating sequence alignment"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._alignment_strategies = {
             "pairwise": self._pairwise_alignment,

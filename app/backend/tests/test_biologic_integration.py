@@ -2,6 +2,8 @@
 Tests for biologic integration with annotation service.
 """
 
+from unittest.mock import AsyncMock
+
 import pytest
 
 from backend.application.services.biologic_service import BiologicServiceImpl

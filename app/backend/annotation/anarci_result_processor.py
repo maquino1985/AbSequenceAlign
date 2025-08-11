@@ -2,7 +2,7 @@ import itertools
 import logging
 from typing import List, Optional, Dict, Any
 
-from anarci import run_anarci
+from anarci import run_anarci  # type: ignore[import-untyped]
 
 from .antibody_region_annotator import AntibodyRegionAnnotator
 from .isotype_hmmer import detect_isotype_with_hmmer

@@ -4,16 +4,18 @@ Entities have identity and lifecycle, and contain business logic.
 """
 
 from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from backend.domain.entities import AntibodyFeature
 
 from abc import ABC, abstractmethod
 
-from backend.domain.value_objects import (
-    AnnotationMetadata,
-)
+from backend.core.exceptions import ValidationError
 from backend.domain.models import (
+    BiologicType,
+    ChainType,
+    DomainType,
     FeatureType,
 )
 
@@ -50,7 +52,7 @@ class BiologicEntity(DomainEntity):
     name: str
     description: Optional[str] = None
     organism: Optional[str] = None
-    biologic_type: str = "antibody"  # antibody, protein, dna, rna
+    biologic_type: BiologicType = BiologicType.ANTIBODY
     chains: List["BiologicChain"] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -94,19 +96,19 @@ class BiologicEntity(DomainEntity):
 
     def is_antibody(self) -> bool:
         """Check if this is an antibody"""
-        return self.biologic_type.lower() == "antibody"
+        return self.biologic_type == BiologicType.ANTIBODY
 
     def is_protein(self) -> bool:
         """Check if this is a protein"""
-        return self.biologic_type.lower() == "protein"
+        return self.biologic_type == BiologicType.PROTEIN
 
     def is_dna(self) -> bool:
         """Check if this is DNA"""
-        return self.biologic_type.lower() == "dna"
+        return self.biologic_type == BiologicType.DNA
 
     def is_rna(self) -> bool:
         """Check if this is RNA"""
-        return self.biologic_type.lower() == "rna"
+        return self.biologic_type == BiologicType.RNA
 
 
 @dataclass
@@ -114,7 +116,7 @@ class BiologicChain(DomainEntity):
     """Domain entity representing a chain within a biologic"""
 
     name: str
-    chain_type: str  # HEAVY, LIGHT, SINGLE_CHAIN, etc.
+    chain_type: ChainType
     sequences: List["BiologicSequence"] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -147,18 +149,22 @@ class BiologicChain(DomainEntity):
 
     def is_heavy_chain(self) -> bool:
         """Check if this is a heavy chain"""
-        return self.chain_type.upper() == "HEAVY"
+        return self.chain_type == ChainType.HEAVY
 
     def is_light_chain(self) -> bool:
         """Check if this is a light chain"""
-        return self.chain_type.upper() in ["LIGHT", "KAPPA", "LAMBDA"]
+        return self.chain_type in [
+            ChainType.LIGHT,
+            ChainType.KAPPA,
+            ChainType.LAMBDA,
+        ]
 
 
 @dataclass
 class BiologicSequence(DomainEntity):
     """Domain entity representing a sequence (protein, DNA, RNA)"""
 
-    sequence_type: str  # PROTEIN, DNA, RNA
+    sequence_type: str  # PROTEIN, DNA, RNA - keeping as string for now
     sequence_data: str
     description: Optional[str] = None
     domains: List["BiologicDomain"] = field(default_factory=list)
@@ -209,7 +215,7 @@ class BiologicSequence(DomainEntity):
 class BiologicDomain(DomainEntity):
     """Domain entity representing a domain within a sequence"""
 
-    domain_type: str  # VARIABLE, CONSTANT, LINKER, etc.
+    domain_type: DomainType
     start_position: int
     end_position: int
     confidence_score: Optional[int] = None  # 0-100
@@ -263,22 +269,22 @@ class BiologicDomain(DomainEntity):
 
     def is_variable_domain(self) -> bool:
         """Check if this is a variable domain"""
-        return self.domain_type.upper() == "VARIABLE"
+        return self.domain_type == DomainType.VARIABLE
 
     def is_constant_domain(self) -> bool:
         """Check if this is a constant domain"""
-        return self.domain_type.upper() == "CONSTANT"
+        return self.domain_type == DomainType.CONSTANT
 
     def is_linker_domain(self) -> bool:
         """Check if this is a linker domain"""
-        return self.domain_type.upper() == "LINKER"
+        return self.domain_type == DomainType.LINKER
 
 
 @dataclass
 class BiologicFeature(DomainEntity):
     """Domain entity representing a feature within a domain"""
 
-    feature_type: str  # CDR, FR, MUTATION, etc.
+    feature_type: FeatureType
     name: str
     value: str
     start_position: Optional[int] = None
@@ -306,15 +312,24 @@ class BiologicFeature(DomainEntity):
 
     def is_cdr_region(self) -> bool:
         """Check if this is a CDR region"""
-        return self.feature_type.upper() in ["CDR1", "CDR2", "CDR3"]
+        return self.feature_type in [
+            FeatureType.CDR1,
+            FeatureType.CDR2,
+            FeatureType.CDR3,
+        ]
 
     def is_fr_region(self) -> bool:
         """Check if this is an FR region"""
-        return self.feature_type.upper() in ["FR1", "FR2", "FR3", "FR4"]
+        return self.feature_type in [
+            FeatureType.FR1,
+            FeatureType.FR2,
+            FeatureType.FR3,
+            FeatureType.FR4,
+        ]
 
     def is_mutation(self) -> bool:
         """Check if this is a mutation feature"""
-        return self.feature_type.upper() == "MUTATION"
+        return self.feature_type == FeatureType.MUTATION
 
     def has_high_confidence(self, threshold: int = 80) -> bool:
         """Check if the feature has high confidence"""

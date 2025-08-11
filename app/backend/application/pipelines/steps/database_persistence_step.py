@@ -5,10 +5,10 @@ Persists annotated antibody sequences to the database.
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.base_classes import AbstractPipelineStep
-from ...core.interfaces import PipelineContext, ProcessingResult
-from ...domain.entities import AntibodySequence
-from ...services.antibody_database_service import AntibodyDatabaseService
+from backend.core.base_classes import AbstractPipelineStep
+from backend.core.interfaces import PipelineContext, ProcessingResult
+from backend.domain.entities import AntibodySequence
+from backend.application.services.biologic_service import BiologicService
 from backend.logger import logger
 
 
@@ -16,9 +16,9 @@ class DatabasePersistenceStep(AbstractPipelineStep):
     """Pipeline step for persisting annotated antibody sequences to the database."""
 
     def __init__(self, session: AsyncSession):
-        super().__init__()
+        super().__init__("database_persistence")
         self.session = session
-        self.database_service = AntibodyDatabaseService(session)
+        self.biologic_service = BiologicService()
 
     async def process(
         self, context: PipelineContext, **kwargs
@@ -46,11 +46,9 @@ class DatabasePersistenceStep(AbstractPipelineStep):
                     success=False, error="Invalid annotated sequence type"
                 )
 
-            # Persist the sequence to the database
-            persistence_result = (
-                await self.database_service.save_antibody_sequence(
-                    annotated_sequence, persist_metadata=True
-                )
+            # Persist the sequence to the database using biologic service
+            persistence_result = await self.biologic_service.process_and_persist_biologic_entity(
+                self.session, annotated_sequence
             )
 
             if not persistence_result.success:
@@ -100,8 +98,7 @@ class DatabasePersistenceStep(AbstractPipelineStep):
             return ProcessingResult(success=False, error=error_msg)
 
     def can_handle(self, context: PipelineContext) -> bool:
-        """Check if this step can handle the current context."""
-        # This step can handle any context that has an annotated sequence
+        """Check if this step can handle the given context."""
         return context.has_data("annotated_sequence")
 
     def get_step_name(self) -> str:

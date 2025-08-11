@@ -21,21 +21,30 @@ from backend.domain.value_objects import RegionBoundary
 # =============================================================================
 
 
+class BiologicType(str, Enum):
+    """Types of biologics"""
+
+    ANTIBODY = "antibody"
+    PROTEIN = "protein"
+    DNA = "dna"
+    RNA = "rna"
+
+
 class ChainType(str, Enum):
     """Types of antibody chains"""
 
-    HEAVY = "H"
-    LIGHT = "L"
-    KAPPA = "K"
-    LAMBDA = "L"
-    BETA = "B"
-    GAMMA = "G"
-    DELTA = "D"
-    EPSILON = "E"
-    ZETA = "Z"
-    ALPHA = "A"
-    THETA = "T"
-    IOTA = "I"
+    HEAVY = "HEAVY"
+    LIGHT = "LIGHT"
+    KAPPA = "KAPPA"
+    LAMBDA = "LAMBDA"
+    BETA = "BETA"
+    GAMMA = "GAMMA"
+    DELTA = "DELTA"
+    EPSILON = "EPSILON"
+    ZETA = "ZETA"
+    ALPHA = "ALPHA"
+    THETA = "THETA"
+    IOTA = "IOTA"
 
 
 class DomainType(str, Enum):
@@ -79,6 +88,13 @@ class FeatureType(str, Enum):
     ISOTYPE = "ISOTYPE"
     MUTATION = "MUTATION"
     POST_TRANSLATIONAL = "POST_TRANSLATIONAL"
+    CDR1 = "CDR1"
+    CDR2 = "CDR2"
+    CDR3 = "CDR3"
+    FR1 = "FR1"
+    FR2 = "FR2"
+    FR3 = "FR3"
+    FR4 = "FR4"
 
 
 # =============================================================================

@@ -7,7 +7,7 @@ sys.path.append("/Users/aquinmx3/repos/AbSequenceAlign/app")
 from backend.annotation.anarci_result_processor import AnarciResultProcessor
 
 
-def test_scfv_annotation():
+def test_scfv_annotation() -> None:
     """Test scFv annotation directly"""
     scfv_sequence = "DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIKGGGGGSGGGGSGGGGSGGGGSQVQLKQSGAEVKKPGASVKVSCKASGYTFTDEYMNWVRQAPGKSLEWMGYINPNNGGADYNQKFQGRVTMTVDQSISTAYMELSRLRSDDSAVYFCARLGYSNPYFDFWGQGTLVKVSS"
 

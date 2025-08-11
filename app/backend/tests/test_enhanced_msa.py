@@ -5,12 +5,16 @@ from backend.models.models import (
 from backend.msa.msa_annotation import MSAAnnotationEngine
 from backend.msa.msa_engine import MSAEngine
 from backend.msa.pssm_calculator import PSSMCalculator
+from backend.models.models import *
+from backend.msa.msa_annotation import *
+from backend.msa.msa_engine import *
+from backend.msa.pssm_calculator import *
 
 
 class TestEnhancedMSA:
     """Test enhanced MSA functionality with PSSM and region annotation"""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up test fixtures"""
         self.msa_engine = MSAEngine()
         self.annotation_engine = MSAAnnotationEngine()
@@ -32,7 +36,7 @@ class TestEnhancedMSA:
             ),
         ]
 
-    def test_enhanced_msa_creation(self):
+    def test_enhanced_msa_creation(self) -> None:
         """Test MSA creation with enhanced features"""
         # Create MSA
         msa_result = self.msa_engine.create_msa(
@@ -55,7 +59,7 @@ class TestEnhancedMSA:
         assert "consensus" in pssm_data
         assert "amino_acids" in pssm_data
 
-    def test_pssm_calculation(self):
+    def test_pssm_calculation(self) -> None:
         """Test PSSM calculation functionality"""
         # Create alignment matrix
         alignment_matrix = [
@@ -103,7 +107,7 @@ class TestEnhancedMSA:
         assert "A" in pssm_data["amino_acids"]
         assert "R" in pssm_data["amino_acids"]
 
-    def test_enhanced_msa_annotation(self):
+    def test_enhanced_msa_annotation(self) -> None:
         """Test MSA annotation with region information"""
         # Create MSA first
         msa_result = self.msa_engine.create_msa(
@@ -131,7 +135,7 @@ class TestEnhancedMSA:
             assert seq.aligned_sequence is not None
             assert seq.annotations is not None
 
-    def test_region_mapping_to_aligned_sequences(self):
+    def test_region_mapping_to_aligned_sequences(self) -> None:
         """Test that region positions are correctly mapped to aligned sequences"""
         # Create MSA with gaps
         sequences_with_gaps = [
@@ -161,7 +165,7 @@ class TestEnhancedMSA:
                 assert annotation["stop"] >= annotation["start"]
                 assert annotation["stop"] < len(msa_result.consensus)
 
-    def test_consensus_quality(self):
+    def test_consensus_quality(self) -> None:
         """Test consensus sequence quality and conservation scores"""
         # Create MSA
         msa_result = self.msa_engine.create_msa(
@@ -188,7 +192,7 @@ class TestEnhancedMSA:
         for aa in consensus:
             assert aa in valid_aas or aa == "-"
 
-    def test_pssm_position_summary(self):
+    def test_pssm_position_summary(self) -> None:
         """Test PSSM position summary functionality"""
         # Create alignment matrix
         alignment_matrix = [
@@ -220,7 +224,7 @@ class TestEnhancedMSA:
         assert len(position_summary["top_frequencies"]) <= 5
         assert len(position_summary["top_scores"]) <= 5
 
-    def test_region_pssm(self):
+    def test_region_pssm(self) -> None:
         """Test region-specific PSSM calculation"""
         # Create alignment matrix
         alignment_matrix = [
@@ -255,9 +259,9 @@ class TestEnhancedMSA:
         assert len(region_pssm["position_scores"]) == 10
         assert len(region_pssm["conservation_scores"]) == 10
 
-    def test_empty_pssm(self):
+    def test_empty_pssm(self) -> None:
         """Test PSSM calculation with empty alignment"""
-        empty_matrix = []
+        empty_matrix: List[Any] = []
         pssm_data = self.pssm_calculator.calculate_pssm(empty_matrix)
 
         # Verify empty PSSM structure
@@ -269,7 +273,7 @@ class TestEnhancedMSA:
         assert pssm_data["alignment_length"] == 0
         assert pssm_data["num_sequences"] == 0
 
-    def test_msa_with_single_sequence(self):
+    def test_msa_with_single_sequence(self) -> None:
         """Test MSA creation with single sequence"""
         single_sequence = [
             (

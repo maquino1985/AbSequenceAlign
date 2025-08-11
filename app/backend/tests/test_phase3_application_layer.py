@@ -3,6 +3,9 @@ Tests for Phase 3: Application Layer implementation.
 Verifies pipeline pattern, application services, and observer pattern functionality.
 """
 
+from backend.domain.models import NumberingScheme, DomainType
+from backend.core.exceptions import ProcessingError
+
 import pytest
 from unittest.mock import Mock, patch
 
