@@ -40,6 +40,14 @@ from .models import (
     AntibodyRegion,
     AntibodyFeature,
     ProcessingJob,
+    # New biologic entity models
+    Biologic,
+    BiologicAlias,
+    Chain,
+    Sequence,
+    ChainSequence,
+    SequenceDomain,
+    DomainFeature,
 )
 
 __all__ = [
@@ -76,4 +84,12 @@ __all__ = [
     "AntibodyRegion",
     "AntibodyFeature",
     "ProcessingJob",
+    # New biologic entity models
+    "Biologic",
+    "BiologicAlias",
+    "Chain",
+    "Sequence",
+    "ChainSequence",
+    "SequenceDomain",
+    "DomainFeature",
 ]
