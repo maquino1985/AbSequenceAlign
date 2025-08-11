@@ -28,24 +28,11 @@ class ValidationUtils:
                 logger.warning(f"Invalid sequence: missing name or chains")
                 return False
 
-            # Each chain should have at least one sequence with domains
+            # Each chain should have at least one sequence
             for chain in sequence.chains:
                 if not chain.sequences:
                     logger.warning(
                         f"Invalid chain {chain.name}: missing sequences"
-                    )
-                    return False
-                
-                # Check that at least one sequence has domains
-                has_domains = False
-                for sequence in chain.sequences:
-                    if sequence.domains:
-                        has_domains = True
-                        break
-                
-                if not has_domains:
-                    logger.warning(
-                        f"Invalid chain {chain.name}: no sequences have domains"
                     )
                     return False
 

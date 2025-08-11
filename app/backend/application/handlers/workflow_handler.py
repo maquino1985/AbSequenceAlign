@@ -101,7 +101,7 @@ class WorkflowHandler(BaseHandler):
                         metadata={},
                     )
 
-                    # Perform annotation
+                    # Perform annotation (domains will be created during annotation)
                     annotation_result = (
                         self.annotation_service.annotate_sequence(
                             sequence, numbering_scheme
