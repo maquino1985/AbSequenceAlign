@@ -143,3 +143,54 @@ class BiologicConverterImpl(
                 f"Error converting Pydantic model to domain entity: {e}"
             )
             raise
+
+    def convert_from_request_data(
+        self, sequence_name: str, sequence_data: Dict[str, Any]
+    ) -> BiologicEntity:
+        """Convert frontend request data to domain entity."""
+        try:
+            self._logger.debug(
+                f"Converting request data to domain entity: {sequence_name}"
+            )
+
+            # Extract chain information from sequence data
+            chains = []
+            for chain_name, chain_sequence in sequence_data.items():
+                from backend.domain.entities import BiologicChain, BiologicSequence
+                from backend.domain.models import ChainType
+
+                # Create sequence
+                biologic_sequence = BiologicSequence(
+                    sequence_type="PROTEIN",
+                    sequence_data=chain_sequence,
+                    description=f"{chain_name} sequence for {sequence_name}",
+                )
+
+                # Create chain
+                biologic_chain = BiologicChain(
+                    name=chain_name,
+                    chain_type=ChainType.HEAVY if "heavy" in chain_name.lower() else ChainType.LIGHT,
+                    sequences=[biologic_sequence],
+                )
+
+                chains.append(biologic_chain)
+
+            # Create domain entity
+            domain_entity = BiologicEntity(
+                name=sequence_name,
+                biologic_type="antibody",
+                description=f"Antibody sequence: {sequence_name}",
+                chains=chains,
+                metadata={},
+            )
+
+            self._logger.debug(
+                f"Successfully converted request data to domain entity: {sequence_name}"
+            )
+            return domain_entity
+
+        except Exception as e:
+            self._logger.error(
+                f"Error converting request data to domain entity: {e}"
+            )
+            raise

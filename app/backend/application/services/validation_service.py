@@ -87,40 +87,6 @@ class ValidationService:
             logger.error(f"Error validating chain: {e}")
             return False
 
-    def validate_sequences(self, sequences: Dict[str, Any]) -> bool:
-        """
-        Validate multiple sequences.
-
-        Args:
-            sequences: Dictionary of sequences to validate
-
-        Returns:
-            True if all valid, False otherwise
-        """
-        try:
-            if not sequences:
-                logger.error("Sequences dictionary is empty")
-                return False
-
-            for name, sequence_data in sequences.items():
-                if not name:
-                    logger.error("Sequence name is required")
-                    return False
-
-                # Convert to BiologicEntity if needed
-                if isinstance(sequence_data, BiologicEntity):
-                    if not self.validate_sequence(sequence_data):
-                        return False
-                else:
-                    logger.error(f"Invalid sequence data type for {name}")
-                    return False
-
-            return True
-
-        except Exception as e:
-            logger.error(f"Error validating sequences: {e}")
-            return False
-
     def validate_amino_acid_sequence(self, sequence: str) -> bool:
         """
         Validate an amino acid sequence.

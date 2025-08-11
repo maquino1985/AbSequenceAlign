@@ -10,6 +10,7 @@ from ..services.annotation_service import AnnotationService
 from ..services.validation_service import ValidationService
 from ..services.response_service import ResponseService
 from ..services.biologic_service import BiologicService
+from ..converters.biologic_converter import BiologicConverterImpl
 from backend.logger import logger
 
 
@@ -37,6 +38,7 @@ class WorkflowHandler(BaseHandler):
         self.validation_service = validation_service
         self.response_service = response_service
         self.biologic_service = biologic_service
+        self.converter = BiologicConverterImpl()
 
     async def handle(self, command: BaseCommand) -> Dict[str, Any]:
         """
@@ -62,19 +64,18 @@ class WorkflowHandler(BaseHandler):
             persist_to_database = command_result.data["persist_to_database"]
             organism = command_result.data["organism"]
 
-            # Validate the sequences
-            if not self.validation_service.validate_sequences(sequences):
-                return self._create_error_response("Invalid sequences data")
-
             # Process each sequence
             results = []
             for sequence_name, sequence_data in sequences.items():
                 try:
                     # Convert sequence data to domain entity
-                    # TODO: Use converter service for this
-                    sequence = (
-                        sequence_data  # Assume it's already a BiologicEntity
+                    sequence = self.converter.convert_from_request_data(
+                        sequence_name, sequence_data
                     )
+
+                    # Validate the converted sequence
+                    if not self.validation_service.validate_sequence(sequence):
+                        return self._create_error_response(f"Invalid sequence data for {sequence_name}")
 
                     # Perform annotation
                     annotation_result = (

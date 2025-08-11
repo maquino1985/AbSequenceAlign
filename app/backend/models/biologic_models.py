@@ -186,6 +186,8 @@ class SequenceDomainResponse(BaseModel):
     domain_type: str
     start_position: int
     end_position: int
+    species: Optional[str] = None
+    germline: Optional[str] = None
     confidence_score: Optional[int] = None
     metadata_json: Dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
@@ -202,6 +204,12 @@ class SequenceDomainCreate(BaseModel):
         ..., description="Start position in the sequence"
     )
     end_position: int = Field(..., description="End position in the sequence")
+    species: Optional[str] = Field(
+        None, description="Species the domain was annotated against (e.g., human, mouse, rat)"
+    )
+    germline: Optional[str] = Field(
+        None, description="Best matching germline gene (e.g., IGHV1-2*02, IGHG1*01)"
+    )
     confidence_score: Optional[int] = Field(
         None, ge=0, le=100, description="Confidence score (0-100)"
     )
