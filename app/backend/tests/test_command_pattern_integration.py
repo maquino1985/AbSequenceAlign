@@ -431,9 +431,9 @@ class TestCommandPatternIntegration:
             # Verify the result
             assert result["success"] is True
 
-            # Verify annotation was called with correct numbering scheme
+            # Verify annotation was called with correct numbering scheme (converted to lowercase)
             annotation_service.annotate_sequence.assert_called_once_with(
-                mock_sequence, scheme
+                mock_sequence, scheme.lower()
             )
 
     @pytest.mark.asyncio

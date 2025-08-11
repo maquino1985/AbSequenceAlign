@@ -15,7 +15,7 @@ class ProcessAnnotationCommand(BaseCommand):
     def __init__(self, request_data: Dict[str, Any]):
         super().__init__(request_data)
         self.sequences: Dict[str, Any] = {}
-        self.numbering_scheme: str = "IMGT"
+        self.numbering_scheme: str = "imgt"
         self.persist_to_database: bool = False
         self.organism: Optional[str] = None
 

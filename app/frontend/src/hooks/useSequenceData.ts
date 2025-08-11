@@ -109,54 +109,62 @@ export const useSequenceData = () => {
   const setSequencesV2 = useCallback((annotationResult: AnnotationResultV2) => {
     const sequences: SequenceData[] = [];
 
-    annotationResult.sequences.forEach((seqInfo: SequenceV2, seqIndex) => {
-      const chains = seqInfo.chains.map((chain: ChainV2, chainIdx) => {
-        const annotations: Region[] = [];
+    // Handle the new workflow response structure
+    if (annotationResult.results) {
+      annotationResult.results.forEach((result, seqIndex) => {
+        if (result.success && result.data?.sequence) {
+          const seqInfo = result.data.sequence;
+          
+          const chains = seqInfo.chains.map((chain, chainIdx) => {
+            const annotations: Region[] = [];
 
-        chain.domains.forEach((domain: DomainV2, domainIdx) => {
-          const domainType = domain.domain_type;
-          domain.regions.forEach((r: RegionV2, regionIdx) => {
-            const baseRegionName = r.name;
-            let regionType: Region['type'] = 'FR';
-            if (domainType === 'LINKER') regionType = 'LINKER';
-            else if (domainType === 'C') regionType = 'CONSTANT';
-            else if (baseRegionName.startsWith('CDR')) regionType = 'CDR';
+            chain.sequences.forEach((sequence, seqIdx) => {
+              sequence.domains.forEach((domain, domainIdx) => {
+                const domainType = domain.domain_type;
+                
+                // Convert features to regions
+                domain.features.forEach((feature, featureIdx) => {
+                  const baseRegionName = feature.name;
+                  let regionType: Region['type'] = 'FR';
+                  if (domainType === 'LINKER') regionType = 'LINKER';
+                  else if (domainType === 'C') regionType = 'CONSTANT';
+                  else if (baseRegionName.startsWith('CDR')) regionType = 'CDR';
 
-            const seqFeature = r.features.find((f) => f.kind === 'sequence') as { kind: string; value?: string } | undefined;
-            const sequenceText = typeof seqFeature?.value === 'string' ? seqFeature?.value : '';
-
-            annotations.push({
-              id: `${seqInfo.name || `seq_${seqIndex}`}_${chain.name}_${domainIdx}_${regionIdx}_${baseRegionName}`,
-              name: baseRegionName,
-              start: r.start,
-              stop: r.stop,
-              sequence: sequenceText,
-              type: regionType,
-              color: getRegionColor(baseRegionName),
-              features: [],
-              details: {
-                isotype: domain.isotype,
-                domain_type: domain.domain_type,
-              }
+                  annotations.push({
+                    id: `${seqInfo.name || `seq_${seqIndex}`}_${chain.name}_${seqIdx}_${domainIdx}_${featureIdx}_${baseRegionName}`,
+                    name: baseRegionName,
+                    start: feature.start_position,
+                    stop: feature.end_position,
+                    sequence: typeof feature.value === 'string' ? feature.value : '',
+                    type: regionType,
+                    color: getRegionColor(baseRegionName),
+                    features: [],
+                    details: {
+                      isotype: undefined,
+                      domain_type: domain.domain_type,
+                    }
+                  });
+                });
+              });
             });
+
+            return {
+              id: `${seqInfo.name || `seq_${seqIndex}`}_chain_${chainIdx}`,
+              type: chain.chain_type,
+              sequence: chain.sequences[0]?.sequence_data || '',
+              annotations
+            };
           });
-        });
 
-        return {
-          id: `${seqInfo.name || `seq_${seqIndex}`}_chain_${chainIdx}`,
-          type: chain.name,
-          sequence: chain.sequence,
-          annotations
-        };
+          sequences.push({
+            id: seqInfo.name || `seq_${seqIndex}`,
+            name: seqInfo.name || `Sequence ${seqIndex + 1}`,
+            chains,
+            species: undefined
+          });
+        }
       });
-
-      sequences.push({
-        id: seqInfo.name || `seq_${seqIndex}`,
-        name: seqInfo.name || `Sequence ${seqIndex + 1}`,
-        chains,
-        species: undefined
-      });
-    });
+    }
 
     setState((prev) => ({
       ...prev,

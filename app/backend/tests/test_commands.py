@@ -347,7 +347,7 @@ class TestProcessAnnotationCommand:
         command = ProcessAnnotationCommand(request_data)
         assert command.request_data == request_data
         assert command.sequences == {}
-        assert command.numbering_scheme == "imgt"
+        assert command.numbering_scheme == "imgt"  # Default value
         assert command.persist_to_database is False
         assert command.organism is None
 

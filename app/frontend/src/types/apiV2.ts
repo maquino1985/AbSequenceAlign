@@ -66,12 +66,42 @@ export interface SequenceV2 {
 }
 
 export interface AnnotationResultV2 {
-  sequences: SequenceV2[];
-  numbering_scheme: string;
-  total_sequences: number;
-  chain_types: Record<string, number>;
-  isotypes: Record<string, number>;
-  species: Record<string, number>;
+  results: Array<{
+    name: string;
+    success: boolean;
+    data?: {
+      sequence: {
+        name: string;
+        biologic_type: string;
+        chains: Array<{
+          name: string;
+          chain_type: string;
+          sequences: Array<{
+            sequence_type: string;
+            sequence_data: string;
+            domains: Array<{
+              domain_type: string;
+              start_position: number;
+              end_position: number;
+              features: Array<{
+                name: string;
+                feature_type: string;
+                value: any;
+                start_position: number;
+                end_position: number;
+              }>;
+            }>;
+          }>;
+        }>;
+      };
+    };
+    error?: string;
+  }>;
+  summary: {
+    total: number;
+    successful: number;
+    failed: number;
+  };
 }
 
 export interface AnnotationRequestV2 {
