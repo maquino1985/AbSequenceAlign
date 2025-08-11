@@ -112,9 +112,15 @@ export const SequenceAnnotation: React.FC = () => {
       // Call API
       const resultV2: AnnotationResultV2 = await api.annotateSequencesV2(request);
       setSequencesV2(resultV2);
+      
+      // Extract summary from the new workflow response structure
+      const firstResult = resultV2.results?.[0];
+      const sequenceData = firstResult?.data?.sequence;
       const summary = {
-        numChains: resultV2.sequences?.[0]?.chains?.length || 0,
-        numDomains: (resultV2.sequences?.[0]?.chains || []).reduce((acc, c) => acc + (c.domains?.length || 0), 0)
+        numChains: sequenceData?.chains?.length || 0,
+        numDomains: (sequenceData?.chains || []).reduce((acc, c) => 
+          acc + (c.sequences?.reduce((acc2, s) => acc2 + (s.domains?.length || 0), 0) || 0), 0
+        )
       };
       const entry: HistoryEntry = {
         id: `${Date.now()}`,
