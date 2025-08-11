@@ -339,7 +339,7 @@ class TestProcessAnnotationCommand:
         """Test creating ProcessAnnotationCommand"""
         request_data = {
             "sequences": {"seq1": Mock(spec=BiologicEntity)},
-            "numbering_scheme": "IMGT",
+            "numbering_scheme": "ImGt",
             "persist_to_database": True,
             "organism": "human",
         }
@@ -347,7 +347,7 @@ class TestProcessAnnotationCommand:
         command = ProcessAnnotationCommand(request_data)
         assert command.request_data == request_data
         assert command.sequences == {}
-        assert command.numbering_scheme == "IMGT"
+        assert command.numbering_scheme == "imgt"
         assert command.persist_to_database is False
         assert command.organism is None
 
@@ -362,7 +362,7 @@ class TestProcessAnnotationCommand:
 
         command = ProcessAnnotationCommand(request_data)
         assert command.validate() is True
-        assert command.numbering_scheme == "IMGT"
+        assert command.numbering_scheme == "imgt"
         assert command.persist_to_database is True
         assert command.organism == "human"
 
@@ -375,7 +375,7 @@ class TestProcessAnnotationCommand:
 
     def test_validate_empty_sequences(self):
         """Test validation with empty sequences"""
-        request_data = {"sequences": {}, "numbering_scheme": "IMGT"}
+        request_data = {"sequences": {}, "numbering_scheme": "imgt"}
 
         command = ProcessAnnotationCommand(request_data)
         assert command.validate() is False
@@ -390,12 +390,25 @@ class TestProcessAnnotationCommand:
         command = ProcessAnnotationCommand(request_data)
         assert command.validate() is False
 
+    def test_validate_case_insensitive_numbering_schemes(self):
+        """Test validation with different case variations"""
+        valid_variations = ["IMGT", "imgt", "ImGt", "Kabat", "CHOTHIA"]
+        
+        for scheme in valid_variations:
+            request_data = {
+                "sequences": {"seq1": Mock(spec=BiologicEntity)},
+                "numbering_scheme": scheme,
+            }
+            command = ProcessAnnotationCommand(request_data)
+            assert command.validate() is True, f"Failed for scheme: {scheme}"
+            assert command.numbering_scheme == scheme.lower()
+
     def test_execute_success(self):
         """Test successful command execution"""
         mock_sequences = {"seq1": Mock(spec=BiologicEntity)}
         request_data = {
             "sequences": mock_sequences,
-            "numbering_scheme": "IMGT",
+            "numbering_scheme": "imgt",
             "persist_to_database": True,
             "organism": "human",
         }
@@ -405,7 +418,7 @@ class TestProcessAnnotationCommand:
 
         assert result.success is True
         assert result.data["sequences"] == mock_sequences
-        assert result.data["numbering_scheme"] == "IMGT"
+        assert result.data["numbering_scheme"] == "imgt"
         assert result.data["persist_to_database"] is True
         assert result.data["organism"] == "human"
         assert result.metadata["command_type"] == "process_annotation"
@@ -414,7 +427,7 @@ class TestProcessAnnotationCommand:
 
     def test_execute_validation_failure(self):
         """Test command execution with validation failure"""
-        request_data = {"numbering_scheme": "IMGT"}  # Missing sequences
+        request_data = {"numbering_scheme": "imgt"}  # Missing sequences
 
         command = ProcessAnnotationCommand(request_data)
         result = command.execute()

@@ -89,7 +89,7 @@ class TestCommandPatternIntegration:
         command = ProcessAnnotationCommand(
             {
                 "sequences": {"test_antibody": mock_sequence},
-                "numbering_scheme": "IMGT",
+                "numbering_scheme": "imgt",
                 "persist_to_database": True,
                 "organism": "human",
             }
@@ -109,7 +109,7 @@ class TestCommandPatternIntegration:
             {"test_antibody": mock_sequence}
         )
         annotation_service.annotate_sequence.assert_called_once_with(
-            mock_sequence, "IMGT"
+            mock_sequence, "imgt"
         )
         biologic_service.process_and_persist_biologic_entity.assert_called_once_with(
             mock_sequence, "human"
@@ -145,7 +145,7 @@ class TestCommandPatternIntegration:
         command = ProcessAnnotationCommand(
             {
                 "sequences": {"test_antibody": mock_sequence},
-                "numbering_scheme": "IMGT",
+                "numbering_scheme": "imgt",
                 "persist_to_database": False,
             }
         )
@@ -163,7 +163,7 @@ class TestCommandPatternIntegration:
             {"test_antibody": mock_sequence}
         )
         annotation_service.annotate_sequence.assert_called_once_with(
-            mock_sequence, "IMGT"
+            mock_sequence, "imgt"
         )
         biologic_service.process_and_persist_biologic_entity.assert_not_called()
         response_service.format_workflow_response.assert_called_once()
@@ -213,7 +213,7 @@ class TestCommandPatternIntegration:
         command = ProcessAnnotationCommand(
             {
                 "sequences": {"antibody_1": seq1, "antibody_2": seq2},
-                "numbering_scheme": "IMGT",
+                "numbering_scheme": "imgt",
                 "persist_to_database": True,
                 "organism": "mouse",
             }
@@ -290,7 +290,7 @@ class TestCommandPatternIntegration:
         command = ProcessAnnotationCommand(
             {
                 "sequences": {"antibody_1": seq1, "antibody_2": seq2},
-                "numbering_scheme": "IMGT",
+                "numbering_scheme": "imgt",
                 "persist_to_database": True,
                 "organism": "human",
             }
