@@ -210,6 +210,23 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
             # Extract regions from ANARCI result
             regions = self._extract_regions_from_anarci(anarci_result, domain)
 
+            # Extract species and germline information from ANARCI result
+            anarci_data = anarci_result.get("data", {})
+            species = None
+            germline = None
+            
+            # Extract species from alignment details
+            if anarci_data.get("alignment_details"):
+                for align_detail in anarci_data["alignment_details"]:
+                    if hasattr(align_detail, 'species'):
+                        species = align_detail.species
+                        break
+            
+            # Extract germline information from hit table
+            if anarci_data.get("hit_table"):
+                germline_info = self._extract_germline_from_hit_table(anarci_data["hit_table"])
+                germline = germline_info.get("id") if germline_info else None
+            
             # Create annotated domain
             annotated_domain = BiologicDomain(
                 domain_type=domain.domain_type,
@@ -220,6 +237,8 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
                     **domain.metadata,
                     "anarci_result": anarci_result.get("data"),
                     "regions": regions,
+                    "species": species,
+                    "germline": germline,
                 },
             )
 
@@ -465,6 +484,40 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
         else:
             # Default to HEAVY if we can't determine
             return ChainType.HEAVY
+
+    def _extract_germline_from_hit_table(self, hit_table: List[List]) -> Dict[str, Any]:
+        """Extract germline information from ANARCI hit table"""
+        if not hit_table or len(hit_table) < 2:
+            return {}
+
+        header = hit_table[0]
+        rows = hit_table[1:]
+
+        # Find relevant column indices
+        id_idx = header.index("id") if "id" in header else None
+        bitscore_idx = header.index("bitscore") if "bitscore" in header else None
+        e_value_idx = header.index("evalue") if "evalue" in header else None
+
+        if not rows:
+            return {}
+
+        # Get best hit (highest bitscore)
+        best_row = max(
+            rows,
+            key=lambda row: (
+                float(row[bitscore_idx]) if bitscore_idx is not None else 0
+            ),
+        )
+
+        germline_info = {}
+        if id_idx is not None:
+            germline_info["id"] = best_row[id_idx]
+        if bitscore_idx is not None:
+            germline_info["bitscore"] = float(best_row[bitscore_idx])
+        if e_value_idx is not None:
+            germline_info["evalue"] = float(best_row[e_value_idx])
+
+        return germline_info
 
     def notify_error(self, error: str) -> None:
         """Notify about an error during processing"""

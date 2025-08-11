@@ -79,18 +79,20 @@ export interface AnnotationResultV2 {
           sequences: Array<{
             sequence_type: string;
             sequence_data: string;
-            domains: Array<{
-              domain_type: string;
-              start_position: number;
-              end_position: number;
-              features: Array<{
-                name: string;
-                feature_type: string;
-                value: any;
-                start_position: number;
-                end_position: number;
-              }>;
-            }>;
+                            domains: Array<{
+                  domain_type: string;
+                  start_position: number;
+                  end_position: number;
+                  species?: string;
+                  germline?: string;
+                  features: Array<{
+                    name: string;
+                    feature_type: string;
+                    value: any;
+                    start_position: number;
+                    end_position: number;
+                  }>;
+                }>;
           }>;
         }>;
       };

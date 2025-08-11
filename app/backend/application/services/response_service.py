@@ -70,6 +70,13 @@ class ResponseService:
                             "end_position": domain.end_position,
                             "features": [],
                         }
+                        
+                        # Add species and germline information (except for LINKER domains)
+                        if domain.domain_type.value != "LINKER":
+                            if "species" in domain.metadata:
+                                domain_data["species"] = domain.metadata["species"]
+                            if "germline" in domain.metadata:
+                                domain_data["germline"] = domain.metadata["germline"]
 
                         # Format each feature
                         for feature in domain.features:
