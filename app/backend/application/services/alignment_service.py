@@ -10,7 +10,8 @@ from ...core.interfaces import ProcessingResult
 from ...core.exceptions import AlignmentError, ValidationError
 from ...domain.models import RegionType, DomainType
 from ...domain.entities import (
-    AntibodySequence,
+    BiologicEntity,
+    BiologicSequence,
 )
 from ...logger import logger
 
@@ -28,7 +29,7 @@ class AlignmentService(AbstractProcessingSubject):
 
     def align_sequences(
         self,
-        sequences: List[AntibodySequence],
+        sequences: List[BiologicEntity],
         strategy: str = "multiple",
         **kwargs,
     ) -> ProcessingResult:
@@ -85,7 +86,7 @@ class AlignmentService(AbstractProcessingSubject):
 
     def align_regions(
         self,
-        sequences: List[AntibodySequence],
+        sequences: List[BiologicEntity],
         region_type: RegionType,
         **kwargs,
     ) -> ProcessingResult:
@@ -133,7 +134,7 @@ class AlignmentService(AbstractProcessingSubject):
             return ProcessingResult(success=False, error=error_msg)
 
     def _pairwise_alignment(
-        self, sequences: List[AntibodySequence], **kwargs
+        self, sequences: List[BiologicEntity], **kwargs
     ) -> Dict[str, Any]:
         """Perform pairwise alignment between sequences"""
         try:
@@ -186,7 +187,7 @@ class AlignmentService(AbstractProcessingSubject):
             )
 
     def _multiple_alignment(
-        self, sequences: List[AntibodySequence], **kwargs
+        self, sequences: List[BiologicEntity], **kwargs
     ) -> Dict[str, Any]:
         """Perform multiple sequence alignment"""
         try:
@@ -213,7 +214,7 @@ class AlignmentService(AbstractProcessingSubject):
             )
 
     def _region_specific_alignment(
-        self, sequences: List[AntibodySequence], **kwargs
+        self, sequences: List[BiologicEntity], **kwargs
     ) -> Dict[str, Any]:
         """Perform region-specific alignment"""
         try:
@@ -308,39 +309,48 @@ class AlignmentService(AbstractProcessingSubject):
             )
 
     def _extract_regions(
-        self, sequences: List[AntibodySequence], region_type: RegionType
+        self, sequences: List[BiologicEntity], region_type: RegionType
     ) -> List[Dict[str, Any]]:
         """Extract specific regions from sequences"""
         regions = []
 
         for i, sequence in enumerate(sequences):
             for chain in sequence.chains:
-                for domain in chain.domains:
-                    if domain.domain_type == DomainType.VARIABLE:
-                        for region_name, region in domain.regions.items():
-                            if region.region_type == region_type:
-                                regions.append(
-                                    {
-                                        "name": f"{sequence.name}_{chain.name}_{region_name}",
-                                        "sequence": str(region.sequence),
-                                        "type": region.region_type.value,
-                                        "position": (region.start, region.end),
-                                        "source": {
-                                            "sequence": sequence.name,
-                                            "chain": chain.name,
-                                            "domain": domain.domain_type.value,
-                                        },
-                                    }
-                                )
+                for biologic_sequence in chain.sequences:
+                    for domain in biologic_sequence.domains:
+                        if domain.domain_type.upper() == "VARIABLE":
+                            # Extract features that match the region type
+                            for feature in domain.features:
+                                if (
+                                    feature.feature_type.upper()
+                                    == region_type.value.upper()
+                                ):
+                                    regions.append(
+                                        {
+                                            "name": f"{sequence.name}_{chain.name}_{feature.name}",
+                                            "sequence": feature.value,
+                                            "type": feature.feature_type,
+                                            "position": (
+                                                feature.start_position,
+                                                feature.end_position,
+                                            ),
+                                            "source": {
+                                                "sequence": sequence.name,
+                                                "chain": chain.name,
+                                                "domain": domain.domain_type,
+                                            },
+                                        }
+                                    )
 
         return regions
 
-    def _extract_full_sequence(self, sequence: AntibodySequence) -> str:
-        """Extract full sequence from antibody sequence"""
+    def _extract_full_sequence(self, sequence: BiologicEntity) -> str:
+        """Extract full sequence from biologic entity"""
         full_sequence = ""
 
         for chain in sequence.chains:
-            full_sequence += str(chain.sequence)
+            for biologic_sequence in chain.sequences:
+                full_sequence += biologic_sequence.sequence_data
 
         return full_sequence
 
@@ -404,7 +414,7 @@ class AlignmentService(AbstractProcessingSubject):
     def _process_alignment_result(
         self,
         alignment_result: Dict[str, Any],
-        sequences: List[AntibodySequence],
+        sequences: List[BiologicEntity],
     ) -> Dict[str, Any]:
         """Process alignment result"""
         return {
@@ -432,7 +442,7 @@ class AlignmentService(AbstractProcessingSubject):
             },
         }
 
-    def _validate_sequences(self, sequences: List[AntibodySequence]) -> bool:
+    def _validate_sequences(self, sequences: List[BiologicEntity]) -> bool:
         """Validate sequences for alignment"""
         if not sequences or len(sequences) < 2:
             return False

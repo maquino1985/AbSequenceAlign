@@ -5,8 +5,12 @@ Allows dynamic creation and configuration of processing pipelines.
 
 from typing import Dict, Any, List, Optional, Type
 
-from backend.core.base_classes import AbstractBuilder, AbstractPipelineStep
-from backend.core.interfaces import ProcessingContext, ProcessingResult
+from backend.core.base_classes import (
+    AbstractBuilder,
+    AbstractPipelineStep,
+    PipelineContext,
+)
+from backend.core.interfaces import ProcessingResult
 from backend.core.exceptions import ProcessingError
 from backend.domain.models import NumberingScheme
 from backend.logger import logger
@@ -104,7 +108,7 @@ class ProcessingPipeline:
         self.steps = steps
         self.config = config
 
-    def execute(self, context: ProcessingContext) -> ProcessingResult:
+    def execute(self, context: PipelineContext) -> ProcessingResult:
         """Execute the pipeline with the given context"""
         try:
             logger.info(f"Executing pipeline with {len(self.steps)} steps")
@@ -154,7 +158,7 @@ class ProcessingPipeline:
                 "name": step.name,
                 "index": i,
                 "can_execute": step.can_execute(
-                    ProcessingContext(sequence=None)
+                    PipelineContext(input_data=None)
                 ),
             }
             for i, step in enumerate(self.steps)
@@ -256,7 +260,7 @@ def create_custom_pipeline(
 class SequenceValidationStep(AbstractPipelineStep):
     """Step for validating input sequences"""
 
-    def _execute_step(self, context: ProcessingContext) -> Any:
+    def _execute_step(self, context: PipelineContext) -> Any:
         # Placeholder implementation
         return {"validated": True}
 
@@ -264,7 +268,7 @@ class SequenceValidationStep(AbstractPipelineStep):
 class ChainValidationStep(AbstractPipelineStep):
     """Step for validating antibody chains"""
 
-    def _execute_step(self, context: ProcessingContext) -> Any:
+    def _execute_step(self, context: PipelineContext) -> Any:
         # Placeholder implementation
         return {"chains_validated": True}
 
@@ -280,7 +284,7 @@ class NumberingStep(AbstractPipelineStep):
         super().__init__(name)
         self.numbering_scheme = numbering_scheme
 
-    def _execute_step(self, context: ProcessingContext) -> Any:
+    def _execute_step(self, context: PipelineContext) -> Any:
         # Placeholder implementation
         return {"numbered": True, "scheme": self.numbering_scheme}
 
@@ -288,7 +292,7 @@ class NumberingStep(AbstractPipelineStep):
 class RegionAnnotationStep(AbstractPipelineStep):
     """Step for annotating regions"""
 
-    def _execute_step(self, context: ProcessingContext) -> Any:
+    def _execute_step(self, context: PipelineContext) -> Any:
         # Placeholder implementation
         return {"regions_annotated": True}
 
@@ -296,7 +300,7 @@ class RegionAnnotationStep(AbstractPipelineStep):
 class IsotypeDetectionStep(AbstractPipelineStep):
     """Step for detecting isotypes"""
 
-    def _execute_step(self, context: ProcessingContext) -> Any:
+    def _execute_step(self, context: PipelineContext) -> Any:
         # Placeholder implementation
         return {"isotype_detected": True}
 
@@ -304,7 +308,7 @@ class IsotypeDetectionStep(AbstractPipelineStep):
 class AlignmentPreparationStep(AbstractPipelineStep):
     """Step for preparing sequences for alignment"""
 
-    def _execute_step(self, context: ProcessingContext) -> Any:
+    def _execute_step(self, context: PipelineContext) -> Any:
         # Placeholder implementation
         return {"prepared": True}
 
@@ -312,7 +316,7 @@ class AlignmentPreparationStep(AbstractPipelineStep):
 class MSAStep(AbstractPipelineStep):
     """Step for performing multiple sequence alignment"""
 
-    def _execute_step(self, context: ProcessingContext) -> Any:
+    def _execute_step(self, context: PipelineContext) -> Any:
         # Placeholder implementation
         return {"aligned": True}
 
@@ -320,6 +324,6 @@ class MSAStep(AbstractPipelineStep):
 class AlignmentPostProcessingStep(AbstractPipelineStep):
     """Step for post-processing alignment results"""
 
-    def _execute_step(self, context: ProcessingContext) -> Any:
+    def _execute_step(self, context: PipelineContext) -> Any:
         # Placeholder implementation
         return {"post_processed": True}

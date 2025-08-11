@@ -1,10 +1,6 @@
 """
 Biologic service for managing biologic entities with ORM integration.
-
-This service bridges domain entities with ORM models, ensuring that:
-- Domain entities are used for business logic
-- ORM models are used for persistence
-- Conversion happens at appropriate boundaries
+Implements the Service pattern with Observer pattern for processing notifications.
 """
 
 from typing import Dict, Any, List, Optional
@@ -15,6 +11,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from backend.core.base_classes import AbstractProcessingSubject
+from backend.core.interfaces import (
+    BiologicService as IBiologicService,
+    BiologicRepository,
+    BiologicProcessor,
+    ProcessingResult,
+)
+from backend.core.exceptions import ValidationError, EntityNotFoundError
 from backend.database.models import (
     Biologic,
     BiologicAlias,
@@ -25,10 +29,11 @@ from backend.database.models import (
     DomainFeature,
 )
 from backend.domain.entities import (
-    AntibodySequence,
-    AntibodyChain,
-    AntibodyDomain,
-    AntibodyRegion,
+    BiologicEntity,
+    BiologicChain,
+    BiologicSequence,
+    BiologicDomain,
+    BiologicFeature,
 )
 from backend.domain.value_objects import (
     AminoAcidSequence,
@@ -44,381 +49,691 @@ from backend.models.biologic_models import (
     SequenceResponse,
     SequenceCreate,
 )
-from backend.core.exceptions import ValidationError, EntityNotFoundError
+from backend.infrastructure.repositories.biologic_repository import (
+    BiologicRepositoryImpl,
+)
+from backend.application.processors.biologic_processor import (
+    BiologicProcessorImpl,
+)
+from backend.application.converters.biologic_converter import (
+    BiologicConverterImpl,
+)
 from backend.logger import logger
 
 
-class BiologicService:
-    """Service for managing biologic entities with ORM integration"""
+class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
+    """Concrete service implementation for biologic entity management."""
 
-    def __init__(self):
-        pass
-
-    # =============================================================================
-    # Domain Entity to ORM Model Conversion
-    # =============================================================================
-
-    def create_biologic_from_antibody_sequence(
-        self, antibody_sequence: AntibodySequence, organism: Optional[str] = None
-    ) -> Biologic:
-        """
-        Create a Biologic ORM model from an AntibodySequence domain entity.
-        
-        This is the key integration point where domain entities are converted
-        to ORM models for persistence.
-        """
-        # Create the biologic entity
-        biologic = Biologic(
-            name=antibody_sequence.name,
-            description=f"Antibody sequence: {antibody_sequence.name}",
-            organism=organism,
-            biologic_type="antibody",
-            metadata_json={
-                "domain_entity_id": antibody_sequence.id,
-                "chain_count": len(antibody_sequence.chains),
-                "total_length": antibody_sequence.total_length,
-                "is_complete_antibody": antibody_sequence.is_complete_antibody(),
-                "is_scfv": antibody_sequence.is_scfv(),
-            }
-        )
-
-        # Create chains for each antibody chain
-        for antibody_chain in antibody_sequence.chains:
-            chain = self._create_chain_from_antibody_chain(biologic, antibody_chain)
-            biologic.chains.append(chain)
-
-        return biologic
-
-    def _create_chain_from_antibody_chain(
-        self, biologic: Biologic, antibody_chain: AntibodyChain
-    ) -> Chain:
-        """Create a Chain ORM model from an AntibodyChain domain entity."""
-        chain = Chain(
-            biologic_id=biologic.id,
-            name=antibody_chain.name,
-            chain_type=antibody_chain.chain_type.value,
-            metadata_json={
-                "domain_entity_id": antibody_chain.id,
-                "chain_type": antibody_chain.chain_type.value,
-                "length": len(antibody_chain.sequence),
-                "domain_count": len(antibody_chain.domains),
-            }
-        )
-
-        # Create sequences for each domain
-        for domain in antibody_chain.domains:
-            sequence = self._create_sequence_from_domain(domain)
-            chain_sequence = ChainSequence(
-                chain_id=chain.id,
-                sequence_id=sequence.id,
-                metadata_json={
-                    "domain_type": domain.domain_type.value,
-                    "domain_length": len(domain.sequence),
-                }
-            )
-            chain.sequences.append(chain_sequence)
-
-        return chain
-
-    def _create_sequence_from_domain(self, domain: AntibodyDomain) -> Sequence:
-        """Create a Sequence ORM model from an AntibodyDomain domain entity."""
-        sequence = Sequence(
-            sequence_type="PROTEIN",
-            sequence_data=str(domain.sequence),
-            length=len(domain.sequence),
-            description=f"{domain.domain_type.value} domain sequence",
-            metadata_json={
-                "domain_entity_id": domain.id,
-                "domain_type": domain.domain_type.value,
-                "region_count": len(domain.regions),
-            }
-        )
-
-        # Create sequence domains for each region
-        for region_name, region in domain.regions.items():
-            sequence_domain = self._create_sequence_domain_from_region(
-                sequence, region, region_name
-            )
-            # Note: sequence_domain.chain_sequence_id will be set when chain_sequence is created
-            # For now, we'll just store it in metadata
-            sequence_domain.metadata_json["temp_chain_sequence_id"] = "pending"
-
-        return sequence
-
-    def _create_sequence_domain_from_region(
-        self, sequence: Sequence, region: AntibodyRegion, region_name: str
-    ) -> SequenceDomain:
-        """Create a SequenceDomain ORM model from an AntibodyRegion domain entity."""
-        sequence_domain = SequenceDomain(
-            chain_sequence_id=sequence.id,  # This will be updated when chain_sequence is created
-            domain_type=region.region_type.value,
-            start_position=region.start,
-            end_position=region.end,
-            confidence_score=int(region.confidence_score.score * 100) if region.confidence_score else None,
-            metadata_json={
-                "domain_entity_id": region.id,
-                "region_name": region_name,
-                "region_type": region.region_type.value,
-                "sequence": str(region.sequence),
-            }
-        )
-
-        # Create domain features for any additional metadata
-        for key, value in region.metadata.items():
-            if isinstance(value, (str, int, float, bool)):
-                feature = DomainFeature(
-                    sequence_domain_id=sequence_domain.id,
-                    feature_type="METADATA",
-                    name=key,
-                    value=str(value),
-                    metadata_json={"source": "domain_entity_metadata"}
-                )
-                sequence_domain.features.append(feature)
-
-        return sequence_domain
-
-    # =============================================================================
-    # ORM Model to Domain Entity Conversion
-    # =============================================================================
-
-    def create_antibody_sequence_from_biologic(
-        self, biologic: Biologic
-    ) -> AntibodySequence:
-        """
-        Create an AntibodySequence domain entity from a Biologic ORM model.
-        
-        This is the reverse conversion for when we need to work with domain entities
-        in business logic.
-        """
-        chains = []
-        for chain_orm in biologic.chains:
-            antibody_chain = self._create_antibody_chain_from_chain(chain_orm)
-            chains.append(antibody_chain)
-
-        return AntibodySequence(
-            name=biologic.name,
-            chains=chains,
-            metadata=biologic.metadata_json or {}
-        )
-
-    def _create_antibody_chain_from_chain(self, chain_orm: Chain) -> AntibodyChain:
-        """Create an AntibodyChain domain entity from a Chain ORM model."""
-        from backend.domain.models import ChainType
-
-        # Create domains from sequences
-        domains = []
-        for chain_sequence in chain_orm.sequences:
-            domain = self._create_antibody_domain_from_sequence(chain_sequence.sequence)
-            domains.append(domain)
-
-        # Create the antibody chain
-        chain_type = ChainType(chain_orm.chain_type)
-        sequence = AminoAcidSequence(chain_orm.sequences[0].sequence.sequence_data)
-
-        return AntibodyChain(
-            name=chain_orm.name,
-            chain_type=chain_type,
-            sequence=sequence,
-            domains=domains,
-            metadata=chain_orm.metadata_json or {}
-        )
-
-    def _create_antibody_domain_from_sequence(self, sequence_orm: Sequence) -> AntibodyDomain:
-        """Create an AntibodyDomain domain entity from a Sequence ORM model."""
-        from backend.domain.models import DomainType
-
-        # Create regions from sequence domains
-        regions = {}
-        for chain_sequence in sequence_orm.chain_sequences:
-            for sequence_domain in chain_sequence.domains:
-                region = self._create_antibody_region_from_sequence_domain(sequence_domain)
-                regions[sequence_domain.metadata_json.get("region_name", "unknown")] = region
-
-        # Create the antibody domain
-        domain_type = DomainType(sequence_orm.metadata_json.get("domain_type", "VARIABLE"))
-        sequence = AminoAcidSequence(sequence_orm.sequence_data)
-
-        return AntibodyDomain(
-            domain_type=domain_type,
-            sequence=sequence,
-            numbering_scheme=None,  # This would need to be determined from context
-            regions=regions,
-            metadata=sequence_orm.metadata_json or {}
-        )
-
-    def _create_antibody_region_from_sequence_domain(
-        self, sequence_domain: SequenceDomain
-    ) -> AntibodyRegion:
-        """Create an AntibodyRegion domain entity from a SequenceDomain ORM model."""
-        from backend.domain.models import RegionType, NumberingScheme
-
-        # Create boundary
-        boundary = RegionBoundary(
-            start=sequence_domain.start_position,
-            end=sequence_domain.end_position
-        )
-
-        # Create sequence
-        sequence = AminoAcidSequence(sequence_domain.metadata_json.get("sequence", ""))
-
-        # Create confidence score
-        confidence_score = None
-        if sequence_domain.confidence_score is not None:
-            confidence_score = ConfidenceScore(
-                score=sequence_domain.confidence_score / 100.0,
-                method="database"
-            )
-
-        # Create region type
-        region_type = RegionType(sequence_domain.domain_type)
-
-        return AntibodyRegion(
-            name=sequence_domain.metadata_json.get("region_name", "unknown"),
-            region_type=region_type,
-            boundary=boundary,
-            sequence=sequence,
-            numbering_scheme=NumberingScheme.IMGT,  # Default, could be made configurable
-            metadata=sequence_domain.metadata_json or {},
-            confidence_score=confidence_score
-        )
-
-    # =============================================================================
-    # Database Operations
-    # =============================================================================
+    def __init__(
+        self,
+        repository: BiologicRepository = None,
+        processor: BiologicProcessor = None,
+    ):
+        super().__init__()
+        self._repository = repository
+        self._processor = processor
+        self._converter = BiologicConverterImpl()
+        self._logger = logger
 
     async def create_biologic(
-        self, db_session: AsyncSession, biologic_data: BiologicCreate
+        self, biologic_data: BiologicCreate
     ) -> BiologicResponse:
-        """Create a new biologic entity in the database."""
-        biologic = Biologic(
-            name=biologic_data.name,
-            description=biologic_data.description,
-            organism=biologic_data.organism,
-            biologic_type=biologic_data.biologic_type,
-            metadata_json=biologic_data.metadata,
-        )
-
-        db_session.add(biologic)
-        await db_session.commit()
-        await db_session.refresh(biologic)
-
-        return BiologicResponse.model_validate(biologic)
-
-    async def get_biologic(
-        self, db_session: AsyncSession, biologic_id: UUID
-    ) -> BiologicResponse:
-        """Get a biologic entity by ID."""
-        stmt = (
-            select(Biologic)
-            .options(
-                selectinload(Biologic.aliases),
-                selectinload(Biologic.chains).selectinload(Chain.sequences)
+        """Create a new biologic entity."""
+        try:
+            self._logger.info(
+                f"Creating biologic entity: {biologic_data.name}"
             )
-            .where(Biologic.id == biologic_id)
-        )
-        
-        result = await db_session.execute(stmt)
-        biologic = result.scalar_one_or_none()
-        
-        if not biologic:
-            raise EntityNotFoundError(f"Biologic with ID {biologic_id} not found")
-        
-        return BiologicResponse.model_validate(biologic)
+            self.notify_step_completed("start", 0.0)
+
+            # Validate input data
+            if not biologic_data.name or not biologic_data.name.strip():
+                raise ValidationError(
+                    "Biologic name is required", field="name"
+                )
+
+            # Create ORM model
+            biologic = Biologic(
+                name=biologic_data.name,
+                description=biologic_data.description,
+                organism=biologic_data.organism,
+                biologic_type=biologic_data.biologic_type,
+                metadata_json=biologic_data.metadata or {},
+            )
+
+            # Persist to database
+            if self._repository:
+                biologic = await self._repository.save(biologic)
+                self._logger.info(
+                    f"Successfully created biologic entity: {biologic.name} (ID: {biologic.id})"
+                )
+            else:
+                self._logger.warning(
+                    "No repository provided, skipping persistence"
+                )
+
+            # Convert to response
+            biologic_response = BiologicResponse(
+                id=str(biologic.id),
+                name=biologic.name,
+                description=biologic.description,
+                organism=biologic.organism,
+                biologic_type=biologic.biologic_type,
+                metadata=biologic.metadata_json,
+                chains=[],  # Would be populated from biologic.chains
+                created_at=biologic.created_at,
+                updated_at=biologic.updated_at,
+            )
+
+            self.notify_step_completed("complete", 1.0)
+            return biologic_response
+
+        except Exception as e:
+            self.notify_processing_failed(str(e))
+            self._logger.error(f"Error creating biologic entity: {e}")
+            raise
+
+    async def get_biologic(self, biologic_id: str) -> BiologicResponse:
+        """Get a biologic entity by ID."""
+        try:
+            self._logger.info(f"Retrieving biologic entity: {biologic_id}")
+
+            if not self._repository:
+                raise EntityNotFoundError("Repository not available")
+
+            biologic = await self._repository.find_by_id(biologic_id)
+            if not biologic:
+                raise EntityNotFoundError(
+                    f"Biologic with ID {biologic_id} not found"
+                )
+
+            # Convert to response
+            biologic_response = BiologicResponse(
+                id=str(biologic.id),
+                name=biologic.name,
+                description=biologic.description,
+                organism=biologic.organism,
+                biologic_type=biologic.biologic_type,
+                metadata=biologic.metadata_json,
+                chains=[],  # Would be populated from biologic.chains
+                created_at=biologic.created_at,
+                updated_at=biologic.updated_at,
+            )
+
+            self._logger.info(
+                f"Successfully retrieved biologic entity: {biologic.name}"
+            )
+            return biologic_response
+
+        except EntityNotFoundError:
+            raise
+        except Exception as e:
+            self._logger.error(
+                f"Error retrieving biologic entity {biologic_id}: {e}"
+            )
+            raise
 
     async def list_biologics(
-        self, db_session: AsyncSession, skip: int = 0, limit: int = 100
+        self, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[BiologicResponse]:
-        """List biologic entities with pagination."""
-        stmt = (
-            select(Biologic)
-            .options(
-                selectinload(Biologic.aliases),
-                selectinload(Biologic.chains)
+        """List all biologic entities."""
+        try:
+            self._logger.info("Listing biologic entities")
+
+            if not self._repository:
+                return []
+
+            biologics = await self._repository.find_all(
+                limit=limit, offset=offset
             )
-            .offset(skip)
-            .limit(limit)
-        )
-        
-        result = await db_session.execute(stmt)
-        biologics = result.scalars().all()
-        
-        return [BiologicResponse.model_validate(biologic) for biologic in biologics]
+
+            # Convert to responses
+            biologic_responses = []
+            for biologic in biologics:
+                biologic_response = BiologicResponse(
+                    id=str(biologic.id),
+                    name=biologic.name,
+                    description=biologic.description,
+                    organism=biologic.organism,
+                    biologic_type=biologic.biologic_type,
+                    metadata=biologic.metadata_json,
+                    chains=[],  # Would be populated from biologic.chains
+                    created_at=biologic.created_at,
+                    updated_at=biologic.updated_at,
+                )
+                biologic_responses.append(biologic_response)
+
+            self._logger.info(
+                f"Successfully listed {len(biologic_responses)} biologic entities"
+            )
+            return biologic_responses
+
+        except Exception as e:
+            self._logger.error(f"Error listing biologic entities: {e}")
+            raise
 
     async def update_biologic(
-        self, db_session: AsyncSession, biologic_id: UUID, update_data: BiologicUpdate
+        self, biologic_id: str, update_data: BiologicUpdate
     ) -> BiologicResponse:
         """Update a biologic entity."""
-        # Get the ORM model
-        stmt = select(Biologic).where(Biologic.id == biologic_id)
-        result = await db_session.execute(stmt)
-        biologic = result.scalar_one_or_none()
-        
-        if not biologic:
-            raise EntityNotFoundError(f"Biologic with ID {biologic_id} not found")
-        
-        # Update fields if provided
-        if update_data.name is not None:
-            biologic.name = update_data.name
-        if update_data.description is not None:
-            biologic.description = update_data.description
-        if update_data.organism is not None:
-            biologic.organism = update_data.organism
-        if update_data.biologic_type is not None:
-            biologic.biologic_type = update_data.biologic_type
-        if update_data.metadata is not None:
-            biologic.metadata_json = update_data.metadata
+        try:
+            self._logger.info(f"Updating biologic entity: {biologic_id}")
 
-        await db_session.commit()
-        await db_session.refresh(biologic)
-        
-        return BiologicResponse.model_validate(biologic)
+            if not self._repository:
+                raise EntityNotFoundError("Repository not available")
 
-    async def delete_biologic(
-        self, db_session: AsyncSession, biologic_id: UUID
-    ) -> None:
+            # Get existing biologic
+            biologic = await self._repository.find_by_id(biologic_id)
+            if not biologic:
+                raise EntityNotFoundError(
+                    f"Biologic with ID {biologic_id} not found"
+                )
+
+            # Update fields
+            if update_data.name is not None:
+                biologic.name = update_data.name
+            if update_data.description is not None:
+                biologic.description = update_data.description
+            if update_data.organism is not None:
+                biologic.organism = update_data.organism
+            if update_data.biologic_type is not None:
+                biologic.biologic_type = update_data.biologic_type
+            if update_data.metadata is not None:
+                biologic.metadata_json = update_data.metadata
+
+            # Persist changes
+            biologic = await self._repository.save(biologic)
+
+            # Convert to response
+            biologic_response = BiologicResponse(
+                id=str(biologic.id),
+                name=biologic.name,
+                description=biologic.description,
+                organism=biologic.organism,
+                biologic_type=biologic.biologic_type,
+                metadata=biologic.metadata_json,
+                chains=[],  # Would be populated from biologic.chains
+                created_at=biologic.created_at,
+                updated_at=biologic.updated_at,
+            )
+
+            self._logger.info(
+                f"Successfully updated biologic entity: {biologic.name}"
+            )
+            return biologic_response
+
+        except EntityNotFoundError:
+            raise
+        except Exception as e:
+            self._logger.error(
+                f"Error updating biologic entity {biologic_id}: {e}"
+            )
+            raise
+
+    async def delete_biologic(self, biologic_id: str) -> bool:
         """Delete a biologic entity."""
-        # Get the ORM model
-        stmt = select(Biologic).where(Biologic.id == biologic_id)
-        result = await db_session.execute(stmt)
-        biologic = result.scalar_one_or_none()
-        
-        if not biologic:
-            raise EntityNotFoundError(f"Biologic with ID {biologic_id} not found")
-        
-        await db_session.delete(biologic)
-        await db_session.commit()
+        try:
+            self._logger.info(f"Deleting biologic entity: {biologic_id}")
 
-    # =============================================================================
-    # Integration with Annotation Service
-    # =============================================================================
+            if not self._repository:
+                return False
 
-    async def process_and_persist_antibody_sequence(
+            success = await self._repository.delete(biologic_id)
+            if success:
+                self._logger.info(
+                    f"Successfully deleted biologic entity: {biologic_id}"
+                )
+            else:
+                self._logger.warning(
+                    f"Failed to delete biologic entity: {biologic_id}"
+                )
+
+            return success
+
+        except Exception as e:
+            self._logger.error(
+                f"Error deleting biologic entity {biologic_id}: {e}"
+            )
+            raise
+
+    async def process_and_persist_biologic(
+        self, biologic_data: BiologicCreate
+    ) -> ProcessingResult:
+        """Process and persist a biologic entity."""
+        try:
+            self._logger.info(
+                f"Processing and persisting biologic entity: {biologic_data.name}"
+            )
+            self.notify_step_completed("start", 0.0)
+
+            if not self._processor:
+                raise ValidationError("Processor not available")
+
+            # Process biologic using the processor
+            result = self._processor.process_biologic(biologic_data)
+
+            if result.success:
+                self.notify_step_completed("complete", 1.0)
+                self._logger.info(
+                    f"Successfully processed and persisted biologic entity: {biologic_data.name}"
+                )
+            else:
+                self.notify_processing_failed(result.error)
+                self._logger.error(
+                    f"Failed to process biologic entity: {result.error}"
+                )
+
+            return result
+
+        except Exception as e:
+            self.notify_processing_failed(str(e))
+            self._logger.error(f"Error processing biologic entity: {e}")
+            return ProcessingResult(success=False, error=str(e))
+
+    async def search_biologics(
+        self, search_criteria: Dict[str, Any]
+    ) -> List[BiologicResponse]:
+        """Search biologics by criteria."""
+        try:
+            self._logger.info(
+                f"Searching biologic entities with criteria: {search_criteria}"
+            )
+
+            if not self._repository:
+                return []
+
+            biologics = await self._repository.search_biologics(
+                search_criteria
+            )
+
+            # Convert to responses
+            biologic_responses = []
+            for biologic in biologics:
+                biologic_response = BiologicResponse(
+                    id=str(biologic.id),
+                    name=biologic.name,
+                    description=biologic.description,
+                    organism=biologic.organism,
+                    biologic_type=biologic.biologic_type,
+                    metadata=biologic.metadata_json,
+                    chains=[],  # Would be populated from biologic.chains
+                    created_at=biologic.created_at,
+                    updated_at=biologic.updated_at,
+                )
+                biologic_responses.append(biologic_response)
+
+            self._logger.info(
+                f"Successfully found {len(biologic_responses)} biologic entities"
+            )
+            return biologic_responses
+
+        except Exception as e:
+            self._logger.error(f"Error searching biologic entities: {e}")
+            raise
+
+    # Legacy methods for backward compatibility
+    def create_biologic_from_biologic_entity(
+        self, biologic_entity: BiologicEntity, organism: Optional[str] = None
+    ) -> Biologic:
+        """Create a Biologic ORM model from an AntibodySequence domain entity."""
+        try:
+            self._logger.debug(
+                f"Creating biologic from biologic entity: {biologic_entity.name}"
+            )
+
+            # Create the biologic entity
+            biologic = Biologic(
+                name=biologic_entity.name,
+                description=f"Biologic: {biologic_entity.name}",
+                organism=organism,
+                biologic_type=biologic_entity.biologic_type,
+                metadata_json={
+                    "domain_entity_id": biologic_entity.id,
+                    "chain_count": len(biologic_entity.chains),
+                    "total_length": biologic_entity.total_length,
+                },
+            )
+
+            # Create chains for each biologic chain
+            for biologic_chain in biologic_entity.chains:
+                chain = self._create_chain_from_biologic_chain(
+                    biologic, biologic_chain
+                )
+                biologic.chains.append(chain)
+
+            self._logger.debug(
+                f"Successfully created biologic from biologic entity: {biologic_entity.name}"
+            )
+            return biologic
+
+        except Exception as e:
+            self._logger.error(
+                f"Error creating biologic from biologic entity: {e}"
+            )
+            raise
+
+    def create_biologic_entity_from_biologic(
+        self, biologic: Biologic
+    ) -> BiologicEntity:
+        """Create an AntibodySequence domain entity from a Biologic ORM model."""
+        try:
+            self._logger.debug(
+                f"Creating antibody sequence from biologic: {biologic.name}"
+            )
+
+            # Convert chains to antibody chains
+            chains = []
+            for chain in biologic.chains:
+                antibody_chain = self._create_antibody_chain_from_chain(chain)
+                chains.append(antibody_chain)
+
+            # Create domain entity
+            biologic_entity = BiologicEntity(
+                name=biologic.name,
+                biologic_type=biologic.biologic_type,
+                description=biologic.description,
+                organism=biologic.organism,
+                chains=chains,
+                metadata=biologic.metadata_json or {},
+            )
+
+            self._logger.debug(
+                f"Successfully created antibody sequence from biologic: {biologic.name}"
+            )
+            return biologic_entity
+
+        except Exception as e:
+            self._logger.error(
+                f"Error creating antibody sequence from biologic: {e}"
+            )
+            raise
+
+    async def process_and_persist_biologic_entity(
         self,
         db_session: AsyncSession,
-        antibody_sequence: AntibodySequence,
-        organism: Optional[str] = None
+        biologic_entity: BiologicEntity,
+        organism: Optional[str] = None,
     ) -> BiologicResponse:
-        """
-        Process an antibody sequence through annotation and persist it as a biologic.
-        
-        This method demonstrates the integration pattern:
-        1. Use domain entities for business logic (annotation)
-        2. Convert to ORM models for persistence
-        3. Return Pydantic models for API responses
-        """
-        # Step 1: Process with domain entities (annotation would happen here)
-        # For now, we'll just use the sequence as-is
-        processed_sequence = antibody_sequence
+        """Process and persist an antibody sequence as a biologic entity."""
+        try:
+            self._logger.info(
+                f"Processing and persisting biologic entity: {biologic_entity.name}"
+            )
 
-        # Step 2: Convert to ORM model for persistence
-        biologic = self.create_biologic_from_antibody_sequence(
-            processed_sequence, organism
-        )
+            # Create biologic from biologic entity
+            biologic = self.create_biologic_from_biologic_entity(
+                biologic_entity, organism
+            )
 
-        # Step 3: Persist to database
-        db_session.add(biologic)
-        await db_session.commit()
-        await db_session.refresh(biologic)
+            # Persist to database
+            if self._repository:
+                biologic = await self._repository.save(biologic)
+                self._logger.info(
+                    f"Successfully persisted biologic entity: {biologic_entity.name}"
+                )
+            else:
+                self._logger.warning(
+                    "No repository provided, skipping persistence"
+                )
 
-        # Step 4: Return Pydantic model for API response
-        return BiologicResponse.model_validate(biologic)
+            # Convert to response
+            biologic_response = BiologicResponse(
+                id=str(biologic.id),
+                name=biologic.name,
+                description=biologic.description,
+                organism=biologic.organism,
+                biologic_type=biologic.biologic_type,
+                metadata=biologic.metadata_json,
+                chains=[],  # Would be populated from biologic.chains
+                created_at=biologic.created_at,
+                updated_at=biologic.updated_at,
+            )
+
+            return biologic_response
+
+        except Exception as e:
+            self._logger.error(
+                f"Error processing and persisting antibody sequence: {e}"
+            )
+            raise
+
+    # Helper methods for chain conversion
+    def _create_chain_from_biologic_chain(
+        self, biologic: Biologic, biologic_chain: BiologicChain
+    ) -> Chain:
+        """Create a Chain ORM model from an AntibodyChain domain entity."""
+        try:
+            # Create chain ORM model
+            chain = Chain(
+                biologic_id=biologic.id,
+                name=biologic_chain.name,
+                chain_type=biologic_chain.chain_type,
+                metadata_json={
+                    "domain_entity_id": biologic_chain.id,
+                    "sequence_count": len(biologic_chain.sequences),
+                },
+            )
+
+            # Create sequences for each sequence in the chain
+            for sequence in biologic_chain.sequences:
+                orm_sequence = self._create_sequence_from_domain(
+                    chain, sequence
+                )
+                chain.sequences.append(orm_sequence)
+
+            return chain
+
+        except Exception as e:
+            self._logger.error(
+                f"Error creating chain from antibody chain: {e}"
+            )
+            raise
+
+    def _create_biologic_chain_from_chain(self, chain: Chain) -> BiologicChain:
+        """Create an AntibodyChain domain entity from a Chain ORM model."""
+        try:
+            # Convert sequences to biologic sequences
+            biologic_sequences = []
+            for sequence in chain.sequences:
+                biologic_sequence = (
+                    self._create_biologic_sequence_from_orm_sequence(sequence)
+                )
+                biologic_sequences.append(biologic_sequence)
+
+            # Create domain entity
+            biologic_chain = BiologicChain(
+                name=chain.name,
+                chain_type=chain.chain_type,  # Would need enum conversion
+                sequences=biologic_sequences,
+                metadata=chain.metadata_json or {},
+            )
+
+            return biologic_chain
+
+        except Exception as e:
+            self._logger.error(
+                f"Error creating antibody chain from chain: {e}"
+            )
+            raise
+
+    def _create_sequence_from_domain(
+        self, chain: Chain, biologic_domain: BiologicDomain
+    ) -> Sequence:
+        """Create a Sequence ORM model from an AntibodyDomain domain entity."""
+        try:
+            # Create sequence ORM model
+            sequence = Sequence(
+                chain_id=chain.id,
+                sequence_type="PROTEIN",
+                sequence_data=biologic_domain.sequence_data,
+                length=len(biologic_domain.sequence_data),
+                description=f"{biologic_domain.domain_type} domain",
+                metadata_json={
+                    "domain_entity_id": biologic_domain.id,
+                    "domain_type": biologic_domain.domain_type,
+                    "feature_count": len(biologic_domain.features),
+                },
+            )
+
+            # Create domains for each feature
+            for feature in biologic_domain.features:
+                sequence_domain = self._create_sequence_domain_from_feature(
+                    sequence, feature
+                )
+                sequence.domains.append(sequence_domain)
+
+            return sequence
+
+        except Exception as e:
+            self._logger.error(f"Error creating sequence from domain: {e}")
+            raise
+
+    def _create_biologic_domain_from_sequence(
+        self, sequence: Sequence
+    ) -> BiologicDomain:
+        """Create an AntibodyDomain domain entity from a Sequence ORM model."""
+        try:
+            # Convert domains to regions
+            regions = {}
+            for sequence_domain in sequence.domains:
+                antibody_region = (
+                    self._create_antibody_region_from_sequence_domain(
+                        sequence_domain
+                    )
+                )
+                regions[antibody_region.name] = antibody_region
+
+            # Create domain entity
+            biologic_domain = BiologicDomain(
+                domain_type=sequence.metadata_json.get(
+                    "domain_type", "V"
+                ),  # Would need enum conversion
+                start_position=0,
+                end_position=len(sequence.sequence_data),
+                confidence_score=1.0,
+                metadata=sequence.metadata_json or {},
+            )
+
+            return biologic_domain
+
+        except Exception as e:
+            self._logger.error(
+                f"Error creating antibody domain from sequence: {e}"
+            )
+            raise
+
+    def _create_sequence_domain_from_feature(
+        self, sequence: Sequence, biologic_feature: BiologicFeature
+    ) -> SequenceDomain:
+        """Create a SequenceDomain ORM model from an AntibodyRegion domain entity."""
+        try:
+            # Create sequence domain ORM model
+            sequence_domain = SequenceDomain(
+                sequence_id=sequence.id,
+                domain_name=biologic_feature.name,
+                start_position=biologic_feature.start_position,
+                end_position=biologic_feature.end_position,
+                metadata_json={
+                    "domain_entity_id": biologic_feature.id,
+                    "feature_type": biologic_feature.feature_type,
+                },
+            )
+
+            return sequence_domain
+
+        except Exception as e:
+            self._logger.error(
+                f"Error creating sequence domain from region: {e}"
+            )
+            raise
+
+    def _create_biologic_feature_from_sequence_domain(
+        self, sequence_domain: SequenceDomain
+    ) -> BiologicFeature:
+        """Create an AntibodyRegion domain entity from a SequenceDomain ORM model."""
+        try:
+            # Create region domain entity
+            biologic_feature = BiologicFeature(
+                name=sequence_domain.domain_name,
+                feature_type=sequence_domain.metadata_json.get(
+                    "region_type", "FR1"
+                ),  # Would need enum conversion
+                start_position=sequence_domain.start_position,
+                end_position=sequence_domain.end_position,
+                confidence_score=1.0,
+                metadata=sequence_domain.metadata_json or {},
+            )
+
+            return biologic_feature
+
+        except Exception as e:
+            self._logger.error(
+                f"Error creating antibody region from sequence domain: {e}"
+            )
+            raise
+
+
+# Additional service implementations for different use cases
+class CachedBiologicServiceImpl(BiologicServiceImpl):
+    """Biologic service with caching capabilities."""
+
+    def __init__(
+        self,
+        repository: BiologicRepository = None,
+        processor: BiologicProcessor = None,
+    ):
+        super().__init__(repository, processor)
+        self._cache = {}
+
+    async def get_biologic(self, biologic_id: str) -> BiologicResponse:
+        """Get a biologic entity by ID with caching."""
+        # Check cache first
+        if biologic_id in self._cache:
+            self._logger.debug(f"Cache hit for biologic: {biologic_id}")
+            return self._cache[biologic_id]
+
+        # Get from repository
+        biologic_response = await super().get_biologic(biologic_id)
+
+        # Cache the result
+        self._cache[biologic_id] = biologic_response
+        self._logger.debug(f"Cached biologic: {biologic_id}")
+
+        return biologic_response
+
+
+class ValidationBiologicServiceImpl(BiologicServiceImpl):
+    """Biologic service with enhanced validation."""
+
+    def __init__(
+        self,
+        repository: BiologicRepository = None,
+        processor: BiologicProcessor = None,
+    ):
+        super().__init__(repository, processor)
+
+    async def create_biologic(
+        self, biologic_data: BiologicCreate
+    ) -> BiologicResponse:
+        """Create a new biologic entity with enhanced validation."""
+        # Perform additional validation
+        self._validate_biologic_data_enhanced(biologic_data)
+
+        # Call parent implementation
+        return await super().create_biologic(biologic_data)
+
+    def _validate_biologic_data_enhanced(
+        self, biologic_data: BiologicCreate
+    ) -> None:
+        """Perform enhanced validation on biologic data."""
+        # Additional validation rules
+        if biologic_data.biologic_type == "antibody":
+            if (
+                not biologic_data.metadata
+                or "chains" not in biologic_data.metadata
+            ):
+                raise ValidationError(
+                    "Antibody biologics must have chains in metadata",
+                    field="metadata",
+                )
+
+        # Add more validation rules as needed

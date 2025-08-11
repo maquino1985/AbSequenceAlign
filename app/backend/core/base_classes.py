@@ -4,7 +4,7 @@ These classes implement the Template Method pattern and provide shared behavior.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Generic, TypeVar
+from typing import List, Dict, Any, Generic, TypeVar, Optional
 from dataclasses import dataclass, field
 import logging
 
@@ -19,6 +19,7 @@ from .interfaces import (
 
 # Type variables
 T = TypeVar("T")
+U = TypeVar("U")
 
 # =============================================================================
 # ABSTRACT PROCESSING CLASSES
@@ -48,23 +49,20 @@ class AbstractProcessingSubject(ProcessingSubject):
                 f"Detached observer: {observer.__class__.__name__}"
             )
 
-    def notify_step_completed(self, step_name: str, progress: float) -> None:
-        """Notify all observers of a step completion"""
-        self._logger.debug(f"Step completed: {step_name} ({progress:.1%})")
+    def notify_step_completed(self, step: str, progress: float) -> None:
+        """Notify all observers of step completion"""
         for observer in self._observers:
-            try:
-                observer.on_step_completed(step_name, progress)
-            except Exception as e:
-                self._logger.error(f"Error notifying observer {observer}: {e}")
+            observer.on_step_completed(step, progress)
 
-    def notify_error(self, error: str) -> None:
-        """Notify all observers of an error"""
-        self._logger.error(f"Processing error: {error}")
+    def notify_processing_completed(self, result: ProcessingResult) -> None:
+        """Notify all observers of processing completion"""
         for observer in self._observers:
-            try:
-                observer.on_error(error)
-            except Exception as e:
-                self._logger.error(f"Error notifying observer {observer}: {e}")
+            observer.on_processing_completed(result)
+
+    def notify_processing_failed(self, error: str) -> None:
+        """Notify all observers of processing failure"""
+        for observer in self._observers:
+            observer.on_processing_failed(error)
 
 
 class AbstractProcessor(ABC, Generic[T]):
@@ -103,45 +101,34 @@ class AbstractProcessor(ABC, Generic[T]):
         self._logger.error(error_msg)
         return ProcessingResult(success=False, error=error_msg)
 
+    def process(self, input_data: T) -> ProcessingResult:
+        """Template method for processing with error handling"""
+        try:
+            self._set_status(ProcessingStatus.RUNNING)
 
-class AbstractExternalToolAdapter(ExternalToolAdapter):
-    """Abstract base class for external tool adapters"""
+            # Validate input
+            if not self._validate_input(input_data):
+                raise ValueError("Invalid input data")
 
-    def __init__(self, tool_name: str):
-        self.tool_name = tool_name
-        self._logger = logging.getLogger(
-            f"{self.__class__.__name__}.{tool_name}"
-        )
-        self._available = None  # Cache for availability check
+            # Pre-process
+            processed_input = self._pre_process(input_data)
 
-    def is_available(self) -> bool:
-        """Check if the external tool is available on the system"""
-        if self._available is None:
-            self._available = self._check_availability()
-        return self._available
+            # Process (implemented by subclasses)
+            result = self._process(processed_input)
+
+            # Post-process
+            final_result = self._post_process(result)
+
+            self._set_status(ProcessingStatus.COMPLETED)
+            return ProcessingResult(success=True, data=final_result)
+
+        except Exception as e:
+            return self._handle_error(e)
 
     @abstractmethod
-    def _check_availability(self) -> bool:
-        """Check if the tool is available - must be implemented by subclasses"""
+    def _process(self, input_data: T) -> Any:
+        """Process the input data - must be implemented by subclasses"""
         pass
-
-    def _validate_input(self, input_data: str) -> bool:
-        """Validate input data"""
-        if not input_data or not input_data.strip():
-            self._logger.error("Empty or invalid input data")
-            return False
-        return True
-
-    def _create_result(
-        self, success: bool, data: Dict[str, Any] = None, error: str = None
-    ) -> Dict[str, Any]:
-        """Create a standardized result dictionary"""
-        return {
-            "success": success,
-            "data": data or {},
-            "error": error,
-            "tool": self.tool_name,
-        }
 
 
 # =============================================================================
@@ -232,6 +219,77 @@ class AbstractAlignmentProcessor(AbstractProcessor):
 
 
 # =============================================================================
+# BIOLOGIC PROCESSING ABSTRACT CLASSES
+# =============================================================================
+
+
+class AbstractBiologicProcessor(AbstractProcessor[T]):
+    """Template method for biologic processing"""
+
+    async def process_biologic(self, biologic_data: T) -> ProcessingResult:
+        """Template method defining biologic processing flow"""
+        try:
+            self._set_status(ProcessingStatus.RUNNING)
+
+            # Template method steps
+            validated_data = self._validate_biologic_data(biologic_data)
+            processed_biologic = self._process_biologic_entity(validated_data)
+            persisted_biologic = await self._persist_biologic(
+                processed_biologic
+            )
+
+            self._set_status(ProcessingStatus.COMPLETED)
+            return ProcessingResult(success=True, data=persisted_biologic)
+
+        except Exception as e:
+            return self._handle_error(e)
+
+    @abstractmethod
+    def _validate_biologic_data(self, data: T) -> T:
+        """Validate the biologic data"""
+        pass
+
+    @abstractmethod
+    def _process_biologic_entity(self, data: T) -> Any:
+        """Process the biologic entity"""
+        pass
+
+    @abstractmethod
+    async def _persist_biologic(self, biologic: Any) -> Any:
+        """Persist the biologic entity"""
+        pass
+
+    def _process(self, input_data: T) -> Any:
+        """Process implementation for AbstractProcessor"""
+        return self.process_biologic(input_data)
+
+
+class AbstractBiologicConverter(ABC, Generic[T, U]):
+    """Abstract converter for biologic entities"""
+
+    def __init__(self):
+        self._logger = logging.getLogger(self.__class__.__name__)
+
+    @abstractmethod
+    def convert_to_orm(self, domain_entity: T) -> U:
+        """Convert domain entity to ORM model"""
+        pass
+
+    @abstractmethod
+    def convert_to_domain(self, orm_model: U) -> T:
+        """Convert ORM model to domain entity"""
+        pass
+
+    def convert_list_to_orm(self, domain_entities: List[T]) -> List[U]:
+        """Convert a list of domain entities to ORM models"""
+        return [self.convert_to_orm(entity) for entity in domain_entities]
+
+    def convert_list_to_domain(self, orm_models: List[U]) -> List[T]:
+        """Convert a list of ORM models to domain entities"""
+        return [self.convert_to_domain(model) for model in orm_models]
+
+
+# =============================================================================
 # BUILDER PATTERN BASE CLASSES
 # =============================================================================
 
@@ -286,21 +344,40 @@ class AbstractFactory(ABC, Generic[T]):
             )
             raise
 
+    def get_available_types(self) -> List[str]:
+        """Get list of available registered types"""
+        return list(self._registry.keys())
+
+
+class AbstractServiceFactory(AbstractFactory[T]):
+    """Abstract factory for creating services"""
+
+    def __init__(self):
+        super().__init__()
+        self._register_default_services()
+
+    @abstractmethod
+    def _register_default_services(self) -> None:
+        """Register default service types - must be implemented by subclasses"""
+        pass
+
 
 # =============================================================================
-# PIPELINE BASE CLASSES
+# PIPELINE PATTERN BASE CLASSES
 # =============================================================================
 
 
 @dataclass
-class PipelineContext(ProcessingContext):
-    """Extended context for pipeline processing"""
+class PipelineContext:
+    """Context for pipeline execution"""
 
+    input_data: Any = None
+    current_step: str = ""
     step_results: Dict[str, Any] = field(default_factory=dict)
     step_errors: Dict[str, str] = field(default_factory=dict)
-    current_step: str = ""
-    total_steps: int = 0
     completed_steps: int = 0
+    total_steps: int = 0
+    errors: List[str] = field(default_factory=list)
 
 
 class AbstractPipelineStep(ABC):
@@ -344,38 +421,53 @@ class AbstractPipelineStep(ABC):
 
 
 # =============================================================================
-# UTILITY BASE CLASSES
+# ADAPTER PATTERN BASE CLASSES
 # =============================================================================
 
 
-class Validatable(ABC):
-    """Base class for objects that can validate themselves"""
+class AbstractBiologicAdapter(ABC):
+    """Abstract adapter for biologic data sources"""
+
+    def __init__(self, source_name: str):
+        self.source_name = source_name
+        self._logger = logging.getLogger(
+            f"{self.__class__.__name__}.{source_name}"
+        )
 
     @abstractmethod
-    def validate(self) -> bool:
-        """Validate this object"""
+    async def fetch_biologic_data(self, identifier: str) -> Dict[str, Any]:
+        """Fetch biologic data from the source"""
         pass
 
     @abstractmethod
-    def get_validation_errors(self) -> List[str]:
-        """Get list of validation errors"""
+    async def validate_biologic_data(self, data: Dict[str, Any]) -> bool:
+        """Validate biologic data from the source"""
         pass
 
+    @abstractmethod
+    async def transform_biologic_data(
+        self, data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Transform biologic data to internal format"""
+        pass
 
-class Configurable(ABC):
-    """Base class for objects that can be configured"""
+    async def process_biologic_data(self, identifier: str) -> Dict[str, Any]:
+        """Process biologic data through the adapter pipeline"""
+        try:
+            # Fetch data
+            raw_data = await self.fetch_biologic_data(identifier)
 
-    def __init__(self, config: Dict[str, Any] = None):
-        self.config = config or {}
+            # Validate data
+            if not await self.validate_biologic_data(raw_data):
+                raise ValueError(
+                    f"Invalid biologic data from {self.source_name}"
+                )
 
-    def get_config(self, key: str, default: Any = None) -> Any:
-        """Get a configuration value"""
-        return self.config.get(key, default)
+            # Transform data
+            transformed_data = await self.transform_biologic_data(raw_data)
 
-    def set_config(self, key: str, value: Any) -> None:
-        """Set a configuration value"""
-        self.config[key] = value
+            return transformed_data
 
-    def has_config(self, key: str) -> bool:
-        """Check if a configuration key exists"""
-        return key in self.config
+        except Exception as e:
+            self._logger.error(f"Error processing biologic data: {e}")
+            raise

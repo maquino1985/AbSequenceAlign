@@ -6,7 +6,7 @@ Implements the ExternalToolAdapter interface to provide a clean abstraction.
 from typing import Dict, Any, List, Tuple, Optional
 import logging
 
-from ...core.base_classes import AbstractExternalToolAdapter
+from ...core.interfaces import AbstractExternalToolAdapter
 from ...core.exceptions import (
     AnarciError,
     ToolNotAvailableError,
@@ -28,7 +28,7 @@ class AnarciAdapter(AbstractExternalToolAdapter):
             NumberingScheme.AHO: "aho",
         }
 
-    def _check_availability(self) -> bool:
+    def is_available(self) -> bool:
         """Check if ANARCI is available on the system"""
         try:
             # Try to import ANARCI
@@ -38,6 +38,22 @@ class AnarciAdapter(AbstractExternalToolAdapter):
         except ImportError:
             self._logger.warning("ANARCI not available via import")
             return False
+
+    def validate_output(self, output: Dict[str, Any]) -> bool:
+        """Validate ANARCI output"""
+        if not output or not isinstance(output, dict):
+            return False
+
+        # Check for required keys in ANARCI output
+        required_keys = ["success", "data"]
+        if not all(key in output for key in required_keys):
+            return False
+
+        return output.get("success", False)
+
+    def _check_availability(self) -> bool:
+        """Check if ANARCI is available on the system"""
+        return self.is_available()
 
     def execute(self, input_data: str) -> Dict[str, Any]:
         """Execute ANARCI on the input sequence"""

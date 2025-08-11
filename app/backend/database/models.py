@@ -24,6 +24,7 @@ from .base import Base, UUIDv7
 # New Biologic Entity Models
 # =============================================================================
 
+
 class Biologic(Base):
     """Main entity representing any biologic (antibodies, enzymes, receptors, etc.)"""
 

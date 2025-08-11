@@ -1,197 +1,20 @@
 """
-Core interfaces and protocols for the antibody sequence analysis system.
-Defines the contracts that all components must follow.
+Core interfaces defining contracts for the application.
+These interfaces establish the contracts that implementations must follow.
 """
 
 from abc import ABC, abstractmethod
-from typing import Protocol, Generic, TypeVar, Dict, Any, List, Optional
+from typing import List, Dict, Any, Optional, Generic, TypeVar, Protocol
 from dataclasses import dataclass
-from enum import Enum
+from datetime import datetime
+import logging
 
-# Type variables for generic components
+# Type variables
 T = TypeVar("T")
-InputT = TypeVar("InputT")
-OutputT = TypeVar("OutputT")
-
-# =============================================================================
-# CORE DOMAIN INTERFACES
-# =============================================================================
-
-
-class Sequence(Protocol):
-    """Core sequence interface - represents any biological sequence"""
-
-    @property
-    def sequence(self) -> str:
-        """The raw sequence string"""
-        ...
-
-    @property
-    def name(self) -> str:
-        """The sequence identifier/name"""
-        ...
-
-    @property
-    def type(self) -> str:
-        """The type of sequence (e.g., 'antibody', 'protein', 'dna')"""
-        ...
-
-
-class Domain(Protocol):
-    """Core domain interface - represents a functional domain within a sequence"""
-
-    @property
-    def sequence(self) -> str:
-        """The domain sequence"""
-        ...
-
-    @property
-    def type(self) -> str:
-        """The domain type (e.g., 'V', 'C', 'LINKER')"""
-        ...
-
-    @property
-    def regions(self) -> Dict[str, Any]:
-        """The annotated regions within this domain"""
-        ...
-
-
-class Region(Protocol):
-    """Core region interface - represents a functional region within a domain"""
-
-    @property
-    def name(self) -> str:
-        """The region name (e.g., 'CDR1', 'FR1')"""
-        ...
-
-    @property
-    def start(self) -> int:
-        """The start position in the sequence"""
-        ...
-
-    @property
-    def stop(self) -> int:
-        """The stop position in the sequence"""
-        ...
-
-    @property
-    def sequence(self) -> str:
-        """The region sequence"""
-        ...
-
+U = TypeVar("U")
 
 # =============================================================================
 # PROCESSING INTERFACES
-# =============================================================================
-
-
-class Processor(Generic[InputT, OutputT], ABC):
-    """Generic processor interface for transforming input to output"""
-
-    @abstractmethod
-    def process(self, input_data: InputT) -> OutputT:
-        """Process the input data and return the result"""
-        pass
-
-
-class ProcessingStrategy(ABC):
-    """Strategy interface for different processing approaches"""
-
-    @abstractmethod
-    def execute(self, sequence: Sequence) -> Domain:
-        """Execute the processing strategy on a sequence"""
-        pass
-
-    @abstractmethod
-    def can_process(self, sequence: Sequence) -> bool:
-        """Check if this strategy can process the given sequence"""
-        pass
-
-
-class PipelineStep(ABC):
-    """Base class for pipeline steps in the Chain of Responsibility pattern"""
-
-    def __init__(self, next_step: Optional["PipelineStep"] = None):
-        self.next_step = next_step
-
-    @abstractmethod
-    def process(self, context: "ProcessingContext") -> "ProcessingContext":
-        """Process the context and optionally pass to next step"""
-        pass
-
-    def set_next(self, step: "PipelineStep") -> "PipelineStep":
-        """Set the next step in the chain"""
-        self.next_step = step
-        return step
-
-    def _process_next(
-        self, context: "ProcessingContext"
-    ) -> "ProcessingContext":
-        """Helper method to process the next step if it exists"""
-        if self.next_step:
-            return self.next_step.process(context)
-        return context
-
-
-# =============================================================================
-# EXTERNAL TOOL INTERFACES
-# =============================================================================
-
-
-class ExternalToolAdapter(ABC):
-    """Adapter interface for external bioinformatics tools"""
-
-    @abstractmethod
-    def execute(self, input_data: str) -> Dict[str, Any]:
-        """Execute the external tool with the given input"""
-        pass
-
-    @abstractmethod
-    def is_available(self) -> bool:
-        """Check if the external tool is available on the system"""
-        pass
-
-
-class AbstractExternalToolAdapter(ABC):
-    """Abstract base class for external tool adapters"""
-
-    @abstractmethod
-    def execute(self, **kwargs) -> Dict[str, Any]:
-        """Execute the external tool"""
-        pass
-
-    @abstractmethod
-    def is_available(self) -> bool:
-        """Check if the external tool is available"""
-        pass
-
-    @abstractmethod
-    def get_version(self) -> Optional[str]:
-        """Get the version of the external tool"""
-        pass
-
-
-class ToolResult(Protocol):
-    """Protocol for tool execution results"""
-
-    @property
-    def success(self) -> bool:
-        """Whether the tool execution was successful"""
-        ...
-
-    @property
-    def data(self) -> Dict[str, Any]:
-        """The result data from the tool"""
-        ...
-
-    @property
-    def error(self) -> Optional[str]:
-        """Error message if execution failed"""
-        ...
-
-
-# =============================================================================
-# OBSERVER PATTERN INTERFACES
 # =============================================================================
 
 
@@ -199,18 +22,18 @@ class ProcessingObserver(ABC):
     """Observer interface for processing events"""
 
     @abstractmethod
-    def on_step_completed(self, step_name: str, progress: float) -> None:
+    def on_step_completed(self, step: str, progress: float) -> None:
         """Called when a processing step is completed"""
         pass
 
     @abstractmethod
-    def on_error(self, error: str) -> None:
-        """Called when an error occurs during processing"""
+    def on_processing_completed(self, result: "ProcessingResult") -> None:
+        """Called when processing is completed"""
         pass
 
     @abstractmethod
-    def on_processing_complete(self, result: Any) -> None:
-        """Called when processing is completely finished"""
+    def on_processing_failed(self, error: str) -> None:
+        """Called when processing fails"""
         pass
 
 
@@ -219,22 +42,130 @@ class ProcessingSubject(ABC):
 
     @abstractmethod
     def attach(self, observer: ProcessingObserver) -> None:
-        """Attach an observer to this subject"""
+        """Attach an observer"""
         pass
 
     @abstractmethod
     def detach(self, observer: ProcessingObserver) -> None:
-        """Detach an observer from this subject"""
+        """Detach an observer"""
         pass
 
     @abstractmethod
-    def notify_step_completed(self, step_name: str, progress: float) -> None:
-        """Notify all observers of a step completion"""
+    def notify_step_completed(self, step: str, progress: float) -> None:
+        """Notify observers of step completion"""
         pass
 
     @abstractmethod
-    def notify_error(self, error: str) -> None:
-        """Notify all observers of an error"""
+    def notify_processing_completed(self, result: "ProcessingResult") -> None:
+        """Notify observers of processing completion"""
+        pass
+
+    @abstractmethod
+    def notify_processing_failed(self, error: str) -> None:
+        """Notify observers of processing failure"""
+        pass
+
+
+@dataclass
+class ProcessingResult:
+    """Result of a processing operation"""
+
+    success: bool
+    data: Any = None
+    error: str = None
+    metadata: Dict[str, Any] = None
+    timestamp: datetime = None
+
+    def __post_init__(self):
+        if self.timestamp is None:
+            self.timestamp = datetime.now()
+        if self.metadata is None:
+            self.metadata = {}
+
+
+class ProcessingStatus:
+    """Processing status enumeration"""
+
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class ProcessingContext(ABC):
+    """Context for processing operations"""
+
+    @abstractmethod
+    def get_input_data(self) -> Any:
+        """Get the input data for processing"""
+        pass
+
+    @abstractmethod
+    def set_result(self, result: ProcessingResult) -> None:
+        """Set the processing result"""
+        pass
+
+    @abstractmethod
+    def get_result(self) -> Optional[ProcessingResult]:
+        """Get the processing result"""
+        pass
+
+
+class AbstractExternalToolAdapter(ABC):
+    """Abstract base class for external tool adapters"""
+
+    def __init__(self, tool_name: str):
+        self.tool_name = tool_name
+        self._logger = logging.getLogger(self.__class__.__name__)
+
+    @abstractmethod
+    def is_available(self) -> bool:
+        """Check if the external tool is available"""
+        pass
+
+    @abstractmethod
+    def execute(self, input_data: str) -> Dict[str, Any]:
+        """Execute the external tool with input data"""
+        pass
+
+    @abstractmethod
+    def validate_output(self, output: Dict[str, Any]) -> bool:
+        """Validate the tool output"""
+        pass
+
+    def _validate_input(self, input_data: str) -> bool:
+        """Validate input data"""
+        return input_data is not None and len(input_data.strip()) > 0
+
+    def _create_result(
+        self, success: bool, data: Any = None, error: str = None
+    ) -> Dict[str, Any]:
+        """Create a standardized result dictionary"""
+        return {
+            "success": success,
+            "data": data,
+            "error": error,
+            "tool_name": self.tool_name,
+        }
+
+
+class ExternalToolAdapter(AbstractExternalToolAdapter):
+    """Interface for external tool adapters"""
+
+    @abstractmethod
+    def is_available(self) -> bool:
+        """Check if the external tool is available"""
+        pass
+
+    @abstractmethod
+    def execute(self, input_data: str) -> Dict[str, Any]:
+        """Execute the external tool with input data"""
+        pass
+
+    @abstractmethod
+    def validate_output(self, output: Dict[str, Any]) -> bool:
+        """Validate the tool output"""
         pass
 
 
@@ -266,89 +197,344 @@ class Repository(Generic[T], ABC):
         """Delete an entity by its ID"""
         pass
 
+    @abstractmethod
+    def count(self) -> int:
+        """Count total entities"""
+        pass
+
+
+class AsyncRepository(Generic[T], ABC):
+    """Generic async repository interface for data access"""
+
+    @abstractmethod
+    async def save(self, entity: T) -> T:
+        """Save an entity"""
+        pass
+
+    @abstractmethod
+    async def find_by_id(self, entity_id: str) -> Optional[T]:
+        """Find an entity by its ID"""
+        pass
+
+    @abstractmethod
+    async def find_all(
+        self, limit: Optional[int] = None, offset: Optional[int] = None
+    ) -> List[T]:
+        """Find all entities with optional pagination"""
+        pass
+
+    @abstractmethod
+    async def delete(self, entity_id: str) -> bool:
+        """Delete an entity by its ID"""
+        pass
+
+    @abstractmethod
+    async def count(self) -> int:
+        """Count total entities"""
+        pass
+
+    @abstractmethod
+    async def exists(self, entity_id: str) -> bool:
+        """Check if an entity exists"""
+        pass
+
+
+# =============================================================================
+# BIOLOGIC INTERFACES
+# =============================================================================
+
+
+class BiologicRepository(AsyncRepository[T], ABC):
+    """Repository interface for biologic entities"""
+
+    @abstractmethod
+    async def find_by_organism(
+        self, organism: str, limit: Optional[int] = None
+    ) -> List[T]:
+        """Find biologics by organism"""
+        pass
+
+    @abstractmethod
+    async def find_by_type(
+        self, biologic_type: str, limit: Optional[int] = None
+    ) -> List[T]:
+        """Find biologics by type"""
+        pass
+
+    @abstractmethod
+    async def find_by_name_pattern(
+        self, name_pattern: str, limit: Optional[int] = None
+    ) -> List[T]:
+        """Find biologics by name pattern"""
+        pass
+
+    @abstractmethod
+    async def find_with_chains(self, entity_id: str) -> Optional[T]:
+        """Find biologic with all its chains loaded"""
+        pass
+
+    @abstractmethod
+    async def find_with_full_hierarchy(self, entity_id: str) -> Optional[T]:
+        """Find biologic with full hierarchy (chains, sequences, domains, features)"""
+        pass
+
+
+class BiologicService(ProcessingSubject, ABC):
+    """Service interface for biologic entity management"""
+
+    @abstractmethod
+    async def create_biologic(
+        self, biologic_data: "BiologicCreate"
+    ) -> "BiologicResponse":
+        """Create a new biologic entity"""
+        pass
+
+    @abstractmethod
+    async def get_biologic(self, biologic_id: str) -> "BiologicResponse":
+        """Get a biologic entity by ID"""
+        pass
+
+    @abstractmethod
+    async def list_biologics(
+        self, limit: Optional[int] = None, offset: Optional[int] = None
+    ) -> List["BiologicResponse"]:
+        """List all biologic entities"""
+        pass
+
+    @abstractmethod
+    async def update_biologic(
+        self, biologic_id: str, update_data: "BiologicUpdate"
+    ) -> "BiologicResponse":
+        """Update a biologic entity"""
+        pass
+
+    @abstractmethod
+    async def delete_biologic(self, biologic_id: str) -> bool:
+        """Delete a biologic entity"""
+        pass
+
+    @abstractmethod
+    async def process_and_persist_biologic(
+        self, biologic_data: "BiologicCreate"
+    ) -> "ProcessingResult":
+        """Process and persist a biologic entity"""
+        pass
+
+    @abstractmethod
+    async def search_biologics(
+        self, search_criteria: Dict[str, Any]
+    ) -> List["BiologicResponse"]:
+        """Search biologics by criteria"""
+        pass
+
+
+class BiologicProcessor(ABC):
+    """Processor interface for biologic entities"""
+
+    @abstractmethod
+    def validate_biologic_data(self, data: "BiologicCreate") -> bool:
+        """Validate biologic data"""
+        pass
+
+    @abstractmethod
+    def process_biologic_entity(
+        self, data: "BiologicCreate"
+    ) -> "BiologicResponse":
+        """Process biologic entity"""
+        pass
+
+    @abstractmethod
+    def convert_domain_to_orm(self, domain_entity: T) -> U:
+        """Convert domain entity to ORM model"""
+        pass
+
+    @abstractmethod
+    def convert_orm_to_domain(self, orm_model: U) -> T:
+        """Convert ORM model to domain entity"""
+        pass
+
+
+class BiologicConverter(Generic[T, U], ABC):
+    """Converter interface for biologic entities"""
+
+    @abstractmethod
+    def convert_to_orm(self, domain_entity: T) -> U:
+        """Convert domain entity to ORM model"""
+        pass
+
+    @abstractmethod
+    def convert_to_domain(self, orm_model: U) -> T:
+        """Convert ORM model to domain entity"""
+        pass
+
+    @abstractmethod
+    def convert_to_pydantic(self, domain_entity: T) -> "BiologicResponse":
+        """Convert domain entity to Pydantic response model"""
+        pass
+
+    @abstractmethod
+    def convert_from_pydantic(self, pydantic_model: "BiologicCreate") -> T:
+        """Convert Pydantic model to domain entity"""
+        pass
+
+
+# =============================================================================
+# STRATEGY INTERFACES
+# =============================================================================
+
+
+class BiologicProcessingStrategy(ABC):
+    """Strategy interface for processing different biologic types"""
+
+    @abstractmethod
+    def can_process(self, biologic_type: str) -> bool:
+        """Check if this strategy can process the given biologic type"""
+        pass
+
+    @abstractmethod
+    def process(self, biologic_data: "BiologicCreate") -> "BiologicResponse":
+        """Process biologic data according to this strategy"""
+        pass
+
+    @abstractmethod
+    def validate(self, biologic_data: "BiologicCreate") -> bool:
+        """Validate biologic data according to this strategy"""
+        pass
+
+
+class BiologicValidationStrategy(ABC):
+    """Strategy interface for validating different biologic types"""
+
+    @abstractmethod
+    def can_validate(self, biologic_type: str) -> bool:
+        """Check if this strategy can validate the given biologic type"""
+        pass
+
+    @abstractmethod
+    def validate(self, biologic_data: "BiologicCreate") -> List[str]:
+        """Validate biologic data and return list of errors"""
+        pass
+
+
+# =============================================================================
+# ADAPTER INTERFACES
+# =============================================================================
+
+
+class BiologicDataAdapter(ABC):
+    """Adapter interface for biologic data sources"""
+
+    @abstractmethod
+    async def fetch_biologic_data(self, identifier: str) -> Dict[str, Any]:
+        """Fetch biologic data from the source"""
+        pass
+
+    @abstractmethod
+    async def validate_biologic_data(self, data: Dict[str, Any]) -> bool:
+        """Validate biologic data from the source"""
+        pass
+
+    @abstractmethod
+    async def transform_biologic_data(
+        self, data: Dict[str, Any]
+    ) -> "BiologicCreate":
+        """Transform biologic data to internal format"""
+        pass
+
+    @abstractmethod
+    def get_source_name(self) -> str:
+        """Get the name of this data source"""
+        pass
+
 
 # =============================================================================
 # FACTORY INTERFACES
 # =============================================================================
 
 
-class Factory(Generic[T], ABC):
-    """Generic factory interface"""
+class BiologicServiceFactory(ABC):
+    """Factory interface for creating biologic services"""
 
     @abstractmethod
-    def create(self, **kwargs) -> T:
-        """Create a new instance of T"""
+    def create_service(self, service_type: str, **kwargs) -> BiologicService:
+        """Create a biologic service of the specified type"""
+        pass
+
+    @abstractmethod
+    def create_processor(
+        self, processor_type: str, **kwargs
+    ) -> BiologicProcessor:
+        """Create a biologic processor of the specified type"""
+        pass
+
+    @abstractmethod
+    def create_converter(
+        self, converter_type: str, **kwargs
+    ) -> BiologicConverter:
+        """Create a biologic converter of the specified type"""
+        pass
+
+    @abstractmethod
+    def create_strategy(
+        self, strategy_type: str, **kwargs
+    ) -> BiologicProcessingStrategy:
+        """Create a biologic processing strategy of the specified type"""
+        pass
+
+    @abstractmethod
+    def get_available_service_types(self) -> List[str]:
+        """Get list of available service types"""
+        pass
+
+    @abstractmethod
+    def get_available_processor_types(self) -> List[str]:
+        """Get list of available processor types"""
+        pass
+
+    @abstractmethod
+    def get_available_converter_types(self) -> List[str]:
+        """Get list of available converter types"""
+        pass
+
+    @abstractmethod
+    def get_available_strategy_types(self) -> List[str]:
+        """Get list of available strategy types"""
         pass
 
 
 # =============================================================================
-# ENUMERATIONS
+# PYDANTIC MODEL PROTOCOLS (for type hints)
 # =============================================================================
 
 
-class ProcessingStatus(str, Enum):
-    """Status of processing operations"""
+class BiologicCreate(Protocol):
+    """Protocol for biologic creation data"""
 
-    PENDING = "pending"
-    RUNNING = "running"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
-
-
-class DomainType(str, Enum):
-    """Types of antibody domains"""
-
-    VARIABLE = "V"
-    CONSTANT = "C"
-    LINKER = "LINKER"
+    name: str
+    description: Optional[str]
+    organism: Optional[str]
+    biologic_type: str
+    metadata: Optional[Dict[str, Any]]
 
 
-class RegionType(str, Enum):
-    """Types of antibody regions"""
+class BiologicUpdate(Protocol):
+    """Protocol for biologic update data"""
 
-    CDR1 = "CDR1"
-    CDR2 = "CDR2"
-    CDR3 = "CDR3"
-    FR1 = "FR1"
-    FR2 = "FR2"
-    FR3 = "FR3"
-    FR4 = "FR4"
-    CONSTANT = "CONSTANT"
-    LINKER = "LINKER"
+    name: Optional[str]
+    description: Optional[str]
+    organism: Optional[str]
+    biologic_type: Optional[str]
+    metadata: Optional[Dict[str, Any]]
 
 
-# =============================================================================
-# DATA CLASSES
-# =============================================================================
+class BiologicResponse(Protocol):
+    """Protocol for biologic response data"""
 
-
-@dataclass
-class ProcessingContext:
-    """Context object passed through processing pipelines"""
-
-    sequence: Sequence
-    domains: List[Domain] = None
-    annotations: Dict[str, Any] = None
-    errors: List[str] = None
-    metadata: Dict[str, Any] = None
-
-    def __post_init__(self):
-        if self.domains is None:
-            self.domains = []
-        if self.annotations is None:
-            self.annotations = {}
-        if self.errors is None:
-            self.errors = []
-        if self.metadata is None:
-            self.metadata = {}
-
-
-@dataclass
-class ProcessingResult:
-    """Result of a processing operation"""
-
-    success: bool
-    data: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    id: str
+    name: str
+    description: Optional[str]
+    organism: Optional[str]
+    biologic_type: str
+    metadata: Optional[Dict[str, Any]]
+    created_at: datetime
+    updated_at: datetime

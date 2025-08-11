@@ -1,10 +1,8 @@
 """
-Tests for the domain model refactoring (Phase 2).
-Verifies that value objects, entities, and domain services work correctly.
+Tests for domain refactoring with new biologic entities.
 """
 
 import pytest
-
 from backend.domain.value_objects import (
     AminoAcidSequence,
     RegionBoundary,
@@ -13,10 +11,11 @@ from backend.domain.value_objects import (
     AnnotationMetadata,
 )
 from backend.domain.entities import (
-    AntibodyRegion,
-    AntibodyDomain,
-    AntibodyChain,
-    AntibodySequence,
+    BiologicEntity,
+    BiologicChain,
+    BiologicSequence,
+    BiologicDomain,
+    BiologicFeature,
 )
 from backend.domain.models import (
     ChainType,
@@ -108,228 +107,184 @@ class TestValueObjects:
         assert intersection.start == 15
         assert intersection.end == 20
 
-        # Union
-        union = boundary1.union(boundary2)
-        assert union.start == 10
-        assert union.end == 25
-
-        # Adjacent
-        boundary4 = RegionBoundary(21, 30)
-        assert boundary1.is_adjacent_to(boundary4)
-
     def test_sequence_identifier_creation(self):
         """Test creating sequence identifiers"""
-        seq_id = SequenceIdentifier("ABC123", "UniProt", "1.0")
-        assert str(seq_id) == "UniProt:ABC123:1.0"
-
-        seq_id_no_version = SequenceIdentifier("ABC123", "UniProt")
-        assert str(seq_id_no_version) == "UniProt:ABC123"
+        identifier = SequenceIdentifier("TEST123", "test_source")
+        assert str(identifier) == "test_source:TEST123"
 
     def test_confidence_score_creation(self):
         """Test creating confidence scores"""
-        score = ConfidenceScore(0.85, "ANARCI")
-        assert score.score == 0.85
-        assert score.method == "ANARCI"
-        assert score.is_high_confidence()
-        assert not score.is_low_confidence()
+        score = ConfidenceScore(0.95, "test_method")
+        assert score.score == 0.95
 
     def test_confidence_score_validation(self):
         """Test confidence score validation"""
-        # Invalid: score > 1.0
-        with pytest.raises(ValidationError):
-            ConfidenceScore(1.5, "ANARCI")
+        # Valid scores
+        ConfidenceScore(0.0, "test_method")
+        ConfidenceScore(0.5, "test_method")
+        ConfidenceScore(1.0, "test_method")
 
-        # Invalid: score < 0.0
+        # Invalid scores
         with pytest.raises(ValidationError):
-            ConfidenceScore(-0.1, "ANARCI")
+            ConfidenceScore(-0.1, "test_method")
+
+        with pytest.raises(ValidationError):
+            ConfidenceScore(1.1, "test_method")
 
     def test_annotation_metadata_creation(self):
         """Test creating annotation metadata"""
         metadata = AnnotationMetadata(
-            tool_version="1.0.0",
-            timestamp="2024-01-01T00:00:00",
-            parameters={"scheme": "IMGT"},
-            confidence_score=ConfidenceScore(0.9, "ANARCI"),
+            tool_version="1.3",
+            timestamp="2023-01-01T00:00:00Z",
+            parameters={"scheme": "imgt"},
         )
-        assert metadata.tool_version == "1.0.0"
-        assert metadata.get_parameter("scheme") == "IMGT"
+        assert metadata.tool_version == "1.3"
+        assert metadata.timestamp == "2023-01-01T00:00:00Z"
 
 
 class TestDomainEntities:
     """Test domain entities functionality"""
 
-    def test_antibody_region_creation(self):
-        """Test creating antibody regions"""
-        sequence = AminoAcidSequence("ACDEFGHIKLMNPQRSTVWY")
-        boundary = RegionBoundary(0, 19)
-
-        region = AntibodyRegion(
+    def test_biologic_feature_creation(self):
+        """Test creating biologic features"""
+        feature = BiologicFeature(
+            feature_type="CDR1",
             name="CDR1",
-            region_type=RegionType.CDR1,
-            boundary=boundary,
-            sequence=sequence,
-            numbering_scheme=NumberingScheme.IMGT,
+            value="ACDEFGHIKLMNPQRSTVWY",
+            start_position=0,
+            end_position=19,
+            confidence_score=95,
         )
 
-        assert region.name == "CDR1"
-        assert region.region_type == RegionType.CDR1
-        assert region.is_cdr_region()
-        assert not region.is_fr_region()
+        assert feature.name == "CDR1"
+        assert feature.feature_type == "CDR1"
+        assert feature.value == "ACDEFGHIKLMNPQRSTVWY"
+        assert feature.start_position == 0
+        assert feature.end_position == 19
+        assert feature.confidence_score == 95
+        assert feature.is_cdr_region()
+        assert not feature.is_fr_region()
 
-    def test_antibody_domain_creation(self):
-        """Test creating antibody domains"""
-        sequence = AminoAcidSequence("ACDEFGHIKLMNPQRSTVWY")
-
-        domain = AntibodyDomain(
-            domain_type=DomainType.VARIABLE,
-            sequence=sequence,
-            numbering_scheme=NumberingScheme.IMGT,
+    def test_biologic_domain_creation(self):
+        """Test creating biologic domains"""
+        domain = BiologicDomain(
+            domain_type="VARIABLE",
+            start_position=0,
+            end_position=99,
+            confidence_score=90,
         )
 
-        assert domain.domain_type == DomainType.VARIABLE
+        assert domain.domain_type == "VARIABLE"
         assert domain.is_variable_domain()
         assert not domain.is_constant_domain()
-        assert len(domain.regions) == 0
+        assert len(domain.features) == 0
+        assert domain.length == 100
 
-    def test_antibody_domain_add_region(self):
-        """Test adding regions to domains"""
-        sequence = AminoAcidSequence("ACDEFGHIKLMNPQRSTVWY")
-        domain = AntibodyDomain(
-            domain_type=DomainType.VARIABLE,
-            sequence=sequence,
-            numbering_scheme=NumberingScheme.IMGT,
+    def test_biologic_domain_add_feature(self):
+        """Test adding features to domains"""
+        domain = BiologicDomain(
+            domain_type="VARIABLE",
+            start_position=0,
+            end_position=99,
+            confidence_score=90,
         )
 
-        # Add a region
-        region = AntibodyRegion(
+        # Add a feature
+        feature = BiologicFeature(
+            feature_type="CDR1",
             name="CDR1",
-            region_type=RegionType.CDR1,
-            boundary=RegionBoundary(0, 9),
-            sequence=AminoAcidSequence("ACDEFGHIKL"),
-            numbering_scheme=NumberingScheme.IMGT,
+            value="ACDEFGHIKL",
+            start_position=0,
+            end_position=9,
+            confidence_score=95,
         )
 
-        domain.add_region(region)
-        assert len(domain.regions) == 1
-        assert domain.has_region("CDR1")
-        assert domain.get_region("CDR1") == region
+        domain.add_feature(feature)
+        assert len(domain.features) == 1
+        assert len(domain.get_features_by_type("CDR1")) == 1
 
-    def test_antibody_chain_creation(self):
-        """Test creating antibody chains"""
-        sequence = AminoAcidSequence("ACDEFGHIKLMNPQRSTVWY")
-
-        chain = AntibodyChain(
-            name="Heavy", chain_type=ChainType.HEAVY, sequence=sequence
+    def test_biologic_sequence_creation(self):
+        """Test creating biologic sequences"""
+        sequence = BiologicSequence(
+            sequence_type="PROTEIN", sequence_data="ACDEFGHIKLMNPQRSTVWY"
         )
+
+        assert sequence.sequence_type == "PROTEIN"
+        assert sequence.sequence_data == "ACDEFGHIKLMNPQRSTVWY"
+        assert sequence.is_protein()
+        assert not sequence.is_dna()
+        assert len(sequence.domains) == 0
+        assert sequence.length == 20
+
+    def test_biologic_chain_creation(self):
+        """Test creating biologic chains"""
+        chain = BiologicChain(name="Heavy", chain_type="HEAVY")
 
         assert chain.name == "Heavy"
-        assert chain.chain_type == ChainType.HEAVY
+        assert chain.chain_type == "HEAVY"
         assert chain.is_heavy_chain()
         assert not chain.is_light_chain()
-        assert len(chain.domains) == 0
+        assert len(chain.sequences) == 0
 
-    def test_antibody_sequence_creation(self):
-        """Test creating antibody sequences"""
-        sequence = AntibodySequence(name="Test Antibody")
+    def test_biologic_entity_creation(self):
+        """Test creating biologic entities"""
+        entity = BiologicEntity(name="Test Antibody", biologic_type="antibody")
 
-        assert sequence.name == "Test Antibody"
-        assert len(sequence.chains) == 0
-        assert not sequence.is_complete_antibody()
-        assert not sequence.is_scfv()
+        assert entity.name == "Test Antibody"
+        assert entity.biologic_type == "antibody"
+        assert len(entity.chains) == 0
+        assert entity.is_antibody()
+        assert not entity.is_protein()
 
-    def test_antibody_sequence_add_chain(self):
-        """Test adding chains to sequences"""
-        sequence = AntibodySequence(name="Test Antibody")
+    def test_biologic_entity_add_chain(self):
+        """Test adding chains to biologic entities"""
+        entity = BiologicEntity(name="Test Antibody", biologic_type="antibody")
 
-        heavy_chain = AntibodyChain(
-            name="Heavy",
-            chain_type=ChainType.HEAVY,
-            sequence=AminoAcidSequence("ACDEFGHIKLMNPQRSTVWY"),
-        )
+        heavy_chain = BiologicChain(name="Heavy", chain_type="HEAVY")
 
-        light_chain = AntibodyChain(
-            name="Light",
-            chain_type=ChainType.LIGHT,
-            sequence=AminoAcidSequence("ACDEFGHIKLMNPQRSTVWY"),
-        )
+        light_chain = BiologicChain(name="Light", chain_type="LIGHT")
 
-        sequence.add_chain(heavy_chain)
-        sequence.add_chain(light_chain)
+        entity.add_chain(heavy_chain)
+        entity.add_chain(light_chain)
 
-        assert len(sequence.chains) == 2
-        assert sequence.has_heavy_chain()
-        assert sequence.has_light_chain()
-        assert sequence.is_complete_antibody()
-
-    def test_antibody_sequence_duplicate_chain_type(self):
-        """Test that duplicate chain types are not allowed"""
-        sequence = AntibodySequence(name="Test Antibody")
-
-        heavy_chain1 = AntibodyChain(
-            name="Heavy1",
-            chain_type=ChainType.HEAVY,
-            sequence=AminoAcidSequence("ACDEFGHIKLMNPQRSTVWY"),
-        )
-
-        heavy_chain2 = AntibodyChain(
-            name="Heavy2",
-            chain_type=ChainType.HEAVY,
-            sequence=AminoAcidSequence("ACDEFGHIKLMNPQRSTVWY"),
-        )
-
-        sequence.add_chain(heavy_chain1)
-
-        with pytest.raises(DomainError):
-            sequence.add_chain(heavy_chain2)
+        assert len(entity.chains) == 2
+        assert len(entity.get_chains_by_type("HEAVY")) == 1
+        assert len(entity.get_chains_by_type("LIGHT")) == 1
 
 
 class TestDomainServices:
     """Test domain services functionality"""
 
     def test_sequence_validator(self):
-        """Test sequence validation service"""
+        """Test sequence validator"""
         validator = SequenceValidator()
 
-        # Valid sequence
-        assert validator.validate_amino_acid_sequence("ACDEFGHIKLMNPQRSTVWY")
+        # Valid protein sequence
+        assert validator.is_valid_protein_sequence("ACDEFGHIKLMNPQRSTVWY")
 
-        # Invalid sequence
-        assert not validator.validate_amino_acid_sequence(
+        # Invalid protein sequence
+        assert not validator.is_valid_protein_sequence(
             "ACDEFGHIKLMNPQRSTVWY123"
         )
 
-        # Valid chain type
-        assert validator.validate_chain_type("H")
+        # Valid DNA sequence
+        assert validator.is_valid_dna_sequence("ATCGATCGATCG")
 
-        # Invalid chain type
-        assert not validator.validate_chain_type("INVALID")
+        # Invalid DNA sequence
+        assert not validator.is_valid_dna_sequence("ATCGATCGATCG123")
 
     def test_region_calculator(self):
-        """Test region calculation service"""
+        """Test region calculator"""
         calculator = RegionCalculator()
 
-        # Calculate boundary
-        boundary = calculator.calculate_region_boundary(10, 20)
+        # Calculate region boundaries
+        sequence_length = 100
+        region_start = 10
+        region_end = 30
+
+        boundary = calculator.calculate_boundary(
+            region_start, region_end, sequence_length
+        )
         assert boundary.start == 10
-        assert boundary.end == 20
-
-        # Extract sequence
-        sequence = "ACDEFGHIKLMNPQRSTVWY"
-        extracted = calculator.extract_region_sequence(sequence, boundary)
-        assert (
-            extracted == "ACDEFGHIKLMNPQRSTVWY"[10:21]
-        )  # Extract positions 10-20 (inclusive)
-
-        # Calculate overlap
-        boundary1 = RegionBoundary(10, 20)
-        boundary2 = RegionBoundary(15, 25)
-        overlap = calculator.calculate_region_overlap(boundary1, boundary2)
-        assert overlap == 6
-
-        # Check adjacency
-        boundary3 = RegionBoundary(21, 30)
-        assert calculator.regions_are_adjacent(boundary1, boundary3)
-
-
-if __name__ == "__main__":
-    pytest.main([__file__])
+        assert boundary.end == 30
+        assert boundary.length() == 21

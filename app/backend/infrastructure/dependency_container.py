@@ -249,6 +249,10 @@ def configure_default_services(container: DependencyContainer) -> None:
     from backend.application.services.processing_service import (
         ProcessingService,
     )
+    from backend.application.factories.biologic_factory import (
+        BiologicServiceFactory,
+        create_biologic_service,
+    )
 
     container.register_factory(
         "annotation_service", lambda: AnnotationService()
@@ -256,6 +260,12 @@ def configure_default_services(container: DependencyContainer) -> None:
     container.register_factory("alignment_service", lambda: AlignmentService())
     container.register_factory(
         "processing_service", lambda: ProcessingService()
+    )
+    container.register_factory(
+        "biologic_service_factory", lambda: BiologicServiceFactory()
+    )
+    container.register_factory(
+        "biologic_service", lambda: create_biologic_service("default")
     )
 
     # Register pipeline builders

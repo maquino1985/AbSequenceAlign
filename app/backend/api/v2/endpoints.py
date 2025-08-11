@@ -61,7 +61,7 @@ async def annotate_and_persist_sequences_v2(
 ):
     """
     Annotate sequences and persist them as biologic entities.
-    
+
     This endpoint demonstrates the integration pattern:
     1. Use domain entities for annotation (business logic)
     2. Convert to ORM models for persistence
@@ -85,7 +85,7 @@ async def annotate_and_persist_sequences_v2(
             db_session=db_session,
             input_dict=input_dict,
             numbering_scheme=request.numbering_scheme.value,
-            organism=organism
+            organism=organism,
         )
 
         return result
@@ -93,7 +93,9 @@ async def annotate_and_persist_sequences_v2(
         raise
     except Exception as e:
         logger.error(f"Annotation with persistence failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Annotation with persistence failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Annotation with persistence failed: {e}"
+        )
 
 
 # Biologic Entity Endpoints
@@ -105,19 +107,21 @@ async def list_biologics_v2(
 ):
     """List all biologic entities with pagination."""
     try:
-        from backend.application.services.biologic_service import BiologicService
-        
+        from backend.application.services.biologic_service import (
+            BiologicService,
+        )
+
         biologic_service = BiologicService()
         biologics = await biologic_service.list_biologics(
-            db_session=db_session,
-            skip=skip,
-            limit=limit
+            db_session=db_session, skip=skip, limit=limit
         )
-        
+
         return biologics
     except Exception as e:
         logger.error(f"Failed to list biologics: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to list biologics: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to list biologics: {e}"
+        )
 
 
 @router.get("/biologics/{biologic_id}", response_model=BiologicResponse)
@@ -127,21 +131,24 @@ async def get_biologic_v2(
 ):
     """Get a specific biologic entity by ID."""
     try:
-        from backend.application.services.biologic_service import BiologicService
+        from backend.application.services.biologic_service import (
+            BiologicService,
+        )
         from backend.core.exceptions import EntityNotFoundError
-        
+
         biologic_service = BiologicService()
         biologic = await biologic_service.get_biologic(
-            db_session=db_session,
-            biologic_id=biologic_id
+            db_session=db_session, biologic_id=biologic_id
         )
-        
+
         return biologic
     except EntityNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Failed to get biologic {biologic_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get biologic: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get biologic: {e}"
+        )
 
 
 # MSA Endpoints

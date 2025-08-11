@@ -27,9 +27,11 @@ from backend.infrastructure.adapters.base_adapter import (
     ToolConfiguration,
 )
 from backend.domain.entities import (
-    AntibodySequence,
-    AntibodyChain,
-    AntibodyDomain,
+    BiologicEntity,
+    BiologicChain,
+    BiologicSequence,
+    BiologicDomain,
+    BiologicFeature,
 )
 from backend.domain.value_objects import AminoAcidSequence, RegionBoundary
 from backend.domain.models import (
@@ -109,11 +111,11 @@ class TestSequenceRepository:
         """Test finding sequences by domain type"""
         # Create sequence with variable domain
         sequence = self._create_test_sequence("var_seq")
-        sequence.chains[0].domains[0].domain_type = DomainType.VARIABLE
+        sequence.chains[0].sequences[0].domains[0].domain_type = "VARIABLE"
         self.repository.save(sequence)
 
         # Find variable domains
-        var_sequences = self.repository.find_by_domain_type("V")
+        var_sequences = self.repository.find_by_domain_type("VARIABLE")
         assert len(var_sequences) == 1
         assert var_sequences[0].name == "var_seq"
 
@@ -157,30 +159,28 @@ class TestSequenceRepository:
         assert "seq1" in sequence_names
         assert "seq2" in sequence_names
 
-    def _create_test_sequence(self, name: str) -> AntibodySequence:
-        """Create a test antibody sequence"""
-        # Create chain
-        chain = AntibodyChain(
-            name="test_chain",
-            chain_type=ChainType.HEAVY,
-            sequence=AminoAcidSequence("QVQLVQSGAEVKKPGASVKVSCKASGYTFT"),
+    def _create_test_sequence(self, name: str) -> BiologicEntity:
+        """Create a test biologic entity"""
+        biologic_entity = BiologicEntity(name=name, biologic_type="antibody")
+
+        # Add a heavy chain with sequence and domain
+        heavy_chain = BiologicChain(name="Heavy", chain_type="HEAVY")
+        sequence = BiologicSequence(
+            sequence_type="PROTEIN", sequence_data="ACDEFGHIKLMNPQRSTVWY"
         )
 
-        # Create domain
-        domain = AntibodyDomain(
-            domain_type=DomainType.VARIABLE,
-            sequence=AminoAcidSequence("QVQLVQSGAEVKKPGASVKVSCKASGYTFT"),
-            numbering_scheme=NumberingScheme.IMGT,
+        # Add a variable domain
+        domain = BiologicDomain(
+            domain_type="VARIABLE",
+            start_position=0,
+            end_position=19,
+            confidence_score=90,
         )
+        sequence.domains.append(domain)
+        heavy_chain.sequences.append(sequence)
+        biologic_entity.add_chain(heavy_chain)
 
-        # Add domain to chain
-        chain.add_domain(domain)
-
-        # Create sequence
-        sequence = AntibodySequence(name=name)
-        sequence.add_chain(chain)
-
-        return sequence
+        return biologic_entity
 
 
 class TestDependencyContainer:
@@ -396,6 +396,10 @@ class MockExternalToolAdapter(BaseExternalToolAdapter):
 
     def _parse_output(self, output: str, **kwargs) -> dict:
         return {"result": "success", "output": output}
+
+    def validate_output(self, output: str) -> bool:
+        """Validate tool output"""
+        return "success" in output.lower()
 
 
 class TestBaseExternalToolAdapter:

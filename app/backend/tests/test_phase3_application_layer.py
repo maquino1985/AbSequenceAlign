@@ -19,14 +19,16 @@ from backend.application.services.processing_service import (
     ProcessingServiceFactory,
 )
 from backend.core.interfaces import (
-    ProcessingContext,
     ProcessingResult,
     ProcessingObserver,
 )
+from backend.core.base_classes import PipelineContext
 from backend.domain.entities import (
-    AntibodySequence,
-    AntibodyChain,
-    AntibodyDomain,
+    BiologicEntity,
+    BiologicChain,
+    BiologicSequence,
+    BiologicDomain,
+    BiologicFeature,
 )
 from backend.domain.value_objects import AminoAcidSequence
 from backend.domain.models import ChainType, DomainType, NumberingScheme
@@ -130,7 +132,7 @@ class TestProcessingPipeline:
 
         # Create test sequence
         sequence = self._create_test_sequence()
-        context = ProcessingContext(sequence=sequence)
+        context = PipelineContext(input_data=sequence)
 
         result = pipeline.execute(context)
         assert result.success
@@ -148,7 +150,7 @@ class TestProcessingPipeline:
         pipeline = ProcessingPipeline(steps, config)
 
         sequence = self._create_test_sequence()
-        context = ProcessingContext(sequence=sequence)
+        context = PipelineContext(input_data=sequence)
 
         result = pipeline.execute(context)
         assert not result.success
@@ -191,23 +193,36 @@ class TestProcessingPipeline:
         assert step_info[1]["name"] == "numbering"
         assert step_info[1]["index"] == 1
 
-    def _create_test_sequence(self) -> AntibodySequence:
-        """Create a test antibody sequence"""
-        sequence = AminoAcidSequence("ACDEFGHIKLMNPQRSTVWY")
-        domain = AntibodyDomain(
+    def _create_test_sequence(self) -> BiologicEntity:
+        """Create a test biologic entity"""
+        biologic_entity = BiologicEntity(
+            name="TestAntibody", biologic_type="antibody"
+        )
+
+        # Add a heavy chain with sequence and domains
+        heavy_chain = BiologicChain(name="Heavy", chain_type="HEAVY")
+
+        # Create a sequence with domains
+        sequence = BiologicSequence(
+            sequence_type="PROTEIN", sequence_data="ACDEFGHIKLMNPQRSTVWY"
+        )
+
+        # Add a variable domain to the sequence
+        variable_domain = BiologicDomain(
             domain_type=DomainType.VARIABLE,
-            sequence=sequence,
-            numbering_scheme=NumberingScheme.IMGT,
+            start_position=0,
+            end_position=19,
+            confidence_score=95,
         )
-        chain = AntibodyChain(
-            name="TestChain", chain_type=ChainType.HEAVY, sequence=sequence
-        )
-        chain.add_domain(domain)
 
-        antibody_sequence = AntibodySequence(name="TestAntibody")
-        antibody_sequence.add_chain(chain)
+        # Add sequence data to domain metadata for testing
+        variable_domain.metadata["sequence"] = sequence.sequence_data
 
-        return antibody_sequence
+        sequence.add_domain(variable_domain)
+        heavy_chain.add_sequence(sequence)
+        biologic_entity.add_chain(heavy_chain)
+
+        return biologic_entity
 
 
 class TestPredefinedPipelines:
@@ -371,23 +386,36 @@ class TestProcessingService:
         pipeline_types = service.get_available_pipeline_types()
         assert "custom_type" in pipeline_types
 
-    def _create_test_sequence(self) -> AntibodySequence:
-        """Create a test antibody sequence"""
-        sequence = AminoAcidSequence("ACDEFGHIKLMNPQRSTVWY")
-        domain = AntibodyDomain(
+    def _create_test_sequence(self) -> BiologicEntity:
+        """Create a test biologic entity"""
+        biologic_entity = BiologicEntity(
+            name="TestAntibody", biologic_type="antibody"
+        )
+
+        # Add a heavy chain with sequence and domains
+        heavy_chain = BiologicChain(name="Heavy", chain_type="HEAVY")
+
+        # Create a sequence with domains
+        sequence = BiologicSequence(
+            sequence_type="PROTEIN", sequence_data="ACDEFGHIKLMNPQRSTVWY"
+        )
+
+        # Add a variable domain to the sequence
+        variable_domain = BiologicDomain(
             domain_type=DomainType.VARIABLE,
-            sequence=sequence,
-            numbering_scheme=NumberingScheme.IMGT,
+            start_position=0,
+            end_position=19,
+            confidence_score=95,
         )
-        chain = AntibodyChain(
-            name="TestChain", chain_type=ChainType.HEAVY, sequence=sequence
-        )
-        chain.add_domain(domain)
 
-        antibody_sequence = AntibodySequence(name="TestAntibody")
-        antibody_sequence.add_chain(chain)
+        # Add sequence data to domain metadata for testing
+        variable_domain.metadata["sequence"] = sequence.sequence_data
 
-        return antibody_sequence
+        sequence.add_domain(variable_domain)
+        heavy_chain.add_sequence(sequence)
+        biologic_entity.add_chain(heavy_chain)
+
+        return biologic_entity
 
 
 class TestProgressTrackingObserver:
@@ -425,7 +453,7 @@ class TestProgressTrackingObserver:
         observer = ProgressTrackingObserver()
 
         result = ProcessingResult(success=True, data={"test": "data"})
-        observer.on_processing_complete(result)
+        observer.on_processing_completed(result)
 
         assert observer.completed
         assert observer.final_result == result
@@ -507,10 +535,10 @@ class SequenceValidationStep:
     def __init__(self, name: str):
         self.name = name
 
-    def execute(self, context: ProcessingContext) -> ProcessingContext:
+    def execute(self, context: PipelineContext) -> PipelineContext:
         return context
 
-    def can_execute(self, context: ProcessingContext) -> bool:
+    def can_execute(self, context: PipelineContext) -> bool:
         return True
 
 
@@ -525,10 +553,10 @@ class NumberingStep:
         self.name = name
         self.numbering_scheme = numbering_scheme
 
-    def execute(self, context: ProcessingContext) -> ProcessingContext:
+    def execute(self, context: PipelineContext) -> PipelineContext:
         return context
 
-    def can_execute(self, context: ProcessingContext) -> bool:
+    def can_execute(self, context: PipelineContext) -> bool:
         return True
 
 
@@ -538,11 +566,11 @@ class ErrorStep:
     def __init__(self, name: str):
         self.name = name
 
-    def execute(self, context: ProcessingContext) -> ProcessingContext:
+    def execute(self, context: PipelineContext) -> PipelineContext:
         context.errors.append(f"Error in step {self.name}")
         return context
 
-    def can_execute(self, context: ProcessingContext) -> bool:
+    def can_execute(self, context: PipelineContext) -> bool:
         return True
 
 

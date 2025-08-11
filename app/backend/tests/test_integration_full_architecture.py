@@ -24,9 +24,11 @@ from backend.application.pipelines.pipeline_builder import (
     create_alignment_pipeline,
 )
 from backend.domain.entities import (
-    AntibodySequence,
-    AntibodyChain,
-    AntibodyDomain,
+    BiologicEntity,
+    BiologicChain,
+    BiologicSequence,
+    BiologicDomain,
+    BiologicFeature,
 )
 from backend.domain.value_objects import AminoAcidSequence, RegionBoundary
 from backend.domain.models import (
@@ -82,8 +84,8 @@ class TestFullArchitectureIntegration:
 
     def test_domain_entity_creation_and_persistence(self):
         """Test creating domain entities and persisting them"""
-        # Create a complete antibody sequence
-        sequence = self._create_test_antibody_sequence()
+        # Create a complete biologic entity
+        sequence = self._create_test_biologic_entity()
 
         # Get repository from container
         repository = self.container.get_service("sequence_repository")
@@ -102,7 +104,7 @@ class TestFullArchitectureIntegration:
     def test_application_service_with_repository(self):
         """Test application services working with repository"""
         # Create and save a sequence
-        sequence = self._create_test_antibody_sequence()
+        sequence = self._create_test_biologic_entity()
         repository = self.container.get_service("sequence_repository")
         saved_sequence = repository.save(sequence)
 
@@ -138,11 +140,11 @@ class TestFullArchitectureIntegration:
             repository = SequenceRepository(storage_path=temp_dir)
 
             # Create multiple sequences with different characteristics
-            heavy_sequence = self._create_test_antibody_sequence("heavy_seq")
+            heavy_sequence = self._create_test_biologic_entity("heavy_seq")
             heavy_sequence.chains[0].chain_type = ChainType.HEAVY
             repository.save(heavy_sequence)
 
-            light_sequence = self._create_test_antibody_sequence("light_seq")
+            light_sequence = self._create_test_biologic_entity("light_seq")
             light_sequence.chains[0].chain_type = ChainType.LIGHT
             repository.save(light_sequence)
 
@@ -156,7 +158,7 @@ class TestFullArchitectureIntegration:
             assert light_sequences[0].name == "light_seq"
 
             # Test domain type queries
-            var_sequences = repository.find_by_domain_type("V")
+            var_sequences = repository.find_by_domain_type("VARIABLE")
             assert (
                 len(var_sequences) == 2
             )  # Both sequences have variable domains
@@ -222,7 +224,7 @@ class TestFullArchitectureIntegration:
         # Create a sequence with invalid data
         try:
             # This should trigger domain validation
-            invalid_sequence = AntibodySequence(
+            invalid_sequence = BiologicEntity(
                 name=""
             )  # Empty name should fail
             pytest.fail("Should have raised ValidationError for empty name")
@@ -246,7 +248,7 @@ class TestFullArchitectureIntegration:
         processing_service.attach(observer)
 
         # Create and process a sequence
-        sequence = self._create_test_antibody_sequence()
+        sequence = self._create_test_biologic_entity()
 
         # Process sequence (this will trigger observer notifications)
         result = processing_service.process_sequence(sequence, "annotation")
@@ -280,7 +282,7 @@ class TestFullArchitectureIntegration:
     def test_complete_workflow_integration(self):
         """Test complete workflow from domain creation to processing"""
         # 1. Create domain entity
-        sequence = self._create_test_antibody_sequence("workflow_test")
+        sequence = self._create_test_biologic_entity("workflow_test")
 
         # 2. Persist to repository
         repository = self.container.get_service("sequence_repository")
@@ -301,32 +303,30 @@ class TestFullArchitectureIntegration:
         assert retrieved_sequence is not None
         assert retrieved_sequence.name == "workflow_test"
 
-    def _create_test_antibody_sequence(
+    def _create_test_biologic_entity(
         self, name: str = "test_sequence"
-    ) -> AntibodySequence:
-        """Create a test antibody sequence with all components"""
-        # Create chain
-        chain = AntibodyChain(
-            name="test_chain",
-            chain_type=ChainType.HEAVY,
-            sequence=AminoAcidSequence("QVQLVQSGAEVKKPGASVKVSCKASGYTFT"),
+    ) -> BiologicEntity:
+        """Create a test biologic entity with all components"""
+        biologic_entity = BiologicEntity(name=name, biologic_type="antibody")
+
+        # Add a heavy chain with sequence and domain
+        heavy_chain = BiologicChain(name="Heavy", chain_type="HEAVY")
+        sequence = BiologicSequence(
+            sequence_type="PROTEIN", sequence_data="ACDEFGHIKLMNPQRSTVWY"
         )
 
-        # Create domain
-        domain = AntibodyDomain(
-            domain_type=DomainType.VARIABLE,
-            sequence=AminoAcidSequence("QVQLVQSGAEVKKPGASVKVSCKASGYTFT"),
-            numbering_scheme=NumberingScheme.IMGT,
+        # Add a variable domain
+        domain = BiologicDomain(
+            domain_type="VARIABLE",
+            start_position=0,
+            end_position=19,
+            confidence_score=90,
         )
+        sequence.domains.append(domain)
+        heavy_chain.sequences.append(sequence)
+        biologic_entity.add_chain(heavy_chain)
 
-        # Add domain to chain
-        chain.add_domain(domain)
-
-        # Create sequence
-        sequence = AntibodySequence(name=name)
-        sequence.add_chain(chain)
-
-        return sequence
+        return biologic_entity
 
 
 class TestArchitectureBoundaries:
@@ -335,17 +335,13 @@ class TestArchitectureBoundaries:
     def test_domain_independence(self):
         """Test that domain layer is independent of infrastructure"""
         # Domain entities should not depend on infrastructure
-        sequence = AntibodySequence(name="test")
-        chain = AntibodyChain(
-            name="test_chain",
-            chain_type=ChainType.HEAVY,
-            sequence=AminoAcidSequence("ACDEFGHIKLMNPQRSTVWY"),
-        )
+        sequence = BiologicEntity(name="test", biologic_type="antibody")
+        chain = BiologicChain(name="test_chain", chain_type="HEAVY")
 
         # These should work without any infrastructure dependencies
         assert sequence.name == "test"
-        assert chain.chain_type == ChainType.HEAVY
-        assert len(chain.sequence) == 20
+        assert chain.chain_type == "HEAVY"
+        assert sequence.is_antibody()
 
     def test_application_layer_abstraction(self):
         """Test that application layer properly abstracts infrastructure"""
@@ -354,8 +350,12 @@ class TestArchitectureBoundaries:
 
         # Mock repository that implements the interface
         mock_repository = Mock(spec=Repository)
-        mock_repository.save.return_value = AntibodySequence(name="test")
-        mock_repository.find_by_id.return_value = AntibodySequence(name="test")
+        mock_repository.save.return_value = BiologicEntity(
+            name="test", biologic_type="antibody"
+        )
+        mock_repository.find_by_id.return_value = BiologicEntity(
+            name="test", biologic_type="antibody"
+        )
 
         # Application service should work with mock repository
         # (This would require dependency injection in the service constructor)
@@ -400,13 +400,12 @@ class TestPerformanceAndScalability:
             # Create multiple sequences
             sequences = []
             for i in range(10):
-                sequence = AntibodySequence(name=f"seq_{i}")
-                chain = AntibodyChain(
-                    name=f"chain_{i}",
-                    chain_type=ChainType.HEAVY,
-                    sequence=AminoAcidSequence("ACDEFGHIKLMNPQRSTVWY"),
+                sequence = BiologicEntity(
+                    name=f"seq_{i}", biologic_type="antibody"
                 )
-                sequence.add_chain(chain)
+                # Add a heavy chain
+                heavy_chain = BiologicChain(name="Heavy", chain_type="HEAVY")
+                sequence.add_chain(heavy_chain)
                 sequences.append(sequence)
 
             # Save all sequences
@@ -418,7 +417,7 @@ class TestPerformanceAndScalability:
             assert len(all_sequences) == 10
 
             # Test query performance
-            heavy_sequences = repository.find_by_chain_type("H")
+            heavy_sequences = repository.find_by_chain_type("HEAVY")
             assert len(heavy_sequences) == 10
 
         finally:
