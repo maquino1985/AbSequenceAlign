@@ -1,20 +1,60 @@
 version: '3.8'
 
 services:
+  # PostgreSQL Database for Testing
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: absequencealign-postgres-test
+    environment:
+      POSTGRES_DB: ${DB_NAME:-absequencealign_test}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "${DB_PORT:-5434}:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c shared_preload_libraries='uuid-ossp'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-absequencealign_test}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-network
+
   # Backend Test Environment
   backend-test:
     build:
       context: .
       dockerfile: ./app/backend/Dockerfile
+      args:
+        BASE_IMAGE: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY_OWNER:-maquino1985}/absequencealign-backend-base:latest
     container_name: absequencealign-backend-test
     environment:
       - PYTHONPATH=/app
       - ENVIRONMENT=test
       - PYTEST_ADDOPTS=-v --tb=short
       - DATA_DIR=/app/data
+      - DB_HOST=postgres-test
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-absequencealign_test}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+      - DB_POOL_SIZE=${DB_POOL_SIZE:-5}
+      - DB_MAX_OVERFLOW=${DB_MAX_OVERFLOW:-10}
+      - DB_POOL_TIMEOUT=${DB_POOL_TIMEOUT:-30}
+      - DB_POOL_RECYCLE=${DB_POOL_RECYCLE:-3600}
+      - DB_ECHO=false
+      - DB_ECHO_POOL=false
     volumes:
       - ./app/backend:/app/backend:ro
       - ./data:/app/data:ro
+    depends_on:
+      postgres-test:
+        condition: service_healthy
     command: >
       sh -c "
         conda run -n AbSequenceAlign python -m pytest backend/tests/ -v --cov=backend --cov-report=xml --cov-report=term-missing
@@ -27,6 +67,8 @@ services:
     build:
       context: ./app/frontend
       dockerfile: Dockerfile.test
+      args:
+        BASE_IMAGE: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY_OWNER:-maquino1985}/absequencealign-frontend-base:latest
     container_name: absequencealign-frontend-test
     environment:
       - CI=true
@@ -48,6 +90,8 @@ services:
     build:
       context: ./app/frontend
       dockerfile: Dockerfile.base
+      args:
+        BASE_IMAGE: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY_OWNER:-maquino1985}/absequencealign-frontend-base:latest
     container_name: absequencealign-frontend-server
     environment:
       - CI=true
@@ -66,16 +110,32 @@ services:
     build:
       context: .
       dockerfile: ./app/backend/Dockerfile
+      args:
+        BASE_IMAGE: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY_OWNER:-maquino1985}/absequencealign-backend-base:latest
     container_name: absequencealign-backend-server
     environment:
       - PYTHONPATH=/app
       - ENVIRONMENT=test
       - DATA_DIR=/app/data
+      - DB_HOST=postgres-test
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-absequencealign_test}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+      - DB_POOL_SIZE=${DB_POOL_SIZE:-5}
+      - DB_MAX_OVERFLOW=${DB_MAX_OVERFLOW:-10}
+      - DB_POOL_TIMEOUT=${DB_POOL_TIMEOUT:-30}
+      - DB_POOL_RECYCLE=${DB_POOL_RECYCLE:-3600}
+      - DB_ECHO=false
+      - DB_ECHO_POOL=false
     volumes:
       - ./app/backend:/app/backend:ro
       - ./data:/app/data:ro
     ports:
       - "8000:8000"
+    depends_on:
+      postgres-test:
+        condition: service_healthy
     command: >
       sh -c "
         conda run -n AbSequenceAlign python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
@@ -88,6 +148,8 @@ services:
     build:
       context: ./app/frontend
       dockerfile: Dockerfile.e2e
+      args:
+        BASE_IMAGE: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY_OWNER:-maquino1985}/absequencealign-frontend-base:latest
     container_name: absequencealign-e2e-test
     environment:
       - CI=true
@@ -107,18 +169,81 @@ services:
     build:
       context: .
       dockerfile: ./app/backend/Dockerfile
+      args:
+        BASE_IMAGE: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY_OWNER:-maquino1985}/absequencealign-backend-base:latest
     container_name: absequencealign-integration-test
     environment:
       - PYTHONPATH=/app
       - ENVIRONMENT=test
       - PYTEST_ADDOPTS=-v
       - DATA_DIR=/app/data
+      - DB_HOST=postgres-test
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-absequencealign_test}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+      - DB_POOL_SIZE=${DB_POOL_SIZE:-5}
+      - DB_MAX_OVERFLOW=${DB_MAX_OVERFLOW:-10}
+      - DB_POOL_TIMEOUT=${DB_POOL_TIMEOUT:-30}
+      - DB_POOL_RECYCLE=${DB_POOL_RECYCLE:-3600}
+      - DB_ECHO=false
+      - DB_ECHO_POOL=false
     volumes:
       - ./app/backend:/app/backend:ro
       - ./data:/app/data:ro
+    depends_on:
+      postgres-test:
+        condition: service_healthy
     command: >
       sh -c "
         conda run -n AbSequenceAlign python -m pytest backend/tests/test_integration.py -v
+      "
+    networks:
+      - test-network
+
+  # Database Migration Test
+  database-test:
+    build:
+      context: .
+      dockerfile: ./app/backend/Dockerfile
+      args:
+        BASE_IMAGE: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY_OWNER:-maquino1985}/absequencealign-backend-base:latest
+    container_name: absequencealign-database-test
+    environment:
+      - PYTHONPATH=/app
+      - ENVIRONMENT=test
+      - DB_HOST=postgres-test
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-absequencealign_test}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+      - DB_POOL_SIZE=${DB_POOL_SIZE:-5}
+      - DB_MAX_OVERFLOW=${DB_MAX_OVERFLOW:-10}
+      - DB_POOL_TIMEOUT=${DB_POOL_TIMEOUT:-30}
+      - DB_POOL_RECYCLE=${DB_POOL_RECYCLE:-3600}
+      - DB_ECHO=false
+      - DB_ECHO_POOL=false
+    volumes:
+      - ./app/backend:/app/backend:ro
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Testing database connection and migrations...' &&
+        conda run -n AbSequenceAlign python -c '
+          import asyncio
+          from database.engine import get_database_engine
+          from database.config import get_database_url
+          print(f\"Database URL: {get_database_url(\"test\")}\")
+          engine = get_database_engine(\"test\")
+          print(\"Database engine created successfully\")
+        ' &&
+        echo 'Running Alembic migrations...' &&
+        conda run -n AbSequenceAlign alembic upgrade head &&
+        echo 'Checking Alembic current version...' &&
+        conda run -n AbSequenceAlign alembic current &&
+        echo 'Database test completed successfully!'
       "
     networks:
       - test-network
@@ -128,5 +253,6 @@ networks:
     driver: bridge
 
 volumes:
+  postgres_test_data:
   cypress-videos:
   cypress-screenshots:

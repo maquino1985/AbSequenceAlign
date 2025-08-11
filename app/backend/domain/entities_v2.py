@@ -1,21 +1,23 @@
 """
-Domain entities for the antibody sequence analysis system.
+Domain entities for the refactored biologic sequence analysis system.
 Entities have identity and lifecycle, and contain business logic.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Set, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from backend.domain.entities import AntibodyFeature
+from typing import Dict, List, Optional, Any, Set, Union, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
-from backend.domain.value_objects import (
+from backend.domain.value_objects_v2 import (
+    DNASequence,
+    RNASequence,
     AminoAcidSequence,
+    Sequence,
+    SequenceType,
     RegionBoundary,
     SequenceIdentifier,
     ConfidenceScore,
     AnnotationMetadata,
+    BiologicAlias,
 )
 from backend.domain.models import (
     ChainType,
@@ -48,13 +50,13 @@ class DomainEntity(ABC):
 
 
 @dataclass
-class AntibodyRegion(DomainEntity):
-    """Domain entity representing an antibody region (CDR, FR, etc.)"""
+class SequenceRegion(DomainEntity):
+    """Domain entity representing a sequence region (CDR, FR, etc.)"""
 
     name: str
     region_type: RegionType
     boundary: RegionBoundary
-    sequence: AminoAcidSequence
+    sequence: Sequence
     numbering_scheme: NumberingScheme
     metadata: Dict[str, Any] = field(default_factory=dict)
     confidence_score: Optional[ConfidenceScore] = None
@@ -98,15 +100,15 @@ class AntibodyRegion(DomainEntity):
         """Check if a position is within this region"""
         return self.boundary.contains(position)
 
-    def overlaps_with(self, other: "AntibodyRegion") -> bool:
+    def overlaps_with(self, other: "SequenceRegion") -> bool:
         """Check if this region overlaps with another"""
         return self.boundary.overlaps_with(other.boundary)
 
-    def is_adjacent_to(self, other: "AntibodyRegion") -> bool:
+    def is_adjacent_to(self, other: "SequenceRegion") -> bool:
         """Check if this region is adjacent to another"""
         return self.boundary.is_adjacent_to(other.boundary)
 
-    def get_sequence_fragment(self) -> AminoAcidSequence:
+    def get_sequence_fragment(self) -> Sequence:
         """Get the sequence fragment for this region"""
         return self.sequence.substring(self.start, self.end + 1)
 
@@ -143,13 +145,14 @@ class AntibodyRegion(DomainEntity):
 
 
 @dataclass
-class AntibodyDomain(DomainEntity):
-    """Domain entity representing an antibody domain (V, C, or linker)"""
+class SequenceDomain(DomainEntity):
+    """Domain entity representing a sequence domain (V, C, or linker)"""
 
     domain_type: DomainType
-    sequence: AminoAcidSequence
+    sequence: Sequence
+    sequence_type: SequenceType
     numbering_scheme: NumberingScheme
-    regions: Dict[str, AntibodyRegion] = field(default_factory=dict)
+    regions: Dict[str, SequenceRegion] = field(default_factory=dict)
     metadata: Dict[str, Any] = field(default_factory=dict)
     annotation_metadata: Optional[AnnotationMetadata] = None
 
@@ -175,9 +178,9 @@ class AntibodyDomain(DomainEntity):
     @property
     def id(self) -> str:
         """Get unique identifier for this domain"""
-        return f"{self.domain_type}_{len(self.sequence)}_{hash(self.sequence)}"
+        return f"{self.domain_type}_{self.sequence_type}_{len(self.sequence)}_{hash(self.sequence)}"
 
-    def add_region(self, region: AntibodyRegion) -> None:
+    def add_region(self, region: SequenceRegion) -> None:
         """Add a region to this domain"""
         # Validate region is within domain bounds
         if region.end >= len(self.sequence):
@@ -199,13 +202,13 @@ class AntibodyDomain(DomainEntity):
 
         self.regions[region.name] = region
 
-    def get_region(self, region_name: str) -> Optional[AntibodyRegion]:
+    def get_region(self, region_name: str) -> Optional[SequenceRegion]:
         """Get a region by name"""
         return self.regions.get(region_name)
 
     def get_regions_by_type(
         self, region_type: RegionType
-    ) -> List[AntibodyRegion]:
+    ) -> List[SequenceRegion]:
         """Get all regions of a specific type"""
         return [
             region
@@ -213,7 +216,7 @@ class AntibodyDomain(DomainEntity):
             if region.region_type == region_type
         ]
 
-    def get_cdr_regions(self) -> List[AntibodyRegion]:
+    def get_cdr_regions(self) -> List[SequenceRegion]:
         """Get all CDR regions"""
         return [
             region
@@ -221,7 +224,7 @@ class AntibodyDomain(DomainEntity):
             if region.is_cdr_region()
         ]
 
-    def get_fr_regions(self) -> List[AntibodyRegion]:
+    def get_fr_regions(self) -> List[SequenceRegion]:
         """Get all FR regions"""
         return [
             region for region in self.regions.values() if region.is_fr_region()
@@ -271,14 +274,16 @@ class AntibodyDomain(DomainEntity):
 
 
 @dataclass
-class AntibodyChain(DomainEntity):
-    """Domain entity representing an antibody chain"""
+class BiologicChain(DomainEntity):
+    """Domain entity representing a biologic chain"""
 
     name: str
     chain_type: ChainType
-    sequence: AminoAcidSequence
-    domains: List[AntibodyDomain] = field(default_factory=list)
-    features: List["AntibodyFeature"] = field(default_factory=list)
+    sequence: Sequence
+    sequence_type: SequenceType
+    numbering_scheme: NumberingScheme
+    domains: List[SequenceDomain] = field(default_factory=list)
+    features: List["DomainFeature"] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
     sequence_id: Optional[SequenceIdentifier] = None
 
@@ -306,9 +311,9 @@ class AntibodyChain(DomainEntity):
         """Get unique identifier for this chain"""
         if self.sequence_id:
             return str(self.sequence_id)
-        return f"{self.name}_{self.chain_type}_{len(self.sequence)}"
+        return f"{self.name}_{self.chain_type}_{self.sequence_type}_{len(self.sequence)}"
 
-    def add_domain(self, domain: AntibodyDomain) -> None:
+    def add_domain(self, domain: SequenceDomain) -> None:
         """Add a domain to this chain"""
         # Validate domain sequence is part of chain sequence
         if str(domain.sequence) not in str(self.sequence):
@@ -325,7 +330,7 @@ class AntibodyChain(DomainEntity):
 
     def get_domains_by_type(
         self, domain_type: DomainType
-    ) -> List[AntibodyDomain]:
+    ) -> List[SequenceDomain]:
         """Get all domains of a specific type"""
         return [
             domain
@@ -333,17 +338,17 @@ class AntibodyChain(DomainEntity):
             if domain.domain_type == domain_type
         ]
 
-    def get_variable_domain(self) -> Optional[AntibodyDomain]:
+    def get_variable_domain(self) -> Optional[SequenceDomain]:
         """Get the variable domain (V) if it exists"""
         variable_domains = self.get_domains_by_type(DomainType.VARIABLE)
         return variable_domains[0] if variable_domains else None
 
-    def get_constant_domain(self) -> Optional[AntibodyDomain]:
+    def get_constant_domain(self) -> Optional[SequenceDomain]:
         """Get the constant domain (C) if it exists"""
         constant_domains = self.get_domains_by_type(DomainType.CONSTANT)
         return constant_domains[0] if constant_domains else None
 
-    def get_linker_domains(self) -> List[AntibodyDomain]:
+    def get_linker_domains(self) -> List[SequenceDomain]:
         """Get all linker domains"""
         return self.get_domains_by_type(DomainType.LINKER)
 
@@ -367,7 +372,7 @@ class AntibodyChain(DomainEntity):
             ChainType.LAMBDA,
         ]
 
-    def get_all_regions(self) -> List[AntibodyRegion]:
+    def get_all_regions(self) -> List[SequenceRegion]:
         """Get all regions from all domains in this chain"""
         regions = []
         for domain in self.domains:
@@ -376,7 +381,7 @@ class AntibodyChain(DomainEntity):
 
     def get_regions_by_type(
         self, region_type: RegionType
-    ) -> List[AntibodyRegion]:
+    ) -> List[SequenceRegion]:
         """Get all regions of a specific type from all domains"""
         return [
             region
@@ -384,13 +389,13 @@ class AntibodyChain(DomainEntity):
             if region.region_type == region_type
         ]
 
-    def add_feature(self, feature: "AntibodyFeature") -> None:
+    def add_feature(self, feature: "DomainFeature") -> None:
         """Add a feature to this chain"""
         self.features.append(feature)
 
     def get_features_by_type(
         self, feature_type: FeatureType
-    ) -> List["AntibodyFeature"]:
+    ) -> List["DomainFeature"]:
         """Get all features of a specific type"""
         return [
             feature
@@ -398,15 +403,15 @@ class AntibodyChain(DomainEntity):
             if feature.feature_type == feature_type
         ]
 
-    def get_mutations(self) -> List["AntibodyFeature"]:
+    def get_mutations(self) -> List["DomainFeature"]:
         """Get all mutation features"""
         return self.get_features_by_type(FeatureType.MUTATION)
 
-    def get_post_translational_modifications(self) -> List["AntibodyFeature"]:
+    def get_post_translational_modifications(self) -> List["DomainFeature"]:
         """Get all post-translational modification features"""
         return self.get_features_by_type(FeatureType.POST_TRANSLATIONAL)
 
-    def get_gene_features(self) -> List["AntibodyFeature"]:
+    def get_gene_features(self) -> List["DomainFeature"]:
         """Get all gene-related features"""
         return [
             feature for feature in self.features if feature.is_gene_related()
@@ -418,162 +423,8 @@ class AntibodyChain(DomainEntity):
 
 
 @dataclass
-class AntibodySequence(DomainEntity):
-    """Domain entity representing a complete antibody sequence"""
-
-    name: str
-    chains: List[AntibodyChain] = field(default_factory=list)
-    features: List["AntibodyFeature"] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    sequence_id: Optional[SequenceIdentifier] = None
-
-    def __post_init__(self):
-        if not self.name:
-            raise ValidationError(
-                "Sequence name cannot be empty", field="name"
-            )
-
-    @property
-    def id(self) -> str:
-        """Get unique identifier for this sequence"""
-        if self.sequence_id:
-            return str(self.sequence_id)
-        return f"{self.name}_{len(self.chains)}_chains"
-
-    def add_chain(self, chain: AntibodyChain) -> None:
-        """Add a chain to this sequence"""
-        # Check for duplicate chain types
-        existing_chain_types = {c.chain_type for c in self.chains}
-        if chain.chain_type in existing_chain_types:
-            raise DomainError(
-                f"Chain type {chain.chain_type} already exists in sequence"
-            )
-
-        self.chains.append(chain)
-
-    def get_chain_by_type(
-        self, chain_type: ChainType
-    ) -> Optional[AntibodyChain]:
-        """Get a chain by type"""
-        for chain in self.chains:
-            if chain.chain_type == chain_type:
-                return chain
-        return None
-
-    def get_heavy_chain(self) -> Optional[AntibodyChain]:
-        """Get the heavy chain if it exists"""
-        return self.get_chain_by_type(ChainType.HEAVY)
-
-    def get_light_chain(self) -> Optional[AntibodyChain]:
-        """Get the light chain if it exists"""
-        light_chains = [
-            chain for chain in self.chains if chain.is_light_chain()
-        ]
-        return light_chains[0] if light_chains else None
-
-    def has_heavy_chain(self) -> bool:
-        """Check if sequence has a heavy chain"""
-        return self.get_heavy_chain() is not None
-
-    def has_light_chain(self) -> bool:
-        """Check if sequence has a light chain"""
-        return self.get_light_chain() is not None
-
-    def is_complete_antibody(self) -> bool:
-        """Check if this is a complete antibody with both heavy and light chains"""
-        return self.has_heavy_chain() and self.has_light_chain()
-
-    def is_scfv(self) -> bool:
-        """Check if this is a single-chain variable fragment (scFv)"""
-        return (
-            len(self.chains) == 1
-            and self.chains[0].has_variable_domain()
-            and self.chains[0].get_linker_domains()
-        )
-
-    def get_all_domains(self) -> List[AntibodyDomain]:
-        """Get all domains from all chains"""
-        domains = []
-        for chain in self.chains:
-            domains.extend(chain.domains)
-        return domains
-
-    def get_domains_by_type(
-        self, domain_type: DomainType
-    ) -> List[AntibodyDomain]:
-        """Get all domains of a specific type from all chains"""
-        return [
-            domain
-            for domain in self.get_all_domains()
-            if domain.domain_type == domain_type
-        ]
-
-    def get_all_regions(self) -> List[AntibodyRegion]:
-        """Get all regions from all domains in all chains"""
-        regions = []
-        for chain in self.chains:
-            regions.extend(chain.get_all_regions())
-        return regions
-
-    def get_regions_by_type(
-        self, region_type: RegionType
-    ) -> List[AntibodyRegion]:
-        """Get all regions of a specific type from all chains"""
-        return [
-            region
-            for region in self.get_all_regions()
-            if region.region_type == region_type
-        ]
-
-    def add_feature(self, feature: "AntibodyFeature") -> None:
-        """Add a feature to this sequence"""
-        self.features.append(feature)
-
-    def get_features_by_type(
-        self, feature_type: FeatureType
-    ) -> List["AntibodyFeature"]:
-        """Get all features of a specific type"""
-        return [
-            feature
-            for feature in self.features
-            if feature.feature_type == feature_type
-        ]
-
-    def get_all_features(self) -> List["AntibodyFeature"]:
-        """Get all features from all chains and sequence level"""
-        all_features = self.features.copy()
-        for chain in self.chains:
-            all_features.extend(chain.features)
-        return all_features
-
-    def get_mutations(self) -> List["AntibodyFeature"]:
-        """Get all mutation features"""
-        return self.get_features_by_type(FeatureType.MUTATION)
-
-    def get_post_translational_modifications(self) -> List["AntibodyFeature"]:
-        """Get all post-translational modification features"""
-        return self.get_features_by_type(FeatureType.POST_TRANSLATIONAL)
-
-    def get_gene_features(self) -> List["AntibodyFeature"]:
-        """Get all gene-related features"""
-        return [
-            feature for feature in self.features if feature.is_gene_related()
-        ]
-
-    @property
-    def total_length(self) -> int:
-        """Get the total length of all chains"""
-        return sum(len(chain.sequence) for chain in self.chains)
-
-    @property
-    def chain_count(self) -> int:
-        """Get the number of chains"""
-        return len(self.chains)
-
-
-@dataclass
-class AntibodyFeature(DomainEntity):
-    """Domain entity representing an antibody feature (mutation, modification, etc.)"""
+class DomainFeature(DomainEntity):
+    """Domain entity representing a domain feature (mutation, modification, etc.)"""
 
     name: str
     feature_type: FeatureType
@@ -621,13 +472,13 @@ class AntibodyFeature(DomainEntity):
             return False
         return self.boundary.contains(position)
 
-    def overlaps_with(self, other: "AntibodyFeature") -> bool:
+    def overlaps_with(self, other: "DomainFeature") -> bool:
         """Check if this feature overlaps with another"""
         if not self.boundary or not other.boundary:
             return False
         return self.boundary.overlaps_with(other.boundary)
 
-    def is_adjacent_to(self, other: "AntibodyFeature") -> bool:
+    def is_adjacent_to(self, other: "DomainFeature") -> bool:
         """Check if this feature is adjacent to another"""
         if not self.boundary or not other.boundary:
             return False
@@ -658,3 +509,206 @@ class AntibodyFeature(DomainEntity):
     def get_metadata(self, key: str, default=None):
         """Get metadata value"""
         return self.metadata.get(key, default)
+
+
+@dataclass
+class Biologic(DomainEntity):
+    """Domain entity representing a biologic entity"""
+
+    name: str
+    aliases: List[BiologicAlias] = field(default_factory=list)
+    chains: List[BiologicChain] = field(default_factory=list)
+    dna_sequences: List[DNASequence] = field(default_factory=list)
+    rna_sequences: List[RNASequence] = field(default_factory=list)
+    protein_sequences: List[AminoAcidSequence] = field(default_factory=list)
+    features: List[DomainFeature] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    sequence_id: Optional[SequenceIdentifier] = None
+
+    def __post_init__(self):
+        if not self.name:
+            raise ValidationError(
+                "Biologic name cannot be empty", field="name"
+            )
+
+    @property
+    def id(self) -> str:
+        """Get unique identifier for this biologic"""
+        if self.sequence_id:
+            return str(self.sequence_id)
+        return f"{self.name}_{len(self.chains)}_chains"
+
+    def add_alias(self, alias: BiologicAlias) -> None:
+        """Add an alias to this biologic"""
+        # Check for duplicate aliases
+        existing_aliases = {a.alias for a in self.aliases}
+        if alias.alias in existing_aliases:
+            raise DomainError(
+                f"Alias '{alias.alias}' already exists for this biologic"
+            )
+        self.aliases.append(alias)
+
+    def get_aliases_by_type(self, alias_type: str) -> List[BiologicAlias]:
+        """Get all aliases of a specific type"""
+        return [
+            alias for alias in self.aliases if alias.alias_type == alias_type
+        ]
+
+    def has_alias(self, alias: str) -> bool:
+        """Check if biologic has a specific alias"""
+        return any(a.alias == alias for a in self.aliases)
+
+    def remove_alias(self, alias: str) -> None:
+        """Remove an alias from this biologic"""
+        self.aliases = [a for a in self.aliases if a.alias != alias]
+
+    def add_chain(self, chain: BiologicChain) -> None:
+        """Add a chain to this biologic"""
+        # Check for duplicate chain types
+        existing_chain_types = {c.chain_type for c in self.chains}
+        if chain.chain_type in existing_chain_types:
+            raise DomainError(
+                f"Chain type {chain.chain_type} already exists in biologic"
+            )
+
+        self.chains.append(chain)
+
+    def get_chain_by_type(
+        self, chain_type: ChainType
+    ) -> Optional[BiologicChain]:
+        """Get a chain by type"""
+        for chain in self.chains:
+            if chain.chain_type == chain_type:
+                return chain
+        return None
+
+    def get_heavy_chain(self) -> Optional[BiologicChain]:
+        """Get the heavy chain if it exists"""
+        return self.get_chain_by_type(ChainType.HEAVY)
+
+    def get_light_chain(self) -> Optional[BiologicChain]:
+        """Get the light chain if it exists"""
+        light_chains = [
+            chain for chain in self.chains if chain.is_light_chain()
+        ]
+        return light_chains[0] if light_chains else None
+
+    def has_heavy_chain(self) -> bool:
+        """Check if biologic has a heavy chain"""
+        return self.get_heavy_chain() is not None
+
+    def has_light_chain(self) -> bool:
+        """Check if biologic has a light chain"""
+        return self.get_light_chain() is not None
+
+    def is_complete_antibody(self) -> bool:
+        """Check if this is a complete antibody with both heavy and light chains"""
+        return self.has_heavy_chain() and self.has_light_chain()
+
+    def is_scfv(self) -> bool:
+        """Check if this is a single-chain variable fragment (scFv)"""
+        return (
+            len(self.chains) == 1
+            and self.chains[0].has_variable_domain()
+            and self.chains[0].get_linker_domains()
+        )
+
+    def add_dna_sequence(self, sequence: DNASequence) -> None:
+        """Add a DNA sequence to this biologic"""
+        self.dna_sequences.append(sequence)
+
+    def add_rna_sequence(self, sequence: RNASequence) -> None:
+        """Add an RNA sequence to this biologic"""
+        self.rna_sequences.append(sequence)
+
+    def add_protein_sequence(self, sequence: AminoAcidSequence) -> None:
+        """Add a protein sequence to this biologic"""
+        self.protein_sequences.append(sequence)
+
+    def get_all_domains(self) -> List[SequenceDomain]:
+        """Get all domains from all chains"""
+        domains = []
+        for chain in self.chains:
+            domains.extend(chain.domains)
+        return domains
+
+    def get_domains_by_type(
+        self, domain_type: DomainType
+    ) -> List[SequenceDomain]:
+        """Get all domains of a specific type from all chains"""
+        return [
+            domain
+            for domain in self.get_all_domains()
+            if domain.domain_type == domain_type
+        ]
+
+    def get_all_regions(self) -> List[SequenceRegion]:
+        """Get all regions from all domains in all chains"""
+        regions = []
+        for chain in self.chains:
+            regions.extend(chain.get_all_regions())
+        return regions
+
+    def get_regions_by_type(
+        self, region_type: RegionType
+    ) -> List[SequenceRegion]:
+        """Get all regions of a specific type from all chains"""
+        return [
+            region
+            for region in self.get_all_regions()
+            if region.region_type == region_type
+        ]
+
+    def add_feature(self, feature: DomainFeature) -> None:
+        """Add a feature to this biologic"""
+        self.features.append(feature)
+
+    def get_features_by_type(
+        self, feature_type: FeatureType
+    ) -> List[DomainFeature]:
+        """Get all features of a specific type"""
+        return [
+            feature
+            for feature in self.features
+            if feature.feature_type == feature_type
+        ]
+
+    def get_all_features(self) -> List[DomainFeature]:
+        """Get all features from all chains and biologic level"""
+        all_features = self.features.copy()
+        for chain in self.chains:
+            all_features.extend(chain.features)
+        return all_features
+
+    def get_mutations(self) -> List[DomainFeature]:
+        """Get all mutation features"""
+        return self.get_features_by_type(FeatureType.MUTATION)
+
+    def get_post_translational_modifications(self) -> List[DomainFeature]:
+        """Get all post-translational modification features"""
+        return self.get_features_by_type(FeatureType.POST_TRANSLATIONAL)
+
+    def get_gene_features(self) -> List[DomainFeature]:
+        """Get all gene-related features"""
+        return [
+            feature for feature in self.features if feature.is_gene_related()
+        ]
+
+    @property
+    def total_length(self) -> int:
+        """Get the total length of all chains"""
+        return sum(len(chain.sequence) for chain in self.chains)
+
+    @property
+    def chain_count(self) -> int:
+        """Get the number of chains"""
+        return len(self.chains)
+
+    @property
+    def sequence_count(self) -> int:
+        """Get the total number of sequences"""
+        return (
+            len(self.dna_sequences)
+            + len(self.rna_sequences)
+            + len(self.protein_sequences)
+        )

@@ -30,10 +30,11 @@ jobs:
           python-version: 3.11
           auto-activate-base: false
 
-      - name: Install ANARCI from source
+      - name: Install pip dependencies
         shell: bash -l {0}
         run: |
           conda activate AbSequenceAlign
+          pip install sqlalchemy==2.0.23 asyncpg==0.29.0 psycopg2-binary==2.9.9 alembic==1.13.1 greenlet==3.0.1
           pip install git+https://github.com/oxpig/ANARCI.git
 
       # Note: Docker base images are not needed for backend tests
@@ -125,20 +126,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push base images
+      - name: Build and tag base images
         run: |
           # Build base images
           ./scripts/build-base-images.sh
           
-          # For now, just build locally - we'll use local images for testing
-          # TODO: Set up proper registry for base images
-          echo "Base images built locally for testing"
-          
-          # Uncomment when registry is properly configured:
-          # docker tag absequencealign-backend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
-          # docker tag absequencealign-frontend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
-          # docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
-          # docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
+          # Tag base images for testing (but don't push)
+          docker tag absequencealign-backend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
+          docker tag absequencealign-frontend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
 
       - name: Test backend Docker build
         run: |
@@ -168,10 +163,43 @@ jobs:
             -f ./app/frontend/Dockerfile.e2e \
             -t test-frontend-e2e ./app/frontend
 
+  # Push Base Images (only on non-PR events)
+  push-base-images:
+    runs-on: ubuntu-latest
+    needs: [docker-tests]
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push base images
+        run: |
+          # Build base images
+          ./scripts/build-base-images.sh
+          
+          # Tag and push base images to GitHub Container Registry
+          docker tag absequencealign-backend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
+          docker tag absequencealign-frontend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
+          docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
+          docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
+
   # E2E Tests - Parallel
   e2e-tests:
     runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests]
+    needs: [backend-tests, frontend-tests, push-base-images]
     strategy:
       matrix:
         # Split Cypress tests into parallel jobs
@@ -206,10 +234,11 @@ jobs:
           python-version: 3.11
           auto-activate-base: false
 
-      - name: Install ANARCI
+      - name: Install pip dependencies
         shell: bash -l {0}
         run: |
           conda activate AbSequenceAlign
+          pip install sqlalchemy==2.0.23 asyncpg==0.29.0 psycopg2-binary==2.9.9 alembic==1.13.1 greenlet==3.0.1
           pip install git+https://github.com/oxpig/ANARCI.git
 
       - name: Start backend server
@@ -264,21 +293,22 @@ jobs:
           wait-on: 'http://localhost:5679'
           wait-on-timeout: 120
 
-      - name: Upload screenshots
-        uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: cypress-screenshots-${{ matrix.spec }}
-          path: app/frontend/cypress/screenshots
-          if-no-files-found: ignore
+      # Screenshots and videos disabled for faster CI/CD
+      # - name: Upload screenshots
+      #   uses: actions/upload-artifact@v4
+      #   if: failure()
+      #   with:
+      #     name: cypress-screenshots-${{ matrix.spec }}
+      #     path: app/frontend/cypress/screenshots
+      #     if-no-files-found: ignore
 
-      - name: Upload videos
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: cypress-videos-${{ matrix.spec }}
-          path: app/frontend/cypress/videos
-          if-no-files-found: ignore
+      # - name: Upload videos
+      #   uses: actions/upload-artifact@v4
+      #   if: always()
+      #   with:
+      #     name: cypress-videos-${{ matrix.spec }}
+      #     path: app/frontend/cypress/videos
+      #     if-no-files-found: ignore
 
       - name: Cleanup frontend container
         if: always()
@@ -289,7 +319,7 @@ jobs:
   # Security Scanning
   security-scan:
     runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests, docker-tests, e2e-tests]
+    needs: [backend-tests, frontend-tests, docker-tests, push-base-images, e2e-tests]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

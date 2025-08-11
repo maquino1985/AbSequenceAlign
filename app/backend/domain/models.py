@@ -71,6 +71,16 @@ class NumberingScheme(str, Enum):
     CGG = "cgg"
 
 
+class FeatureType(str, Enum):
+    """Types of antibody features"""
+
+    GENE = "GENE"
+    ALLELE = "ALLELE"
+    ISOTYPE = "ISOTYPE"
+    MUTATION = "MUTATION"
+    POST_TRANSLATIONAL = "POST_TRANSLATIONAL"
+
+
 # =============================================================================
 # DOMAIN ENTITIES
 # =============================================================================
