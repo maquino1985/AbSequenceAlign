@@ -100,9 +100,9 @@ class TestCommandPatternIntegration:
 
         # Verify the result
         assert result["success"] is True
-        assert result["data"]["summary"]["total"] == 1
-        assert result["data"]["summary"]["successful"] == 1
-        assert result["data"]["summary"]["failed"] == 0
+        assert result["data"]["data"]["summary"]["total"] == 1
+        assert result["data"]["data"]["summary"]["successful"] == 1
+        assert result["data"]["data"]["summary"]["failed"] == 0
 
         # Verify service interactions
         validation_service.validate_sequences.assert_called_once_with(
@@ -155,8 +155,8 @@ class TestCommandPatternIntegration:
 
         # Verify the result
         assert result["success"] is True
-        assert result["data"]["summary"]["total"] == 1
-        assert result["data"]["summary"]["successful"] == 1
+        assert result["data"]["data"]["summary"]["total"] == 1
+        assert result["data"]["data"]["summary"]["successful"] == 1
 
         # Verify service interactions
         validation_service.validate_sequences.assert_called_once_with(
@@ -224,9 +224,9 @@ class TestCommandPatternIntegration:
 
         # Verify the result
         assert result["success"] is True
-        assert result["data"]["summary"]["total"] == 2
-        assert result["data"]["summary"]["successful"] == 2
-        assert result["data"]["summary"]["failed"] == 0
+        assert result["data"]["data"]["summary"]["total"] == 2
+        assert result["data"]["data"]["summary"]["successful"] == 2
+        assert result["data"]["data"]["summary"]["failed"] == 0
 
         # Verify service interactions
         validation_service.validate_sequences.assert_called_once_with(
@@ -301,9 +301,9 @@ class TestCommandPatternIntegration:
 
         # Verify the result
         assert result["success"] is True
-        assert result["data"]["summary"]["total"] == 2
-        assert result["data"]["summary"]["successful"] == 1
-        assert result["data"]["summary"]["failed"] == 1
+        assert result["data"]["data"]["summary"]["total"] == 2
+        assert result["data"]["data"]["summary"]["successful"] == 1
+        assert result["data"]["data"]["summary"]["failed"] == 1
 
         # Verify service interactions
         validation_service.validate_sequences.assert_called_once_with(

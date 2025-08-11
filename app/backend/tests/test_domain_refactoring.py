@@ -23,6 +23,10 @@ from backend.domain.models import (
     NumberingScheme,
     SequenceValidator,
     RegionCalculator,
+    BiologicType,
+    ChainType,
+    DomainType,
+    FeatureType,
 )
 
 
@@ -166,13 +170,13 @@ class TestDomainEntities:
     def test_biologic_domain_creation(self):
         """Test creating biologic domains"""
         domain = BiologicDomain(
-            domain_type="VARIABLE",
+            domain_type=DomainType.VARIABLE,
             start_position=0,
             end_position=99,
             confidence_score=90,
         )
 
-        assert domain.domain_type == "VARIABLE"
+        assert domain.domain_type == DomainType.VARIABLE
         assert domain.is_variable_domain()
         assert not domain.is_constant_domain()
         assert len(domain.features) == 0
@@ -181,7 +185,7 @@ class TestDomainEntities:
     def test_biologic_domain_add_feature(self):
         """Test adding features to domains"""
         domain = BiologicDomain(
-            domain_type="VARIABLE",
+            domain_type=DomainType.VARIABLE,
             start_position=0,
             end_position=99,
             confidence_score=90,
@@ -189,7 +193,7 @@ class TestDomainEntities:
 
         # Add a feature
         feature = BiologicFeature(
-            feature_type="CDR1",
+            feature_type=FeatureType.CDR1,
             name="CDR1",
             value="ACDEFGHIKL",
             start_position=0,
@@ -199,7 +203,7 @@ class TestDomainEntities:
 
         domain.add_feature(feature)
         assert len(domain.features) == 1
-        assert len(domain.get_features_by_type("CDR1")) == 1
+        assert len(domain.get_features_by_type(FeatureType.CDR1)) == 1
 
     def test_biologic_sequence_creation(self):
         """Test creating biologic sequences"""
@@ -216,20 +220,20 @@ class TestDomainEntities:
 
     def test_biologic_chain_creation(self):
         """Test creating biologic chains"""
-        chain = BiologicChain(name="Heavy", chain_type="HEAVY")
+        chain = BiologicChain(name="Heavy", chain_type=ChainType.HEAVY)
 
         assert chain.name == "Heavy"
-        assert chain.chain_type == "HEAVY"
+        assert chain.chain_type == ChainType.HEAVY
         assert chain.is_heavy_chain()
         assert not chain.is_light_chain()
         assert len(chain.sequences) == 0
 
     def test_biologic_entity_creation(self):
         """Test creating biologic entities"""
-        entity = BiologicEntity(name="Test Antibody", biologic_type="antibody")
+        entity = BiologicEntity(name="Test Antibody", biologic_type=BiologicType.ANTIBODY)
 
         assert entity.name == "Test Antibody"
-        assert entity.biologic_type == "antibody"
+        assert entity.biologic_type == BiologicType.ANTIBODY
         assert len(entity.chains) == 0
         assert entity.is_antibody()
         assert not entity.is_protein()
@@ -238,16 +242,16 @@ class TestDomainEntities:
         """Test adding chains to biologic entities"""
         entity = BiologicEntity(name="Test Antibody", biologic_type="antibody")
 
-        heavy_chain = BiologicChain(name="Heavy", chain_type="HEAVY")
+        heavy_chain = BiologicChain(name="Heavy", chain_type=ChainType.HEAVY)
 
-        light_chain = BiologicChain(name="Light", chain_type="LIGHT")
+        light_chain = BiologicChain(name="Light", chain_type=ChainType.LIGHT)
 
         entity.add_chain(heavy_chain)
         entity.add_chain(light_chain)
 
         assert len(entity.chains) == 2
-        assert len(entity.get_chains_by_type("HEAVY")) == 1
-        assert len(entity.get_chains_by_type("LIGHT")) == 1
+        assert len(entity.get_chains_by_type(ChainType.HEAVY)) == 1
+        assert len(entity.get_chains_by_type(ChainType.LIGHT)) == 1
 
 
 class TestDomainServices:

@@ -8,6 +8,7 @@ from backend.logger import logger
 from backend.models.models import MSACreationRequest, MSAAnnotationRequest
 from backend.models.biologic_models import BiologicResponse
 from backend.models.requests_v2 import AnnotationRequestV2
+from backend.models.models_v2 import AnnotationResultV2
 from backend.msa.msa_annotation import MSAAnnotationEngine
 from backend.msa.msa_engine import MSAEngine
 from fastapi import APIRouter, HTTPException, File, Form, UploadFile, Depends
@@ -20,7 +21,7 @@ async def health_check_v2():
     return {"status": "healthy"}
 
 
-@router.post("/annotate", response_model=V2AnnotationResult)
+@router.post("/annotate", response_model=AnnotationResultV2)
 async def annotate_sequences_v2(
     request: AnnotationRequestV2,
     persist_to_database: bool = True,

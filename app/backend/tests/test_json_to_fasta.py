@@ -2,8 +2,6 @@
 Tests for JSON to FASTA conversion utilities
 """
 
-from backend.utils.json_to_fasta import json_to_fasta
-
 from backend.utils.json_to_fasta import (
     json_seqs_to_fasta,
     json_seqs_to_fasta_simple,
