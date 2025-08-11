@@ -35,7 +35,7 @@ class ProcessAnnotationCommand(BaseCommand):
             # Extract numbering scheme if provided
             if "numbering_scheme" in self.request_data:
                 scheme = self.request_data["numbering_scheme"]
-                if scheme not in ["IMGT", "KABAT", "CHOTHIA"]:
+                if scheme not in ["imgt", "kabat", "chothia", "martin", "aho", "cgg"]:
                     logger.error(f"Invalid numbering scheme: {scheme}")
                     return False
                 self.numbering_scheme = scheme

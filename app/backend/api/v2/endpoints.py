@@ -21,7 +21,7 @@ async def health_check_v2():
     return {"status": "healthy"}
 
 
-@router.post("/annotate", response_model=AnnotationResultV2)
+@router.post("/annotate")
 async def annotate_sequences_v2(
     request: AnnotationRequestV2,
     persist_to_database: bool = True,
@@ -69,9 +69,11 @@ async def annotate_sequences_v2(
 
         # Execute the workflow
         result = await handler.handle(command)
-        v2_result = result["data"] if result["success"] else result
-
-        return v2_result
+        
+        if result["success"]:
+            return result["data"]
+        else:
+            raise HTTPException(status_code=400, detail=result["error"])
     except HTTPException:
         raise
     except Exception as e:
