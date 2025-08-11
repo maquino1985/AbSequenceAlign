@@ -126,16 +126,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push base images
+      - name: Build and tag base images
         run: |
           # Build base images
           ./scripts/build-base-images.sh
           
-          # Tag and push base images to GitHub Container Registry
+          # Tag base images for testing (but don't push)
           docker tag absequencealign-backend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
           docker tag absequencealign-frontend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
-          docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
-          docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
 
       - name: Test backend Docker build
         run: |
@@ -165,10 +163,43 @@ jobs:
             -f ./app/frontend/Dockerfile.e2e \
             -t test-frontend-e2e ./app/frontend
 
+  # Push Base Images (only on non-PR events)
+  push-base-images:
+    runs-on: ubuntu-latest
+    needs: [docker-tests]
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push base images
+        run: |
+          # Build base images
+          ./scripts/build-base-images.sh
+          
+          # Tag and push base images to GitHub Container Registry
+          docker tag absequencealign-backend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
+          docker tag absequencealign-frontend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
+          docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
+          docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
+
   # E2E Tests - Parallel
   e2e-tests:
     runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests]
+    needs: [backend-tests, frontend-tests, push-base-images]
     strategy:
       matrix:
         # Split Cypress tests into parallel jobs
@@ -288,7 +319,7 @@ jobs:
   # Security Scanning
   security-scan:
     runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests, docker-tests, e2e-tests]
+    needs: [backend-tests, frontend-tests, docker-tests, push-base-images, e2e-tests]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
