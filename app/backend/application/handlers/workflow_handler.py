@@ -10,7 +10,6 @@ from ..services.annotation_service import AnnotationService
 from ..services.validation_service import ValidationService
 from ..services.response_service import ResponseService
 from ..services.biologic_service import BiologicService
-from ..converters.biologic_converter import BiologicConverterImpl
 from backend.logger import logger
 
 
@@ -38,7 +37,6 @@ class WorkflowHandler(BaseHandler):
         self.validation_service = validation_service
         self.response_service = response_service
         self.biologic_service = biologic_service
-        self.converter = BiologicConverterImpl()
 
     async def handle(self, command: BaseCommand) -> Dict[str, Any]:
         """
@@ -68,14 +66,40 @@ class WorkflowHandler(BaseHandler):
             results = []
             for sequence_name, sequence_data in sequences.items():
                 try:
-                    # Convert sequence data to domain entity
-                    sequence = self.converter.convert_from_request_data(
-                        sequence_name, sequence_data
-                    )
+                    # Create domain entity from sequence data
+                    from backend.domain.entities import BiologicEntity, BiologicChain, BiologicSequence
+                    from backend.domain.models import ChainType, BiologicType
 
-                    # Validate the converted sequence
-                    if not self.validation_service.validate_sequence(sequence):
-                        return self._create_error_response(f"Invalid sequence data for {sequence_name}")
+                    # Convert sequence data to domain entities
+                    chains = []
+                    for chain_name, chain_sequence in sequence_data.items():
+                        # Create sequence
+                        biologic_sequence = BiologicSequence(
+                            sequence_type="PROTEIN",
+                            sequence_data=chain_sequence,
+                            description=f"{chain_name} sequence for {sequence_name}",
+                        )
+
+                        # Determine chain type
+                        chain_type = ChainType.HEAVY if "heavy" in chain_name.lower() else ChainType.LIGHT
+
+                        # Create chain
+                        biologic_chain = BiologicChain(
+                            name=chain_name,
+                            chain_type=chain_type,
+                            sequences=[biologic_sequence],
+                        )
+
+                        chains.append(biologic_chain)
+
+                    # Create domain entity
+                    sequence = BiologicEntity(
+                        name=sequence_name,
+                        biologic_type=BiologicType.ANTIBODY,
+                        description=f"Antibody sequence: {sequence_name}",
+                        chains=chains,
+                        metadata={},
+                    )
 
                     # Perform annotation
                     annotation_result = (
