@@ -4,7 +4,10 @@ Entities have identity and lifecycle, and contain business logic.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Set
+from typing import Dict, List, Optional, Any, Set, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from backend.domain.entities import AntibodyFeature
 from abc import ABC, abstractmethod
 
 from backend.domain.value_objects import (
@@ -19,6 +22,7 @@ from backend.domain.models import (
     DomainType,
     RegionType,
     NumberingScheme,
+    FeatureType,
 )
 from backend.core.exceptions import ValidationError, DomainError
 
@@ -274,6 +278,7 @@ class AntibodyChain(DomainEntity):
     chain_type: ChainType
     sequence: AminoAcidSequence
     domains: List[AntibodyDomain] = field(default_factory=list)
+    features: List["AntibodyFeature"] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
     sequence_id: Optional[SequenceIdentifier] = None
 
@@ -379,6 +384,34 @@ class AntibodyChain(DomainEntity):
             if region.region_type == region_type
         ]
 
+    def add_feature(self, feature: "AntibodyFeature") -> None:
+        """Add a feature to this chain"""
+        self.features.append(feature)
+
+    def get_features_by_type(
+        self, feature_type: FeatureType
+    ) -> List["AntibodyFeature"]:
+        """Get all features of a specific type"""
+        return [
+            feature
+            for feature in self.features
+            if feature.feature_type == feature_type
+        ]
+
+    def get_mutations(self) -> List["AntibodyFeature"]:
+        """Get all mutation features"""
+        return self.get_features_by_type(FeatureType.MUTATION)
+
+    def get_post_translational_modifications(self) -> List["AntibodyFeature"]:
+        """Get all post-translational modification features"""
+        return self.get_features_by_type(FeatureType.POST_TRANSLATIONAL)
+
+    def get_gene_features(self) -> List["AntibodyFeature"]:
+        """Get all gene-related features"""
+        return [
+            feature for feature in self.features if feature.is_gene_related()
+        ]
+
     @property
     def length(self) -> int:
         return len(self.sequence)
@@ -390,6 +423,7 @@ class AntibodySequence(DomainEntity):
 
     name: str
     chains: List[AntibodyChain] = field(default_factory=list)
+    features: List["AntibodyFeature"] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
     sequence_id: Optional[SequenceIdentifier] = None
 
@@ -491,6 +525,41 @@ class AntibodySequence(DomainEntity):
             if region.region_type == region_type
         ]
 
+    def add_feature(self, feature: "AntibodyFeature") -> None:
+        """Add a feature to this sequence"""
+        self.features.append(feature)
+
+    def get_features_by_type(
+        self, feature_type: FeatureType
+    ) -> List["AntibodyFeature"]:
+        """Get all features of a specific type"""
+        return [
+            feature
+            for feature in self.features
+            if feature.feature_type == feature_type
+        ]
+
+    def get_all_features(self) -> List["AntibodyFeature"]:
+        """Get all features from all chains and sequence level"""
+        all_features = self.features.copy()
+        for chain in self.chains:
+            all_features.extend(chain.features)
+        return all_features
+
+    def get_mutations(self) -> List["AntibodyFeature"]:
+        """Get all mutation features"""
+        return self.get_features_by_type(FeatureType.MUTATION)
+
+    def get_post_translational_modifications(self) -> List["AntibodyFeature"]:
+        """Get all post-translational modification features"""
+        return self.get_features_by_type(FeatureType.POST_TRANSLATIONAL)
+
+    def get_gene_features(self) -> List["AntibodyFeature"]:
+        """Get all gene-related features"""
+        return [
+            feature for feature in self.features if feature.is_gene_related()
+        ]
+
     @property
     def total_length(self) -> int:
         """Get the total length of all chains"""
@@ -500,3 +569,92 @@ class AntibodySequence(DomainEntity):
     def chain_count(self) -> int:
         """Get the number of chains"""
         return len(self.chains)
+
+
+@dataclass
+class AntibodyFeature(DomainEntity):
+    """Domain entity representing an antibody feature (mutation, modification, etc.)"""
+
+    name: str
+    feature_type: FeatureType
+    value: str
+    boundary: Optional[RegionBoundary] = None
+    confidence_score: Optional[ConfidenceScore] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self):
+        if not self.name:
+            raise ValidationError("Feature name cannot be empty", field="name")
+        if not self.value:
+            raise ValidationError(
+                "Feature value cannot be empty", field="value"
+            )
+
+    @property
+    def id(self) -> str:
+        """Get unique identifier for this feature"""
+        boundary_str = (
+            f"_{self.boundary.start}_{self.boundary.end}"
+            if self.boundary
+            else ""
+        )
+        return f"{self.name}_{self.feature_type}{boundary_str}"
+
+    @property
+    def start(self) -> Optional[int]:
+        """Get the start position of this feature"""
+        return self.boundary.start if self.boundary else None
+
+    @property
+    def end(self) -> Optional[int]:
+        """Get the end position of this feature"""
+        return self.boundary.end if self.boundary else None
+
+    @property
+    def length(self) -> Optional[int]:
+        """Get the length of this feature"""
+        return self.boundary.length() if self.boundary else None
+
+    def has_position(self, position: int) -> bool:
+        """Check if a position is within this feature"""
+        if not self.boundary:
+            return False
+        return self.boundary.contains(position)
+
+    def overlaps_with(self, other: "AntibodyFeature") -> bool:
+        """Check if this feature overlaps with another"""
+        if not self.boundary or not other.boundary:
+            return False
+        return self.boundary.overlaps_with(other.boundary)
+
+    def is_adjacent_to(self, other: "AntibodyFeature") -> bool:
+        """Check if this feature is adjacent to another"""
+        if not self.boundary or not other.boundary:
+            return False
+        return self.boundary.is_adjacent_to(other.boundary)
+
+    def is_mutation(self) -> bool:
+        """Check if this is a mutation feature"""
+        return self.feature_type == FeatureType.MUTATION
+
+    def is_post_translational(self) -> bool:
+        """Check if this is a post-translational modification"""
+        return self.feature_type == FeatureType.POST_TRANSLATIONAL
+
+    def is_gene_related(self) -> bool:
+        """Check if this is a gene-related feature"""
+        return self.feature_type in [FeatureType.GENE, FeatureType.ALLELE]
+
+    def has_high_confidence(self, threshold: float = 0.8) -> bool:
+        """Check if the feature has high confidence"""
+        if not self.confidence_score:
+            return False
+        return self.confidence_score.is_high_confidence(threshold)
+
+    def add_metadata(self, key: str, value: Any) -> None:
+        """Add metadata to this feature"""
+        self.metadata[key] = value
+
+    def get_metadata(self, key: str, default=None):
+        """Get metadata value"""
+        return self.metadata.get(key, default)
