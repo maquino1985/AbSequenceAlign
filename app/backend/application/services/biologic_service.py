@@ -467,16 +467,19 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
                 )
 
             # Convert to response
+            from datetime import datetime
+            from backend.database import UUIDv7
+            
             biologic_response = BiologicResponse(
-                id=str(biologic.id),
+                id=str(biologic.id) if biologic.id else UUIDv7()(),
                 name=biologic.name,
                 description=biologic.description,
                 organism=biologic.organism,
                 biologic_type=biologic.biologic_type,
                 metadata=biologic.metadata_json,
                 chains=[],  # Would be populated from biologic.chains
-                created_at=biologic.created_at,
-                updated_at=biologic.updated_at,
+                created_at=biologic.created_at or datetime.now(),
+                updated_at=biologic.updated_at or datetime.now(),
             )
 
             return biologic_response
@@ -505,11 +508,18 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
             )
 
             # Create sequences for each sequence in the chain
+            chain_sequences = []
             for sequence in biologic_chain.sequences:
-                orm_sequence = self._create_sequence_from_domain(
-                    chain, sequence
+                orm_sequence = self._create_sequence_from_sequence(
+                    chain=chain, biologic_sequence=sequence
                 )
-                chain.sequences.append(orm_sequence)
+                # The sequence is returned with its chain_sequences already set
+                # We need to extract the chain_sequence and add it to the chain
+                if orm_sequence.chain_sequences:
+                    chain_sequences.extend(orm_sequence.chain_sequences)
+            
+            # Set the chain_sequences on the chain
+            chain.sequences = chain_sequences
 
             return chain
 
@@ -524,9 +534,11 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
         try:
             # Convert sequences to biologic sequences
             biologic_sequences = []
-            for sequence in chain.sequences:
+            for chain_sequence in chain.sequences:
+                # Get the actual sequence from the chain_sequence
+                sequence = chain_sequence.sequence
                 biologic_sequence = (
-                    self._create_biologic_sequence_from_orm_sequence(sequence)
+                    self._create_biologic_sequence_from_orm_sequence(sequence=sequence)
                 )
                 biologic_sequences.append(biologic_sequence)
 
@@ -546,55 +558,134 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
             )
             raise
 
-    def _create_sequence_from_domain(
-        self, chain: Chain, biologic_domain: BiologicDomain
+    def _create_biologic_sequence_from_orm_sequence(
+        self, sequence: Sequence
+    ) -> BiologicSequence:
+        """Create a BiologicSequence domain entity from a Sequence ORM model."""
+        try:
+            # Convert domains to biologic domains
+            biologic_domains = []
+            for chain_sequence in sequence.chain_sequences:
+                for domain in chain_sequence.domains:
+                    biologic_domain = self._create_biologic_domain_from_sequence_domain(domain)
+                    biologic_domains.append(biologic_domain)
+
+            # Create domain entity
+            biologic_sequence = BiologicSequence(
+                sequence_type=sequence.sequence_type,
+                sequence_data=sequence.sequence_data,
+                description=sequence.description,
+                domains=biologic_domains,
+                metadata=sequence.metadata_json or {},
+            )
+
+            return biologic_sequence
+
+        except Exception as e:
+            self._logger.error(
+                f"Error creating biologic sequence from ORM sequence: {e}"
+            )
+            raise
+
+    def _create_biologic_domain_from_sequence_domain(
+        self, sequence_domain: SequenceDomain
+    ) -> BiologicDomain:
+        """Create a BiologicDomain domain entity from a SequenceDomain ORM model."""
+        try:
+            # Convert features to biologic features
+            biologic_features = []
+            for feature in sequence_domain.features:
+                biologic_feature = self._create_biologic_feature_from_sequence_domain(
+                    sequence_domain=sequence_domain
+                )
+                biologic_features.append(biologic_feature)
+
+            # Create domain entity
+            biologic_domain = BiologicDomain(
+                domain_type=sequence_domain.domain_type,  # Would need enum conversion
+                start_position=sequence_domain.start_position,
+                end_position=sequence_domain.end_position,
+                confidence_score=sequence_domain.confidence_score,
+                features=biologic_features,
+                metadata=sequence_domain.metadata_json or {},
+            )
+
+            return biologic_domain
+
+        except Exception as e:
+            self._logger.error(
+                f"Error creating biologic domain from sequence domain: {e}"
+            )
+            raise
+
+    def _create_sequence_from_sequence(
+        self, chain: Chain, biologic_sequence: BiologicSequence
     ) -> Sequence:
-        """Create a Sequence ORM model from an AntibodyDomain domain entity."""
+        """Create a Sequence ORM model from a BiologicSequence domain entity."""
         try:
             # Create sequence ORM model
             metadata_json = {
-                "domain_entity_id": biologic_domain.id,
-                "domain_type": biologic_domain.domain_type,
-                "feature_count": len(biologic_domain.features),
+                "sequence_entity_id": biologic_sequence.id,
+                "sequence_type": biologic_sequence.sequence_type,
+                "domain_count": len(biologic_sequence.domains),
             }
             
             sequence = Sequence(
-                chain_id=chain.id,
-                sequence_type="PROTEIN",
-                sequence_data=biologic_domain.sequence_data,
-                length=len(biologic_domain.sequence_data),
-                description=f"{biologic_domain.domain_type} domain",
+                sequence_type=biologic_sequence.sequence_type,
+                sequence_data=biologic_sequence.sequence_data,
+                length=len(biologic_sequence.sequence_data),
+                description=biologic_sequence.description or f"{biologic_sequence.sequence_type} sequence",
                 metadata_json=metadata_json,
             )
 
-            # Create a single SequenceDomain for the entire domain with species/germline info
-            sequence_domain = SequenceDomain(
-                chain_sequence_id=sequence.id,  # This will be set after sequence is saved
-                domain_type=biologic_domain.domain_type.value,
-                start_position=biologic_domain.start_position,
-                end_position=biologic_domain.end_position,
-                species=biologic_domain.metadata.get("species"),
-                germline=biologic_domain.metadata.get("germline"),
-                confidence_score=biologic_domain.confidence_score,
+            # Create ChainSequence to link the sequence to the chain
+            chain_sequence = ChainSequence(
+                chain_id=chain.id,
+                sequence_id=sequence.id,  # This will be set after sequence is saved
+                start_position=0,
+                end_position=len(biologic_sequence.sequence_data),
                 metadata_json={
-                    "domain_entity_id": biologic_domain.id,
-                    "domain_type": biologic_domain.domain_type,
+                    "sequence_entity_id": biologic_sequence.id,
+                    "chain_entity_id": chain.id,
                 },
             )
 
-            # Create features for each feature in the domain
-            for feature in biologic_domain.features:
-                domain_feature = self._create_domain_feature_from_feature(
-                    sequence_domain, feature
+            # Create SequenceDomain objects for each domain in the sequence
+            sequence_domains = []
+            for domain in biologic_sequence.domains:
+                sequence_domain = SequenceDomain(
+                    chain_sequence_id=chain_sequence.id,  # This will be set after chain_sequence is saved
+                    domain_type=domain.domain_type.value,
+                    start_position=domain.start_position,
+                    end_position=domain.end_position,
+                    species=domain.metadata.get("species"),
+                    germline=domain.metadata.get("germline"),
+                    confidence_score=domain.confidence_score,
+                    metadata_json={
+                        "domain_entity_id": domain.id,
+                        "domain_type": domain.domain_type,
+                    },
                 )
-                sequence_domain.features.append(domain_feature)
 
-            sequence.domains = [sequence_domain]
+                # Create features for each feature in the domain
+                for feature in domain.features:
+                    domain_feature = self._create_domain_feature_from_feature(
+                        sequence_domain=sequence_domain, biologic_feature=feature
+                    )
+                    sequence_domain.features.append(domain_feature)
+
+                sequence_domains.append(sequence_domain)
+
+            # Set the domains on the chain_sequence
+            chain_sequence.domains = sequence_domains
+
+            # Set the chain_sequence on the sequence
+            sequence.chain_sequences = [chain_sequence]
 
             return sequence
 
         except Exception as e:
-            self._logger.error(f"Error creating sequence from domain: {e}")
+            self._logger.error(f"Error creating sequence from sequence: {e}")
             raise
 
     def _create_biologic_domain_from_sequence(
@@ -673,12 +764,12 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
     def _create_sequence_domain_from_feature(
         self, sequence: Sequence, biologic_feature: BiologicFeature
     ) -> SequenceDomain:
-        """Create a SequenceDomain ORM model from an AntibodyRegion domain entity."""
+        """Create a SequenceDomain ORM model from a BiologicFeature domain entity."""
         try:
             # Create sequence domain ORM model
             sequence_domain = SequenceDomain(
-                sequence_id=sequence.id,
-                domain_name=biologic_feature.name,
+                chain_sequence_id=sequence.id,  # This should be chain_sequence_id, not sequence_id
+                domain_type=biologic_feature.feature_type.value,  # Use domain_type instead of domain_name
                 start_position=biologic_feature.start_position,
                 end_position=biologic_feature.end_position,
                 metadata_json={
@@ -691,24 +782,24 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
 
         except Exception as e:
             self._logger.error(
-                f"Error creating sequence domain from region: {e}"
+                f"Error creating sequence domain from feature: {e}"
             )
             raise
 
     def _create_biologic_feature_from_sequence_domain(
         self, sequence_domain: SequenceDomain
     ) -> BiologicFeature:
-        """Create an AntibodyRegion domain entity from a SequenceDomain ORM model."""
+        """Create a BiologicFeature domain entity from a SequenceDomain ORM model."""
         try:
-            # Create region domain entity
+            # Create feature domain entity
             biologic_feature = BiologicFeature(
-                name=sequence_domain.domain_name,
+                name=sequence_domain.domain_type,  # Use domain_type instead of domain_name
                 feature_type=sequence_domain.metadata_json.get(
-                    "region_type", "FR1"
+                    "feature_type", "FR1"
                 ),  # Would need enum conversion
                 start_position=sequence_domain.start_position,
                 end_position=sequence_domain.end_position,
-                confidence_score=1.0,
+                confidence_score=sequence_domain.confidence_score or 1.0,
                 metadata=sequence_domain.metadata_json or {},
             )
 
@@ -716,7 +807,7 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
 
         except Exception as e:
             self._logger.error(
-                f"Error creating antibody region from sequence domain: {e}"
+                f"Error creating biologic feature from sequence domain: {e}"
             )
             raise
 
@@ -790,3 +881,4 @@ class ValidationBiologicServiceImpl(BiologicServiceImpl):
 
 # Alias for backward compatibility
 BiologicService = BiologicServiceImpl
+

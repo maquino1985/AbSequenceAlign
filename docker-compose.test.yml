@@ -77,7 +77,6 @@ services:
       - ./app/frontend:/app:ro
     command: >
       sh -c "
-        npm ci &&
         npm run test &&
         npm run type-check &&
         npm run lint

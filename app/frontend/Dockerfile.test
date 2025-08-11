@@ -1,11 +1,11 @@
 # Frontend Test Dockerfile - Uses base image with dependencies pre-installed
-FROM absequencealign-frontend-base:latest
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
 
 # Set working directory
 WORKDIR /app
 
-# Copy source code (excluding node_modules which are already in base image)
-COPY package*.json ./
+# Copy source code (excluding node_modules and package files which are already in base image)
 COPY src/ ./src/
 COPY public/ ./public/
 COPY tsconfig*.json ./
