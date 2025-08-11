@@ -479,6 +479,12 @@ class TestInfrastructureIntegration:
 
     def test_service_dependency_injection(self):
         """Test that services can be retrieved from container"""
+        # Configure container to use temporary directory for repository
+        import tempfile
+
+        temp_dir = tempfile.mkdtemp()
+        self.container.register_config("storage_path", temp_dir)
+
         # Test repository
         repository = self.container.get_service("sequence_repository")
         assert repository is not None
