@@ -7,6 +7,7 @@ from backend.jobs.job_manager import job_manager
 from backend.logger import logger
 from backend.models.models import MSACreationRequest, MSAAnnotationRequest
 from backend.models.models_v2 import AnnotationResult as V2AnnotationResult
+from backend.models.biologic_models import BiologicResponse
 from backend.models.requests_v2 import AnnotationRequestV2
 from backend.msa.msa_annotation import MSAAnnotationEngine
 from backend.msa.msa_engine import MSAEngine
@@ -50,6 +51,97 @@ async def annotate_sequences_v2(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Annotation failed: {e}")
+
+
+@router.post("/annotate-with-persistence", response_model=dict)
+async def annotate_and_persist_sequences_v2(
+    request: AnnotationRequestV2,
+    organism: Optional[str] = None,
+    db_session: AsyncSession = Depends(get_db_session),
+):
+    """
+    Annotate sequences and persist them as biologic entities.
+    
+    This endpoint demonstrates the integration pattern:
+    1. Use domain entities for annotation (business logic)
+    2. Convert to ORM models for persistence
+    3. Return Pydantic models for API responses
+    """
+    try:
+        from backend.application.services.annotation_service import (
+            AnnotationService,
+        )
+
+        # Convert request sequences to the format expected by AnarciResultProcessor
+        input_dict = {}
+        for seq in request.sequences:
+            chain_data = seq.get_all_chains()
+            if chain_data:
+                input_dict[seq.name] = chain_data
+
+        # Use the service to process the annotation request with persistence
+        annotation_service = AnnotationService()
+        result = await annotation_service.annotate_and_persist_sequence(
+            db_session=db_session,
+            input_dict=input_dict,
+            numbering_scheme=request.numbering_scheme.value,
+            organism=organism
+        )
+
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Annotation with persistence failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Annotation with persistence failed: {e}")
+
+
+# Biologic Entity Endpoints
+@router.get("/biologics", response_model=list[BiologicResponse])
+async def list_biologics_v2(
+    skip: int = 0,
+    limit: int = 100,
+    db_session: AsyncSession = Depends(get_db_session),
+):
+    """List all biologic entities with pagination."""
+    try:
+        from backend.application.services.biologic_service import BiologicService
+        
+        biologic_service = BiologicService()
+        biologics = await biologic_service.list_biologics(
+            db_session=db_session,
+            skip=skip,
+            limit=limit
+        )
+        
+        return biologics
+    except Exception as e:
+        logger.error(f"Failed to list biologics: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list biologics: {e}")
+
+
+@router.get("/biologics/{biologic_id}", response_model=BiologicResponse)
+async def get_biologic_v2(
+    biologic_id: str,
+    db_session: AsyncSession = Depends(get_db_session),
+):
+    """Get a specific biologic entity by ID."""
+    try:
+        from backend.application.services.biologic_service import BiologicService
+        from backend.core.exceptions import EntityNotFoundError
+        
+        biologic_service = BiologicService()
+        biologic = await biologic_service.get_biologic(
+            db_session=db_session,
+            biologic_id=biologic_id
+        )
+        
+        return biologic
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to get biologic {biologic_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get biologic: {e}")
 
 
 # MSA Endpoints

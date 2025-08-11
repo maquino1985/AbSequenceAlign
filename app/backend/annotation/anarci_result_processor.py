@@ -6,7 +6,7 @@ from anarci import run_anarci
 
 from .antibody_region_annotator import AntibodyRegionAnnotator
 from .isotype_hmmer import detect_isotype_with_hmmer
-from backend.utils.types import Chain, Domain
+from backend.utils.sequence_types import Chain, Domain
 
 
 class AnarciResultObject:

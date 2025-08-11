@@ -35,6 +35,7 @@ from backend.models.models_v2 import (
     DomainType,
     AnnotationResult,
 )
+from backend.application.services.biologic_service import BiologicService
 from backend.logger import logger
 
 
@@ -45,6 +46,7 @@ class AnnotationService(AbstractProcessingSubject):
         super().__init__()
         self._anarci_adapter = AnarciAdapter()
         self._hmmer_adapter = HmmerAdapter()
+        self._biologic_service = BiologicService()
 
     def process_sequence(
         self,
@@ -642,3 +644,191 @@ class AnnotationService(AbstractProcessingSubject):
                             species.get(species_name, 0) + 1
                         )
         return species
+
+    # =============================================================================
+    # Integration with Biologic Models for Persistence
+    # =============================================================================
+
+    async def annotate_and_persist_sequence(
+        self,
+        db_session,
+        input_dict: Dict[str, Any],
+        numbering_scheme: str = "imgt",
+        organism: Optional[str] = None
+    ):
+        """
+        Annotate a sequence and persist it as a biologic entity.
+        
+        This method demonstrates the integration pattern:
+        1. Use domain entities for annotation (business logic)
+        2. Convert to ORM models for persistence
+        3. Return Pydantic models for API responses
+        """
+        # Step 1: Process with AnarciResultProcessor (existing logic)
+        processor = AnarciResultProcessor(input_dict, numbering_scheme=numbering_scheme)
+        
+        # Step 2: Convert processor results to domain entities
+        antibody_sequence = self._create_antibody_sequence_from_processor(processor)
+        
+        # Step 3: Use biologic service to persist as ORM models
+        biologic_response = await self._biologic_service.process_and_persist_antibody_sequence(
+            db_session, antibody_sequence, organism
+        )
+        
+        # Step 4: Return both the biologic response and the original annotation result
+        annotation_result = self.create_api_response_from_processor(processor, numbering_scheme)
+        
+        return {
+            "biologic": biologic_response,
+            "annotation": annotation_result
+        }
+
+    def _create_antibody_sequence_from_processor(
+        self, processor: AnarciResultProcessor
+    ) -> AntibodySequence:
+        """
+        Create an AntibodySequence domain entity from AnarciResultProcessor results.
+        
+        This bridges the gap between the processor results and domain entities.
+        """
+        from backend.domain.value_objects import AminoAcidSequence
+        from backend.domain.models import ChainType, DomainType, RegionType, NumberingScheme
+        
+        chains = []
+        
+        for result in processor.results:
+            for chain_data in result.chains:
+                # Create domains for this chain
+                domains = []
+                for domain_data in chain_data.domains:
+                    # Create regions for this domain
+                    regions = {}
+                    if hasattr(domain_data, "regions") and domain_data.regions:
+                        for region_name, region_data in domain_data.regions.items():
+                            try:
+                                region = self._create_antibody_region_from_processor_data(
+                                    region_name, region_data, domain_data.sequence
+                                )
+                                regions[region_name] = region
+                            except Exception as e:
+                                logger.warning(f"Error creating region {region_name}: {e}")
+                                # Create fallback region
+                                region = self._create_fallback_antibody_region(
+                                    region_name, domain_data.sequence
+                                )
+                                regions[region_name] = region
+                    
+                    # Create domain
+                    domain = AntibodyDomain(
+                        domain_type=DomainType(domain_data.domain_type.upper()),
+                        sequence=AminoAcidSequence(domain_data.sequence),
+                        numbering_scheme=NumberingScheme.IMGT,
+                        regions=regions,
+                        metadata={}
+                    )
+                    domains.append(domain)
+                
+                # Create chain
+                chain = AntibodyChain(
+                    name=chain_data.name,
+                    chain_type=ChainType(chain_data.chain_type.upper()),
+                    sequence=AminoAcidSequence(chain_data.sequence),
+                    domains=domains,
+                    metadata={}
+                )
+                chains.append(chain)
+        
+        # Create antibody sequence
+        sequence_name = processor.results[0].biologic_name if processor.results else "Unknown"
+        return AntibodySequence(
+            name=sequence_name,
+            chains=chains,
+            metadata={}
+        )
+
+    def _create_antibody_region_from_processor_data(
+        self, region_name: str, region_data: Any, domain_sequence: str
+    ) -> AntibodyRegion:
+        """Create an AntibodyRegion domain entity from processor data."""
+        from backend.domain.value_objects import AminoAcidSequence, RegionBoundary, ConfidenceScore
+        from backend.domain.models import RegionType, NumberingScheme
+        
+        # Extract region boundaries
+        start = getattr(region_data, "start", 0)
+        end = getattr(region_data, "end", len(domain_sequence) - 1)
+        
+        # Create boundary
+        boundary = RegionBoundary(start=start, end=end)
+        
+        # Extract sequence
+        sequence = getattr(region_data, "sequence", domain_sequence[start:end+1])
+        amino_acid_sequence = AminoAcidSequence(sequence)
+        
+        # Determine region type
+        region_type = self._map_region_type(region_name)
+        
+        # Create confidence score if available
+        confidence_score = None
+        if hasattr(region_data, "confidence"):
+            confidence_score = ConfidenceScore(region_data.confidence)
+        
+        return AntibodyRegion(
+            name=region_name,
+            region_type=region_type,
+            boundary=boundary,
+            sequence=amino_acid_sequence,
+            numbering_scheme=NumberingScheme.IMGT,
+            metadata={},
+            confidence_score=confidence_score
+        )
+
+    def _create_fallback_antibody_region(
+        self, region_name: str, domain_sequence: str
+    ) -> AntibodyRegion:
+        """Create a fallback AntibodyRegion when processor data is incomplete."""
+        from backend.domain.value_objects import AminoAcidSequence, RegionBoundary
+        from backend.domain.models import RegionType, NumberingScheme
+        
+        # Create a simple region covering the entire domain
+        boundary = RegionBoundary(start=0, end=len(domain_sequence) - 1)
+        sequence = AminoAcidSequence(domain_sequence)
+        region_type = self._map_region_type(region_name)
+        
+        return AntibodyRegion(
+            name=region_name,
+            region_type=region_type,
+            boundary=boundary,
+            sequence=sequence,
+            numbering_scheme=NumberingScheme.IMGT,
+            metadata={"fallback": True},
+            confidence_score=None
+        )
+
+    def _map_region_type(self, region_name: str) -> RegionType:
+        """Map region name to RegionType enum."""
+        from backend.domain.models import RegionType
+        
+        region_name_lower = region_name.lower()
+        
+        if "cdr" in region_name_lower:
+            if "1" in region_name_lower:
+                return RegionType.CDR1
+            elif "2" in region_name_lower:
+                return RegionType.CDR2
+            elif "3" in region_name_lower:
+                return RegionType.CDR3
+            else:
+                return RegionType.CDR1  # Default
+        elif "fr" in region_name_lower:
+            if "1" in region_name_lower:
+                return RegionType.FR1
+            elif "2" in region_name_lower:
+                return RegionType.FR2
+            elif "3" in region_name_lower:
+                return RegionType.FR3
+            elif "4" in region_name_lower:
+                return RegionType.FR4
+            else:
+                return RegionType.FR1  # Default
+        else:
+            return RegionType.FR1  # Default fallback
