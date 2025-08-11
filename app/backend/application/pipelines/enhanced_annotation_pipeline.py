@@ -10,10 +10,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ...core.base_classes import AbstractProcessingSubject
 from ...core.interfaces import ProcessingResult
 from ...domain.models import (
-    AntibodySequence,
     NumberingScheme,
+    ChainType,
+    RegionType,
+    DomainType,
 )
-from ...services.antibody_database_service import AntibodyDatabaseService
+from ...domain.entities import (
+    AntibodySequence,
+    AntibodyChain,
+    AntibodyDomain,
+    AntibodyRegion,
+)
+from ..services.antibody_database_service import AntibodyDatabaseService
 from backend.annotation.anarci_result_processor import AnarciResultProcessor
 
 
@@ -239,15 +247,76 @@ class EnhancedAnnotationPipeline(AbstractProcessingSubject):
     ) -> AntibodySequence:
         """Convert AnarciResultProcessor results back to domain entities"""
         try:
-            # For now, return the original sequence with basic annotation
-            # In a full implementation, you would convert the processor results
-            # to proper domain entities with all the annotation data
+            from backend.domain.value_objects import (
+                AminoAcidSequence,
+                RegionBoundary,
+                ConfidenceScore,
+                AnnotationMetadata,
+            )
+            from backend.domain.models import (
+                NumberingScheme,
+            )
 
-            # Create a basic annotated sequence
+            # Get the first result (assuming single sequence for now)
+            if not processor.results:
+                return original_sequence
+
+            result_obj = processor.results[0]
+
+            # Create annotated chains from the processor results
+            annotated_chains = []
+            for chain in result_obj.chains:
+                # Create domains from the chain data
+                domains = []
+                for domain in chain.domains:
+                    # Create regions from the domain
+                    regions = {}
+                    if hasattr(domain, "regions") and domain.regions:
+                        for region_name, region_data in domain.regions.items():
+                            # Create AntibodyRegion from the region data
+                            antibody_region = AntibodyRegion(
+                                name=region_name,
+                                region_type=self._get_region_type(region_name),
+                                boundary=RegionBoundary(
+                                    start=region_data.get("start", 0),
+                                    end=region_data.get("stop", 0),
+                                ),
+                                sequence=AminoAcidSequence(
+                                    region_data.get("sequence", "")
+                                ),
+                                numbering_scheme=NumberingScheme.IMGT,  # Default for now
+                                confidence_score=ConfidenceScore(
+                                    0.9
+                                ),  # Default confidence
+                            )
+                            regions[region_name] = antibody_region
+
+                    # Create AntibodyDomain
+                    antibody_domain = AntibodyDomain(
+                        domain_type=self._get_domain_type(domain.domain_type),
+                        sequence=AminoAcidSequence(domain.sequence),
+                        numbering_scheme=NumberingScheme.IMGT,  # Default for now
+                        regions=regions,
+                        annotation_metadata=AnnotationMetadata(
+                            description=f"Domain {domain.domain_type}",
+                            source="anarci",
+                        ),
+                    )
+                    domains.append(antibody_domain)
+
+                # Create AntibodyChain
+                antibody_chain = AntibodyChain(
+                    name=chain.name,
+                    chain_type=self._get_chain_type(chain.name),
+                    sequence=AminoAcidSequence(chain.sequence),
+                    domains=domains,
+                )
+                annotated_chains.append(antibody_chain)
+
+            # Create the annotated sequence
             annotated_sequence = AntibodySequence(
                 name=original_sequence.name,
-                sequence=original_sequence.sequence,
-                chains=original_sequence.chains,  # Would be enhanced with annotation data
+                chains=annotated_chains,
                 metadata=original_sequence.metadata,
             )
 
@@ -257,6 +326,49 @@ class EnhancedAnnotationPipeline(AbstractProcessingSubject):
             self._logger.error(f"Error converting processor results: {e}")
             # Return original sequence as fallback
             return original_sequence
+
+    def _get_region_type(self, region_name: str) -> RegionType:
+        """Convert region name to RegionType enum"""
+        if region_name.startswith("CDR"):
+            if "1" in region_name:
+                return RegionType.CDR1
+            elif "2" in region_name:
+                return RegionType.CDR2
+            elif "3" in region_name:
+                return RegionType.CDR3
+        elif region_name.startswith("FR"):
+            if "1" in region_name:
+                return RegionType.FR1
+            elif "2" in region_name:
+                return RegionType.FR2
+            elif "3" in region_name:
+                return RegionType.FR3
+            elif "4" in region_name:
+                return RegionType.FR4
+        elif region_name == "LINKER":
+            return RegionType.LINKER
+        else:
+            return RegionType.CONSTANT
+
+    def _get_domain_type(self, domain_type: str) -> DomainType:
+        """Convert domain type string to DomainType enum"""
+        if domain_type == "V":
+            return DomainType.VARIABLE
+        elif domain_type == "C":
+            return DomainType.CONSTANT
+        elif domain_type == "LINKER":
+            return DomainType.LINKER
+        else:
+            return DomainType.VARIABLE
+
+    def _get_chain_type(self, chain_name: str) -> ChainType:
+        """Convert chain name to ChainType enum"""
+        if "heavy" in chain_name.lower() or "h" in chain_name.lower():
+            return ChainType.HEAVY
+        elif "light" in chain_name.lower() or "l" in chain_name.lower():
+            return ChainType.LIGHT
+        else:
+            return ChainType.HEAVY  # Default to heavy
 
     async def _persist_to_database(
         self, sequence: AntibodySequence

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.annotation.sequence_processor import SequenceProcessor
@@ -6,14 +6,7 @@ from backend.database.engine import get_db_session
 from backend.jobs.job_manager import job_manager
 from backend.logger import logger
 from backend.models.models import MSACreationRequest, MSAAnnotationRequest
-from backend.models.models_v2 import (
-    AnnotationResult as V2AnnotationResult,
-    Sequence as V2Sequence,
-    Chain as V2Chain,
-    Domain as V2Domain,
-    Region as V2Region,
-    RegionFeature as V2RegionFeature,
-)
+from backend.models.models_v2 import AnnotationResult as V2AnnotationResult
 from backend.models.requests_v2 import AnnotationRequestV2
 from backend.msa.msa_annotation import MSAAnnotationEngine
 from backend.msa.msa_engine import MSAEngine
@@ -34,138 +27,25 @@ async def annotate_sequences_v2(
     db_session: AsyncSession = Depends(get_db_session),
 ):
     try:
-        # Convert request to domain entities
-        from backend.domain.entities import AntibodySequence
-        from backend.domain.value_objects import (
-            AminoAcidSequence,
-            AnnotationMetadata,
+        # Use the unified annotation service to handle the conversion
+        from backend.application.services.annotation_service import (
+            AnnotationService,
         )
 
-        sequences = []
+        # Convert request sequences to the format expected by AnarciResultProcessor
+        input_dict = {}
         for seq in request.sequences:
-            # Create AntibodySequence from request data
-            antibody_sequence = AntibodySequence(
-                name=seq.name,
-                sequence=(
-                    AminoAcidSequence(seq.sequence) if seq.sequence else None
-                ),
-                chains=[],  # Will be populated during annotation
-                metadata=(
-                    AnnotationMetadata(
-                        description=seq.description,
-                        source=seq.source,
-                    )
-                    if seq.description or seq.source
-                    else None
-                ),
-            )
-            sequences.append(antibody_sequence)
+            chain_data = seq.get_all_chains()
+            if chain_data:
+                input_dict[seq.name] = chain_data
 
-        # Use enhanced annotation pipeline with database persistence
-        from backend.application.pipelines.enhanced_annotation_pipeline import (
-            EnhancedAnnotationPipeline,
+        # Use the service to process the annotation request
+        annotation_service = AnnotationService()
+        v2_result = annotation_service.process_annotation_request_for_api(
+            input_dict, request.numbering_scheme.value
         )
 
-        pipeline = EnhancedAnnotationPipeline(db_session)
-        result = await pipeline.process_sequences(
-            sequences=sequences,
-            numbering_scheme=request.numbering_scheme,
-            persist_to_database=persist_to_database,
-        )
-
-        if not result.success:
-            raise HTTPException(status_code=500, detail=result.error)
-
-        # Convert annotated sequences back to V2 format
-        v2_sequences: List[V2Sequence] = []
-        for annotated_seq in result.data["annotated_sequences"]:
-            v2_chains: List[V2Chain] = []
-            for chain in annotated_seq.chains:
-                v2_domains: List[V2Domain] = []
-                for domain in chain.domains:
-                    v2_regions: List[V2Region] = []
-                    for region in domain.regions:
-                        region_feature = V2RegionFeature(
-                            kind="sequence",
-                            value=(
-                                region.sequence.value
-                                if region.sequence
-                                else None
-                            ),
-                        )
-                        v2_region = V2Region(
-                            name=region.region_type.value,
-                            start=(
-                                region.boundary.start
-                                if region.boundary
-                                else None
-                            ),
-                            stop=(
-                                region.boundary.end
-                                if region.boundary
-                                else None
-                            ),
-                            features=[region_feature],
-                        )
-                        v2_regions.append(v2_region)
-
-                    v2_domain = V2Domain(
-                        domain_type=domain.domain_type,
-                        start=(
-                            domain.boundary.start if domain.boundary else None
-                        ),
-                        stop=domain.boundary.end if domain.boundary else None,
-                        sequence=(
-                            domain.sequence.value if domain.sequence else None
-                        ),
-                        regions=v2_regions,
-                        isotype=None,  # Would be populated from annotation
-                        species=None,  # Would be populated from annotation
-                        metadata={},
-                    )
-                    v2_domains.append(v2_domain)
-
-                v2_chain = V2Chain(
-                    name=chain.name,
-                    sequence=chain.sequence.value if chain.sequence else None,
-                    domains=v2_domains,
-                )
-                v2_chains.append(v2_chain)
-
-            v2_sequence = V2Sequence(
-                name=annotated_seq.name,
-                original_sequence=(
-                    annotated_seq.sequence.value
-                    if annotated_seq.sequence
-                    else ""
-                ),
-                chains=v2_chains,
-            )
-            v2_sequences.append(v2_sequence)
-
-        # Calculate statistics
-        chain_types = {}
-        isotypes = {}
-        species_counts = {}
-
-        # Add additional metadata about database persistence
-        metadata = {
-            "database_persistence": (
-                "enabled" if persist_to_database else "disabled"
-            ),
-        }
-
-        if persist_to_database and "saved_sequences" in result.data:
-            metadata["saved_to_database"] = len(result.data["saved_sequences"])
-
-        return V2AnnotationResult(
-            sequences=v2_sequences,
-            numbering_scheme=request.numbering_scheme.value,
-            total_sequences=len(v2_sequences),
-            chain_types=chain_types,
-            isotypes=isotypes,
-            species=species_counts,
-        )
+        return v2_result
     except HTTPException:
         raise
     except Exception as e:
