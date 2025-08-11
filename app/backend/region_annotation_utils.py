@@ -114,7 +114,7 @@ def find_kabat_cdrs(
 
 def annotate_regions(
     numbering: List[Tuple[Tuple[int, str], str]],
-    scheme: NumberingScheme = "imgt",
+    scheme: str = "imgt",
     chain_type: str = "H",
 ) -> Dict[str, str]:
     """
@@ -122,7 +122,7 @@ def annotate_regions(
     """
     if scheme == "imgt":
         boundaries = SCHEME_MAP[(scheme, chain_type)]
-        regions = {k: [] for k in boundaries}
+        regions: Dict[str, List[str]] = {k: [] for k in boundaries}
         for (pos, ins), aa in numbering:
             for region, rule in boundaries.items():
                 if rule(pos, ins):
@@ -133,7 +133,7 @@ def annotate_regions(
         # Use heuristics for Kabat
         cdrs = find_kabat_cdrs(numbering, chain_type)
         seq = "".join([aa for (_, aa) in numbering])
-        regions = {}
+        regions: Dict[str, str] = {}
         # Assign regions based on CDR boundaries
         last = 0
         for cdr in ["CDR1", "CDR2", "CDR3"]:
@@ -148,7 +148,7 @@ def annotate_regions(
         # For demonstration, use same as Kabat; real Chothia heuristics differ
         cdrs = find_kabat_cdrs(numbering, chain_type)
         seq = "".join([aa for (_, aa) in numbering])
-        regions = {}
+        regions: Dict[str, str] = {}
         last = 0
         for cdr in ["CDR1", "CDR2", "CDR3"]:
             if cdr in cdrs:

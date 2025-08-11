@@ -4,6 +4,7 @@ Implements the Decorator pattern for adding validation to converters.
 """
 
 
+from typing import Dict, Any, List
 from backend.core.base_classes import AbstractBiologicConverter
 from backend.core.interfaces import (
     BiologicConverter,

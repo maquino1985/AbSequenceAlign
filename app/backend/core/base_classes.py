@@ -3,6 +3,7 @@ Abstract base classes providing common functionality and enforcing contracts.
 These classes implement the Template Method pattern and provide shared behavior.
 """
 
+from typing import List, Dict, Any, Generic, TypeVar, Optional, TypeVar
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 import logging

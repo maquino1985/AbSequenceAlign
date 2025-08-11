@@ -3,6 +3,10 @@ Processor for biologic entities following the Template Method pattern.
 Implements biologic processing with validation, conversion, and persistence.
 """
 
+from typing import Dict, Any, Optional, List
+from backend.core.exceptions import ValidationError
+from backend.domain.entities import BiologicEntity
+from backend.core.base_classes import AbstractBiologicProcessor
 from backend.database.models import Biologic
 from backend.models.biologic_models import BiologicCreate, BiologicResponse
 from backend.application.converters.biologic_converter import (

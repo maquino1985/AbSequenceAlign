@@ -3,6 +3,8 @@ Strategy patterns for processing different biologic types.
 Implements the Strategy pattern for flexible biologic processing.
 """
 
+import uuid
+from typing import List, Dict, Any, Optional
 from backend.core.interfaces import (
     BiologicProcessingStrategy,
     BiologicValidationStrategy,
