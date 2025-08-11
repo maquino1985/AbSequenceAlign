@@ -130,15 +130,11 @@ jobs:
           # Build base images
           ./scripts/build-base-images.sh
           
-          # For now, just build locally - we'll use local images for testing
-          # TODO: Set up proper registry for base images
-          echo "Base images built locally for testing"
-          
-          # Uncomment when registry is properly configured:
-          # docker tag absequencealign-backend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
-          # docker tag absequencealign-frontend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
-          # docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
-          # docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
+          # Tag and push base images to GitHub Container Registry
+          docker tag absequencealign-backend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
+          docker tag absequencealign-frontend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
+          docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
+          docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
 
       - name: Test backend Docker build
         run: |

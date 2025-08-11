@@ -186,6 +186,20 @@ if [ "$RUN_INTEGRATION" = true ]; then
     fi
 fi
 
+# Database Tests
+if [ "$RUN_INTEGRATION" = true ]; then
+    print_header "Running Database Tests in Docker"
+    print_status "Building and running database test container..."
+    
+    if docker compose -f docker-compose.test.yml up --build database-test --exit-code-from database-test; then
+        print_status "Database tests passed!"
+    else
+        print_error "Database tests failed!"
+        cleanup
+        exit 1
+    fi
+fi
+
 # E2E Tests
 if [ "$RUN_E2E" = true ]; then
     print_header "Running E2E Tests in Docker"
