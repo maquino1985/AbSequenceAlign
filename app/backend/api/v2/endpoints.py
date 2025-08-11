@@ -1,7 +1,8 @@
 from typing import List, Optional
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.annotation.anarci_result_processor import AnarciResultProcessor
 from backend.annotation.sequence_processor import SequenceProcessor
+from backend.database.engine import get_db_session
 from backend.jobs.job_manager import job_manager
 from backend.logger import logger
 from backend.models.models import MSACreationRequest, MSAAnnotationRequest
@@ -12,12 +13,11 @@ from backend.models.models_v2 import (
     Domain as V2Domain,
     Region as V2Region,
     RegionFeature as V2RegionFeature,
-    DomainType,
 )
 from backend.models.requests_v2 import AnnotationRequestV2
 from backend.msa.msa_annotation import MSAAnnotationEngine
 from backend.msa.msa_engine import MSAEngine
-from fastapi import APIRouter, HTTPException, File, Form, UploadFile
+from fastapi import APIRouter, HTTPException, File, Form, UploadFile, Depends
 
 router = APIRouter()
 
@@ -28,127 +28,135 @@ async def health_check_v2():
 
 
 @router.post("/annotate", response_model=V2AnnotationResult)
-async def annotate_sequences_v2(request: AnnotationRequestV2):
+async def annotate_sequences_v2(
+    request: AnnotationRequestV2,
+    persist_to_database: bool = True,
+    db_session: AsyncSession = Depends(get_db_session),
+):
     try:
-        # Build input for processor (reuse existing logic)
-        input_dict = {}
-        for seq in request.sequences:
-            chains = seq.get_all_chains()
-            if chains:
-                input_dict[seq.name] = chains
-
-        processor = AnarciResultProcessor(
-            input_dict, numbering_scheme=request.numbering_scheme.value
+        # Convert request to domain entities
+        from backend.domain.entities import AntibodySequence
+        from backend.domain.value_objects import (
+            AminoAcidSequence,
+            AnnotationMetadata,
         )
 
+        sequences = []
+        for seq in request.sequences:
+            # Create AntibodySequence from request data
+            antibody_sequence = AntibodySequence(
+                name=seq.name,
+                sequence=(
+                    AminoAcidSequence(seq.sequence) if seq.sequence else None
+                ),
+                chains=[],  # Will be populated during annotation
+                metadata=(
+                    AnnotationMetadata(
+                        description=seq.description,
+                        source=seq.source,
+                    )
+                    if seq.description or seq.source
+                    else None
+                ),
+            )
+            sequences.append(antibody_sequence)
+
+        # Use enhanced annotation pipeline with database persistence
+        from backend.application.pipelines.enhanced_annotation_pipeline import (
+            EnhancedAnnotationPipeline,
+        )
+
+        pipeline = EnhancedAnnotationPipeline(db_session)
+        result = await pipeline.process_sequences(
+            sequences=sequences,
+            numbering_scheme=request.numbering_scheme,
+            persist_to_database=persist_to_database,
+        )
+
+        if not result.success:
+            raise HTTPException(status_code=500, detail=result.error)
+
+        # Convert annotated sequences back to V2 format
         v2_sequences: List[V2Sequence] = []
-        for result in processor.results:
+        for annotated_seq in result.data["annotated_sequences"]:
             v2_chains: List[V2Chain] = []
-            for chain in result.chains:
+            for chain in annotated_seq.chains:
                 v2_domains: List[V2Domain] = []
                 for domain in chain.domains:
-                    # Map domain type
-                    if getattr(domain, "domain_type", "V") == "C":
-                        dtype = DomainType.CONSTANT
-                    elif getattr(domain, "domain_type", "V") == "LINKER":
-                        dtype = DomainType.LINKER
-                    else:
-                        dtype = DomainType.VARIABLE
-
-                    # Absolute start/stop for domain
-                    dstart = None
-                    dstop = None
-                    if domain.alignment_details:
-                        if dtype == DomainType.LINKER:
-                            dstart = domain.alignment_details.get("start")
-                            dstop = domain.alignment_details.get("end")
-                        else:
-                            dstart = domain.alignment_details.get(
-                                "query_start"
-                            )
-                            dstop = domain.alignment_details.get("query_end")
-
                     v2_regions: List[V2Region] = []
-                    # Regions if present
-                    if hasattr(domain, "regions") and domain.regions:
-                        for rname, r in domain.regions.items():
-                            # r may be a dataclass-like object or a plain dict
-                            if isinstance(r, dict):
-                                start = int(r.get("start"))
-                                stop = int(r.get("stop"))
-                                seq_val = r.get("sequence")
-                            else:
-                                start = int(r.start)
-                                stop = int(r.stop)
-                                seq_val = r.sequence
-                            features = [
-                                V2RegionFeature(kind="sequence", value=seq_val)
-                            ]
-                            v2_regions.append(
-                                V2Region(
-                                    name=rname,
-                                    start=start,
-                                    stop=stop,
-                                    features=features,
-                                )
-                            )
-
-                    v2_domains.append(
-                        V2Domain(
-                            domain_type=dtype,
-                            start=dstart,
-                            stop=dstop,
-                            sequence=domain.sequence,
-                            regions=v2_regions,
-                            isotype=getattr(domain, "isotype", None),
-                            species=getattr(domain, "species", None),
-                            metadata={},
+                    for region in domain.regions:
+                        region_feature = V2RegionFeature(
+                            kind="sequence",
+                            value=(
+                                region.sequence.value
+                                if region.sequence
+                                else None
+                            ),
                         )
-                    )
+                        v2_region = V2Region(
+                            name=region.region_type.value,
+                            start=(
+                                region.boundary.start
+                                if region.boundary
+                                else None
+                            ),
+                            stop=(
+                                region.boundary.end
+                                if region.boundary
+                                else None
+                            ),
+                            features=[region_feature],
+                        )
+                        v2_regions.append(v2_region)
 
-                v2_chains.append(
-                    V2Chain(
-                        name=chain.name,
-                        sequence=chain.sequence,
-                        domains=v2_domains,
+                    v2_domain = V2Domain(
+                        domain_type=domain.domain_type,
+                        start=(
+                            domain.boundary.start if domain.boundary else None
+                        ),
+                        stop=domain.boundary.end if domain.boundary else None,
+                        sequence=(
+                            domain.sequence.value if domain.sequence else None
+                        ),
+                        regions=v2_regions,
+                        isotype=None,  # Would be populated from annotation
+                        species=None,  # Would be populated from annotation
+                        metadata={},
                     )
-                )
+                    v2_domains.append(v2_domain)
 
-            v2_sequences.append(
-                V2Sequence(
-                    name=result.biologic_name,
-                    original_sequence=(
-                        v2_chains[0].sequence if v2_chains else ""
-                    ),
-                    chains=v2_chains,
+                v2_chain = V2Chain(
+                    name=chain.name,
+                    sequence=chain.sequence.value if chain.sequence else None,
+                    domains=v2_domains,
                 )
+                v2_chains.append(v2_chain)
+
+            v2_sequence = V2Sequence(
+                name=annotated_seq.name,
+                original_sequence=(
+                    annotated_seq.sequence.value
+                    if annotated_seq.sequence
+                    else ""
+                ),
+                chains=v2_chains,
             )
+            v2_sequences.append(v2_sequence)
 
-        # Calculate statistics like v1
+        # Calculate statistics
         chain_types = {}
         isotypes = {}
         species_counts = {}
 
-        for result in processor.results:
-            for chain in result.chains:
-                # Get the primary domain (first variable domain) for chain metadata
-                primary_domain = next(
-                    (d for d in chain.domains if d.domain_type == "V"),
-                    chain.domains[0],
-                )
+        # Add additional metadata about database persistence
+        metadata = {
+            "database_persistence": (
+                "enabled" if persist_to_database else "disabled"
+            ),
+        }
 
-                # Stats - only count primary domain
-                if primary_domain.isotype:
-                    chain_types[primary_domain.isotype] = (
-                        chain_types.get(primary_domain.isotype, 0) + 1
-                    )
-                    isotypes[primary_domain.isotype] = (
-                        isotypes.get(primary_domain.isotype, 0) + 1
-                    )
-                if primary_domain.species:
-                    species_counts[primary_domain.species] = (
-                        species_counts.get(primary_domain.species, 0) + 1
-                    )
+        if persist_to_database and "saved_sequences" in result.data:
+            metadata["saved_to_database"] = len(result.data["saved_sequences"])
 
         return V2AnnotationResult(
             sequences=v2_sequences,

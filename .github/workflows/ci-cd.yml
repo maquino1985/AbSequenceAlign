@@ -260,21 +260,22 @@ jobs:
           wait-on: 'http://localhost:5679'
           wait-on-timeout: 120
 
-      - name: Upload screenshots
-        uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: cypress-screenshots-${{ matrix.spec }}
-          path: app/frontend/cypress/screenshots
-          if-no-files-found: ignore
+      # Screenshots and videos disabled for faster CI/CD
+      # - name: Upload screenshots
+      #   uses: actions/upload-artifact@v4
+      #   if: failure()
+      #   with:
+      #     name: cypress-screenshots-${{ matrix.spec }}
+      #     path: app/frontend/cypress/screenshots
+      #     if-no-files-found: ignore
 
-      - name: Upload videos
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: cypress-videos-${{ matrix.spec }}
-          path: app/frontend/cypress/videos
-          if-no-files-found: ignore
+      # - name: Upload videos
+      #   uses: actions/upload-artifact@v4
+      #   if: always()
+      #   with:
+      #     name: cypress-videos-${{ matrix.spec }}
+      #     path: app/frontend/cypress/videos
+      #     if-no-files-found: ignore
 
       - name: Cleanup frontend container
         if: always()

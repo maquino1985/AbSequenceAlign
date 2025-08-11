@@ -1,5 +1,6 @@
 from backend.api.v1.endpoints import router as api_v1_router
 from backend.api.v2.endpoints import router as api_v2_router
+from backend.api.v2.database_endpoints import router as database_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -24,6 +25,9 @@ app.include_router(api_v1_router, prefix="/api/v1")
 
 # Register v2 API router
 app.include_router(api_v2_router, prefix="/api/v2")
+
+# Register database API router
+app.include_router(database_router, prefix="/api/v2/database")
 
 
 # Health check endpoint
