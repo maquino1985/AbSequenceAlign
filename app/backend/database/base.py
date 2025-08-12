@@ -8,8 +8,7 @@ from typing import Any, Dict
 
 from sqlalchemy import Column, DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import declared_attr
+from sqlalchemy.orm import declarative_base, declared_attr
 
 
 class UUIDv7:

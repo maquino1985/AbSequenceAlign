@@ -54,7 +54,7 @@ class AnarciAdapter(AbstractExternalToolAdapter):
         """Check if ANARCI is available on the system"""
         return self.is_available()
 
-    def execute(self, input_data: str) -> Dict[str, Any]:
+    def execute(self, input_data: str, scheme: NumberingScheme = NumberingScheme.IMGT) -> Dict[str, Any]:
         """Execute ANARCI on the input sequence"""
         if not self._validate_input(input_data):
             raise AnarciError("Invalid input data", tool_name=self.tool_name)
@@ -64,7 +64,8 @@ class AnarciAdapter(AbstractExternalToolAdapter):
             sequences = self._parse_input(input_data)
 
             # Run ANARCI
-            result = self._run_anarci(sequences)
+            scheme_str = self._convert_scheme(scheme)
+            result = self._run_anarci(sequences, scheme=scheme_str)
 
             return self._create_result(True, data=result)
 
@@ -89,7 +90,7 @@ class AnarciAdapter(AbstractExternalToolAdapter):
             allowed_species = ["human", "mouse", "rat"]
 
         input_data = f">query\n{sequence}\n"
-        result = self.execute(input_data)
+        result = self.execute(input_data, scheme=scheme)
 
         # Add scheme information to result
         result["data"]["scheme"] = scheme.value
@@ -112,7 +113,7 @@ class AnarciAdapter(AbstractExternalToolAdapter):
         for name, sequence in sequences:
             input_data += f">{name}\n{sequence}\n"
 
-        result = self.execute(input_data)
+        result = self.execute(input_data, scheme=scheme)
 
         # Add scheme information to result
         result["data"]["scheme"] = scheme.value
@@ -165,17 +166,33 @@ class AnarciAdapter(AbstractExternalToolAdapter):
             from anarci import run_anarci
 
             # Run ANARCI
-            (
-                sequences_out,
-                numbered,
-                alignment_details,
-                hit_tables,
-            ), used_scheme = run_anarci(
+            anarci_result = run_anarci(
                 sequences,
                 scheme=scheme,
                 allowed_species=allowed_species,
                 assign_germline=True,
             )
+            
+            # Handle different return formats from ANARCI
+            if isinstance(anarci_result, tuple):
+                if len(anarci_result) == 2:
+                    # New format: (data, used_scheme)
+                    data, used_scheme = anarci_result
+                    if isinstance(data, tuple) and len(data) == 4:
+                        sequences_out, numbered, alignment_details, hit_tables = data
+                    else:
+                        raise AnarciError("Unexpected ANARCI data format", tool_name=self.tool_name)
+                elif len(anarci_result) == 4:
+                    # Format: (sequences_out, numbered, alignment_details, hit_tables)
+                    sequences_out, numbered, alignment_details, hit_tables = anarci_result
+                    used_scheme = scheme  # Use the input scheme
+                elif len(anarci_result) == 5:
+                    # Old format: (sequences_out, numbered, alignment_details, hit_tables, used_scheme)
+                    sequences_out, numbered, alignment_details, hit_tables, used_scheme = anarci_result
+                else:
+                    raise AnarciError(f"Unexpected ANARCI tuple length: {len(anarci_result)}", tool_name=self.tool_name)
+            else:
+                raise AnarciError("Unexpected ANARCI return format", tool_name=self.tool_name)
 
             # Process results
             results = []

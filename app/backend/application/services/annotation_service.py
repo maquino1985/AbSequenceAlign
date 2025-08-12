@@ -15,6 +15,7 @@ from backend.domain.models import (
     NumberingScheme,
     ChainType,
     DomainType,
+    FeatureType,
     RegionType,
 )
 from backend.domain.entities import (
@@ -116,12 +117,15 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
             if not chain.chain_type:
                 chain.chain_type = self._detect_chain_type(chain)
 
-            # Process domains from sequences
+            # Process sequences and detect/create domains
             annotated_sequences = []
             for sequence in chain.sequences:
-                # Annotate domains in this sequence
+                # Detect and create domains from sequence data
+                detected_domains = self._detect_domains_from_sequence(sequence, numbering_scheme)
+                
+                # Annotate each detected domain
                 annotated_domains = []
-                for domain in sequence.domains:
+                for domain in detected_domains:
                     if domain.domain_type == DomainType.VARIABLE:
                         annotated_domain = self._annotate_variable_domain(
                             domain, numbering_scheme
@@ -138,6 +142,7 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
                             step="domain_type_check",
                         )
                     annotated_domains.append(annotated_domain)
+                
                 sequence.domains = annotated_domains
                 annotated_sequences.append(sequence)
             chain.sequences = annotated_sequences
@@ -193,49 +198,54 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
     ) -> BiologicDomain:
         """Annotate a variable domain using ANARCI"""
         try:
-            # Get the sequence for this domain
-            domain_sequence = self._get_domain_sequence(domain)
+            # Check if ANARCI result is already in metadata (from domain detection)
+            if "anarci_result" in domain.metadata:
+                anarci_result = {"success": True, "data": domain.metadata["anarci_result"]}
+            else:
+                # Get the sequence for this domain
+                domain_sequence = self._get_domain_sequence(domain)
 
-            # Use ANARCI for variable domain annotation
-            anarci_result = self._anarci_adapter.annotate_sequence(
-                domain_sequence, numbering_scheme
-            )
-
-            if not anarci_result.get("success", False):
-                raise AnnotationError(
-                    "ANARCI annotation failed", step="anarci_annotation"
+                # Use ANARCI for variable domain annotation
+                anarci_result = self._anarci_adapter.number_sequence(
+                    domain_sequence, numbering_scheme
                 )
+
+                if not anarci_result.get("success", False):
+                    raise AnnotationError(
+                        "ANARCI annotation failed", step="anarci_annotation"
+                    )
 
             # Extract regions from ANARCI result
             regions = self._extract_regions_from_anarci(anarci_result, domain)
 
             # Extract species and germline information from ANARCI result
             anarci_data = anarci_result.get("data", {})
-            species = None
-            germline = None
+            species = domain.metadata.get("species")
+            germline = domain.metadata.get("germline")
             
-            # Extract species from alignment details
-            if anarci_data.get("alignment_details"):
-                for align_detail in anarci_data["alignment_details"]:
-                    if hasattr(align_detail, 'species'):
-                        species = align_detail.species
-                        break
+            # If not already extracted, try to extract from ANARCI result
+            if not species:
+                if anarci_data.get("alignment_details"):
+                    for align_detail in anarci_data["alignment_details"]:
+                        if hasattr(align_detail, 'species'):
+                            species = align_detail.species
+                            break
             
-            # Extract germline information from hit table
-            if anarci_data.get("hit_table"):
-                germline_info = self._extract_germline_from_hit_table(anarci_data["hit_table"])
-                germline = germline_info.get("id") if germline_info else None
+            if not germline:
+                if anarci_data.get("hit_table"):
+                    germline_info = self._extract_germline_from_hit_table(anarci_data["hit_table"])
+                    germline = germline_info.get("id") if germline_info else None
             
-            # Create annotated domain
+            # Create annotated domain with features
             annotated_domain = BiologicDomain(
                 domain_type=domain.domain_type,
                 start_position=domain.start_position,
                 end_position=domain.end_position,
                 confidence_score=domain.confidence_score,
+                features=list(regions.values()),  # Add features to the domain
                 metadata={
                     **domain.metadata,
-                    "anarci_result": anarci_result.get("data"),
-                    "regions": regions,
+                    "anarci_result": anarci_data,
                     "species": species,
                     "germline": germline,
                 },
@@ -254,16 +264,20 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
     ) -> BiologicDomain:
         """Annotate a constant domain using HMMER"""
         try:
-            # Get the sequence for this domain
-            domain_sequence = self._get_domain_sequence(domain)
+            # Check if HMMER result is already in metadata (from domain detection)
+            if "hmmer_result" in domain.metadata:
+                hmmer_result = domain.metadata["hmmer_result"]
+            else:
+                # Get the sequence for this domain
+                domain_sequence = self._get_domain_sequence(domain)
 
-            # Use HMMER for isotype detection
-            hmmer_result = self._hmmer_adapter.detect_isotype(domain_sequence)
+                # Use HMMER for isotype detection
+                hmmer_result = self._hmmer_adapter.detect_isotype(domain_sequence)
 
-            if not hmmer_result.get("success", False):
-                raise AnnotationError(
-                    "HMMER isotype detection failed", step="hmmer_detection"
-                )
+                if not hmmer_result.get("success", False):
+                    raise AnnotationError(
+                        "HMMER isotype detection failed", step="hmmer_detection"
+                    )
 
             # Create annotated domain
             annotated_domain = BiologicDomain(
@@ -320,15 +334,26 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
         regions = {}
 
         try:
-            numbered = anarci_result.get("data", {}).get("numbered", [])
-            if numbered:
-                # Extract CDR regions
-                cdr_regions = self._extract_cdr_regions(numbered, domain)
-                regions.update(cdr_regions)
+            data = anarci_result.get("data", {})
+            # The results are nested under data.data.results
+            nested_data = data.get("data", {})
+            results = nested_data.get("results", [])
+            if results:
+                for result in results:
+                    numbered_list = result.get("numbered", [])
+                    
+                    # Each item in numbered_list is (numbered_data, start, end)
+                    for numbered_item in numbered_list:
+                        if isinstance(numbered_item, tuple) and len(numbered_item) == 3:
+                            numbered_data, start, end = numbered_item
+                            if numbered_data:
+                                # Extract CDR regions from this numbered data
+                                cdr_regions = self._extract_cdr_regions(numbered_data, domain)
+                                regions.update(cdr_regions)
 
-                # Extract FR regions
-                fr_regions = self._extract_fr_regions(numbered, domain)
-                regions.update(fr_regions)
+                                # Extract FR regions from this numbered data
+                                fr_regions = self._extract_fr_regions(numbered_data, domain)
+                                regions.update(fr_regions)
 
         except Exception as e:
             logger.warning(f"Error extracting regions from ANARCI: {e}")
@@ -356,7 +381,7 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
                 )
                 if cdr_sequence:
                     region = BiologicFeature(
-                        feature_type=cdr_name,
+                        feature_type=FeatureType(cdr_name),
                         name=cdr_name,
                         value=cdr_sequence,
                         start_position=start,
@@ -393,7 +418,7 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
                 )
                 if fr_sequence:
                     region = BiologicFeature(
-                        feature_type=fr_name,
+                        feature_type=FeatureType(fr_name),
                         name=fr_name,
                         value=fr_sequence,
                         start_position=start,
@@ -415,12 +440,16 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
         try:
             # Extract amino acids from numbered sequence
             region_sequence = ""
+            
+            # Handle ANARCI format: [((pos, chain), aa), ...]
             for item in numbered:
-                if isinstance(item, dict) and "pos" in item:
-                    pos = item["pos"]
-                    if start <= pos <= end:
-                        aa = item.get("aa", "")
-                        region_sequence += aa
+                if isinstance(item, tuple) and len(item) == 2:
+                    pos_tuple, aa = item
+                    if isinstance(pos_tuple, tuple) and len(pos_tuple) == 2:
+                        pos, chain = pos_tuple
+                        if isinstance(pos, int) and start <= pos <= end:
+                            region_sequence += aa
+            
             return region_sequence if region_sequence else None
         except Exception as e:
             logger.warning(f"Error extracting region sequence: {e}")
@@ -462,6 +491,117 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
         except Exception as e:
             logger.warning(f"Error detecting chain type: {e}")
             return ChainType.HEAVY
+
+    def _detect_domains_from_sequence(
+        self, 
+        sequence: BiologicSequence, 
+        numbering_scheme: NumberingScheme
+    ) -> List[BiologicDomain]:
+        """Detect domains from sequence data using ANARCI and HMMER"""
+        try:
+            logger.debug(f"Detecting domains from sequence: {sequence.sequence_data[:50]}...")
+            
+            domains = []
+            sequence_data = sequence.sequence_data
+            
+            # Use ANARCI to detect variable domains
+            anarci_result = self._anarci_adapter.number_sequence(
+                sequence_data, numbering_scheme
+            )
+            
+
+            
+            if anarci_result.get("success", False):
+                # Extract variable domain information
+                numbered = anarci_result.get("data", {}).get("results", [])
+                if numbered:
+                    # Create variable domain
+                    variable_domain = BiologicDomain(
+                        domain_type=DomainType.VARIABLE,
+                        start_position=1,  # Will be updated with actual positions
+                        end_position=len(sequence_data),
+                        confidence_score=1.0,
+                        metadata={
+                            "sequence": sequence_data,
+                            "anarci_result": anarci_result,
+                            "numbering_scheme": numbering_scheme.value
+                        }
+                    )
+                    domains.append(variable_domain)
+                    
+                    # Extract species and germline info from alignment details
+                    for result in numbered:
+                        alignment_details = result.get("alignment_details", [])
+                        for alignment in alignment_details:
+                            if alignment.get("species"):
+                                variable_domain.metadata["species"] = alignment["species"]
+                            if alignment.get("germlines"):
+                                germlines = alignment["germlines"]
+                                v_gene = germlines.get("v_gene", [None, 0])[0]
+                                j_gene = germlines.get("j_gene", [None, 0])[0]
+                                if v_gene and j_gene:
+                                    variable_domain.metadata["germline"] = f"{v_gene[1]}/{j_gene[1]}"
+                                elif v_gene:
+                                    variable_domain.metadata["germline"] = v_gene[1]
+                                elif j_gene:
+                                    variable_domain.metadata["germline"] = j_gene[1]
+                                break
+                        if "species" in variable_domain.metadata:
+                            break
+            
+            # Use HMMER to detect constant domains (handle missing HMM files gracefully)
+            try:
+                hmmer_result = self._hmmer_adapter.detect_isotype(sequence_data)
+                if hmmer_result.get("success", False):
+                    # Create constant domain
+                    constant_domain = BiologicDomain(
+                        domain_type=DomainType.CONSTANT,
+                        start_position=1,  # Will be updated with actual positions
+                        end_position=len(sequence_data),
+                        confidence_score=1.0,
+                        metadata={
+                            "sequence": sequence_data,
+                            "hmmer_result": hmmer_result
+                        }
+                    )
+                    domains.append(constant_domain)
+            except Exception as hmmer_error:
+                logger.warning(f"HMMER detection failed (this is expected in development): {hmmer_error}")
+                # Continue without constant domain detection
+            
+            # If no domains detected, create a single domain with the full sequence
+            if not domains:
+                logger.warning(f"No domains detected for sequence, creating default domain")
+                default_domain = BiologicDomain(
+                    domain_type=DomainType.VARIABLE,
+                    start_position=1,
+                    end_position=len(sequence_data),
+                    confidence_score=0.5,
+                    metadata={
+                        "sequence": sequence_data,
+                        "note": "Default domain - no specific detection"
+                    }
+                )
+                domains.append(default_domain)
+            
+            logger.debug(f"Detected {len(domains)} domains for sequence")
+            return domains
+            
+        except Exception as e:
+            logger.error(f"Error detecting domains from sequence: {e}")
+            # Return a default domain if detection fails
+            return [
+                BiologicDomain(
+                    domain_type=DomainType.VARIABLE,
+                    start_position=1,
+                    end_position=len(sequence.sequence_data),
+                    confidence_score=0.0,
+                    metadata={
+                        "sequence": sequence.sequence_data,
+                        "error": str(e)
+                    }
+                )
+            ]
 
     def _detect_chain_type_from_name(self, chain_name: str) -> ChainType:
         """Detect chain type from chain name"""

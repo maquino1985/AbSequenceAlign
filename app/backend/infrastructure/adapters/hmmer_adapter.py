@@ -102,12 +102,21 @@ class HmmerAdapter(AbstractExternalToolAdapter):
         if hmm_dir and os.path.exists(hmm_dir):
             return hmm_dir
 
+        # Try to get from PROJECT_ROOT_DIR environment variable
+        project_root = os.environ.get("PROJECT_ROOT_DIR")
+        if project_root:
+            hmm_dir = os.path.join(project_root, "data", "isotype_hmms")
+            if os.path.exists(hmm_dir):
+                return hmm_dir
+
         # Try common locations
         common_paths = [
             "/usr/local/share/hmmer/isotype_hmms",
             "/opt/hmmer/isotype_hmms",
             "./data/isotype_hmms",
             "./app/backend/data/isotype_hmms",
+            "../../data/isotype_hmms",  # From backend directory to project root
+            "../data/isotype_hmms",     # Alternative path
         ]
 
         for path in common_paths:

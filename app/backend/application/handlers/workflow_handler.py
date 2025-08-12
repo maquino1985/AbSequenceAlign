@@ -58,9 +58,21 @@ class WorkflowHandler(BaseHandler):
 
             # Extract data from command result
             sequences = command_result.data["sequences"]
-            numbering_scheme = command_result.data["numbering_scheme"]
+            numbering_scheme_str = command_result.data["numbering_scheme"]
             persist_to_database = command_result.data["persist_to_database"]
             organism = command_result.data["organism"]
+            
+            # Convert numbering scheme string to enum
+            from backend.domain.models import NumberingScheme
+            numbering_scheme_map = {
+                "imgt": NumberingScheme.IMGT,
+                "kabat": NumberingScheme.KABAT,
+                "chothia": NumberingScheme.CHOTHIA,
+                "martin": NumberingScheme.MARTIN,
+                "aho": NumberingScheme.AHO,
+                "cgg": NumberingScheme.CGG,
+            }
+            numbering_scheme = numbering_scheme_map.get(numbering_scheme_str, NumberingScheme.IMGT)
 
             # Process each sequence
             results = []
