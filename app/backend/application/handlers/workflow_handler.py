@@ -2,19 +2,30 @@
 Handler for complete annotation workflow commands.
 """
 
-from typing import Dict, Any
+from pprint import pprint
+from typing import Dict, Any, List
 
+from annotation.anarci_result_processor import (
+    AnarciResultProcessor,
+    AnarciResultObject,
+)
+from backend.domain.entities import (
+    BiologicEntity,
+    BiologicChain,
+    BiologicSequence,
+)
+from backend.domain.models import BiologicType
+from backend.domain.models import NumberingScheme
+from backend.logger import logger
+from domain import BiologicDomain, DomainType, BiologicFeature
 from .base_handler import BaseHandler
 from ..commands.base_command import BaseCommand
 from ..services.annotation_service import AnnotationService
-from ..services.validation_service import ValidationService
-from ..services.response_service import ResponseService
 from ..services.biologic_service import BiologicService
-from backend.logger import logger
-from backend.domain.models import NumberingScheme
+from ..services.response_service import ResponseService
+from ..services.validation_service import ValidationService
 
-from backend.domain.entities import BiologicEntity, BiologicChain, BiologicSequence
-from backend.domain.models import ChainType, BiologicType
+
 class WorkflowHandler(BaseHandler):
     """Handler for complete annotation workflow commands"""
 
@@ -63,7 +74,7 @@ class WorkflowHandler(BaseHandler):
             numbering_scheme_str = command_result.data["numbering_scheme"]
             persist_to_database = command_result.data["persist_to_database"]
             organism = command_result.data["organism"]
-            
+
             # Convert numbering scheme string to enum
             numbering_scheme_map = {
                 "imgt": NumberingScheme.IMGT,
@@ -73,85 +84,39 @@ class WorkflowHandler(BaseHandler):
                 "aho": NumberingScheme.AHO,
                 "cgg": NumberingScheme.CGG,
             }
-            numbering_scheme = numbering_scheme_map.get(numbering_scheme_str, NumberingScheme.IMGT)
+            numbering_scheme = numbering_scheme_map.get(
+                numbering_scheme_str, NumberingScheme.IMGT
+            )
 
             # Process each sequence
-            results = []
-            for sequence_name, sequence_data in sequences.items():
+            answer = []
+            processor = AnarciResultProcessor(
+                input_dict=sequences, numbering_scheme=numbering_scheme
+            )
+
+            anarci_results: List[AnarciResultObject] = processor.results
+            for anarci_result in anarci_results:
                 try:
-                    # Create domain entity from sequence data
-
-
-                    # Convert sequence data to domain entities
-                    chains = []
-                    for chain_name, chain_sequence in sequence_data.items():
-
-                        annotation_result = (
-                            self.annotation_service.annotate_sequence(
-                                {chain_name: chain_sequence}, numbering_scheme
-                            )
-                        )
-                        # Create sequence
-                        biologic_sequence = BiologicSequence(
-                            sequence_type="PROTEIN",
-                            sequence_data=chain_sequence,
-                            description=f"{chain_name} sequence for {sequence_name}",
-                        )
-
-                        # Determine chain type
-                        chain_type = ChainType.HEAVY if "heavy" in chain_name.lower() else ChainType.LIGHT
-
-                        # Create chain
-                        biologic_chain = BiologicChain(
-                            name=chain_name,
-                            chain_type=chain_type,
-                            sequences=[biologic_sequence],
-                        )
-
-                        chains.append(biologic_chain)
-
-                    # Create domain entity
-                    sequence = BiologicEntity(
-                        name=sequence_name,
-                        biologic_type=BiologicType.ANTIBODY,
-                        description=f"Antibody sequence: {sequence_name}",
-                        chains=chains,
-                        metadata={},
+                    answer.append(
+                        {
+                            "name": anarci_result.biologic_name,
+                            "result": anarci_result,
+                            "success": True,
+                        }
                     )
 
-                    # Perform annotation (domains will be created during annotation)
-
-
-                    if annotation_result.success:
-                        results.append(
-                            {
-                                "name": sequence_name,
-                                "result": annotation_result.data,
-                                "success": True,
-                            }
-                        )
-
-                        # Persist to database if requested
-                        if persist_to_database:
-                            await self.biologic_service.process_and_persist_biologic_entity(
-                                annotation_result.data, organism
-                            )
-                    else:
-                        results.append(
-                            {
-                                "name": sequence_name,
-                                "error": annotation_result.error,
-                                "success": False,
-                            }
-                        )
+                    # if persist_to_database:
+                    #     await self.biologic_service.process_and_persist_biologic_entity(
+                    #         results.data, organism
+                    #     )
 
                 except Exception as e:
                     logger.error(
-                        f"Error processing sequence {sequence_name}: {e}"
+                        f"Error processing sequence {anarci_result.biologic_name}: {e}"
                     )
-                    results.append(
+                    answer.append(
                         {
-                            "name": sequence_name,
+                            "name": anarci_result.biologic_name,
                             "error": str(e),
                             "success": False,
                         }
@@ -159,7 +124,7 @@ class WorkflowHandler(BaseHandler):
 
             # Format the response
             formatted_response = (
-                self.response_service.format_workflow_response(results)
+                self.response_service.format_workflow_response(answer)
             )
 
             return self._create_success_response(formatted_response)

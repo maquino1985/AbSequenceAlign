@@ -6,7 +6,7 @@ Value objects are immutable and represent concepts that are defined by their att
 from dataclasses import dataclass
 from typing import Optional
 
-from ..core.exceptions import ValidationError, SequenceValidationError
+from backend.core.exceptions import ValidationError, SequenceValidationError
 
 
 @dataclass(frozen=True)

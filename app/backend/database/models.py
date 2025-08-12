@@ -212,11 +212,15 @@ class SequenceDomain(Base):
     )  # VARIABLE, CONSTANT, LINKER, etc.
     start_position = Column(Integer, nullable=False)
     end_position = Column(Integer, nullable=False)
-    
+
     # Species and germline information
-    species = Column(String(50), nullable=True, index=True)  # e.g., "human", "mouse", "rat"
-    germline = Column(String(100), nullable=True, index=True)  # e.g., "IGHV1-2*02", "IGHG1*01"
-    
+    species = Column(
+        String(50), nullable=True, index=True
+    )  # e.g., "human", "mouse", "rat"
+    germline = Column(
+        String(100), nullable=True, index=True
+    )  # e.g., "IGHV1-2*02", "IGHG1*01"
+
     confidence_score = Column(Integer, nullable=True)  # 0-100
     metadata_json = Column(JSONB, nullable=True, default=dict)
     created_at = Column(

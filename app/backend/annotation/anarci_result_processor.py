@@ -4,9 +4,14 @@ from typing import List, Optional, Dict, Any
 
 from anarci import run_anarci  # type: ignore[import-untyped]
 
+from backend.utils.chain_type_util import ChainTypeUtil
+from domain import DomainType
+from models.models_v2 import Chain
 from .antibody_region_annotator import AntibodyRegionAnnotator
 from .isotype_hmmer import detect_isotype_with_hmmer
-from backend.utils.sequence_types import Chain, Domain
+
+# from backend.utils.sequence_types import Chain, Domain
+from backend.models.models_v2 import ChainType, Domain, Region
 
 
 class AnarciResultObject:
@@ -189,7 +194,7 @@ class AnarciResultProcessor:
                         numbering=numbered_domain,
                         alignment_details=domain_alignment,
                         hit_table=best_hit,
-                        isotype=chain_type,
+                        # isotype=chain_type,
                         species=species,
                         germlines=domain_alignment.get("germlines"),
                     )
@@ -211,30 +216,30 @@ class AnarciResultProcessor:
                             isotype=None,
                             species=species,  # Use same species as variable domain
                             germlines=None,
+                            domain_type=DomainType.LINKER,
+                            regions=[
+                                Region(
+                                    name="LINKER",
+                                    start=prev_domain_end,
+                                    stop=domain_end,
+                                )
+                            ],
                         )
-                        linker_domain.domain_type = "LINKER"
                         # Add linker region directly to the domain
-                        linker_domain.regions = {
-                            "LINKER": {
-                                "name": "LINKER",
-                                "start": prev_domain_end,
-                                "stop": domain_start,
-                                "sequence": linker_seq,
-                                "domain_type": "LINKER",
-                            }
-                        }
                         domains.append(linker_domain)
 
                     # Attach annotation scheme and annotate regions
-                    domain.domain_type = "V"  # Mark as variable domain
-                    domain.annotation_scheme = used_scheme
+                    domain.domain_type = (
+                        DomainType.VARIABLE
+                    )  # Mark as variable domain
+                    # domain.annotation_scheme = used_scheme
                     AntibodyRegionAnnotator.annotate_domain(
                         domain, scheme=used_scheme
                     )
                     # Shift region coordinates to absolute positions within the original sequence
                     if hasattr(domain, "regions") and domain.regions:
-                        absolute_regions = {}
-                        for region_name, region in domain.regions.items():
+                        absolute_regions = []
+                        for region in domain.regions:
                             # region.start/stop may be ints or like [pos, ' ']; normalize to int
                             def to_int(pos):
                                 if isinstance(pos, (list, tuple)):
@@ -248,13 +253,11 @@ class AnarciResultProcessor:
                             # We therefore add domain_start - 1 to convert to absolute 1-based positions
                             start_abs = domain_start + (start_rel - 1)
                             stop_abs = domain_start + (stop_rel - 1)
-                            absolute_regions[region_name] = type(region)(
-                                name=region.name,
-                                start=start_abs,
-                                stop=stop_abs,
-                                sequence=region.sequence,
-                            )
-                        domain.regions = absolute_regions
+                            # domain_region = Region(name=region.name, start=start_abs, stop=stop_abs, sequence=region.sequence)
+                            region.start = start_abs
+                            region.stop = stop_abs
+                            # absolute_regions.append(domain_region)
+                        # domain.regions = absolute_regions
                     domains.append(domain)
 
                     # Check for constant region after variable domain
@@ -297,8 +300,16 @@ class AnarciResultProcessor:
                         prev_domain_end = domain_end
 
                 # Create a single chain containing all domains
-                chains.append(Chain(chain_name, raw_sequence, domains))
-
+                chain_type: ChainType = ChainTypeUtil.extract_chain_type(
+                    seq_aligns
+                )
+                chain = Chain(
+                    name=chain_name,
+                    sequence=raw_sequence,
+                    chain_type=chain_type,
+                )
+                chain.domains.append(domain)
+                chains.append(chain)
             result_objects.append(AnarciResultObject(biologic_name, chains))
         return result_objects
 

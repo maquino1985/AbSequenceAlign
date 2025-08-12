@@ -39,62 +39,12 @@ class ResponseService:
                 "message": "Successfully annotated",
                 "data": {
                     "sequence": {
-                        "name": annotated_sequence.name,
-                        "biologic_type": annotated_sequence.biologic_type.value,
-                        "chains": [],
+                        "name": annotated_sequence.biologic_name,
+                        # "biologic_type": annotated_sequence.biologic_type.value,
+                        "chains": annotated_sequence.chains,
                     }
                 },
             }
-
-            # Format each chain
-            for chain in annotated_sequence.chains:
-                chain_data = {
-                    "name": chain.name,
-                    "chain_type": chain.chain_type.value,
-                    "sequences": [],
-                }
-
-                # Format each sequence in the chain
-                for sequence in chain.sequences:
-                    sequence_data = {
-                        "sequence_type": sequence.sequence_type,
-                        "sequence_data": sequence.sequence_data,
-                        "domains": [],
-                    }
-
-                    # Format each domain
-                    for domain in sequence.domains:
-                        domain_data = {
-                            "domain_type": domain.domain_type.value,
-                            "start_position": domain.start_position,
-                            "end_position": domain.end_position,
-                            "features": [],
-                        }
-                        
-                        # Add species and germline information (except for LINKER domains)
-                        if domain.domain_type.value != "LINKER":
-                            if "species" in domain.metadata:
-                                domain_data["species"] = domain.metadata["species"]
-                            if "germline" in domain.metadata:
-                                domain_data["germline"] = domain.metadata["germline"]
-
-                        # Format each feature
-                        for feature in domain.features:
-                            feature_data = {
-                                "name": feature.name,
-                                "feature_type": feature.feature_type.value,
-                                "value": feature.value,
-                                "start_position": feature.start_position,
-                                "end_position": feature.end_position,
-                            }
-                            domain_data["features"].append(feature_data)
-
-                        sequence_data["domains"].append(domain_data)
-
-                    chain_data["sequences"].append(sequence_data)
-
-                response["data"]["sequence"]["chains"].append(chain_data)
-
             return response
 
         except Exception as e:

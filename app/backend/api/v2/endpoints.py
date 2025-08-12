@@ -37,9 +37,9 @@ async def health_check_v2():
 
 @router.post("/annotate")
 async def annotate_sequences_v2(
-        request: AnnotationRequestV2,
-        persist_to_database: bool = True,
-        db_session: AsyncSession = Depends(get_db_session),
+    request: AnnotationRequestV2,
+    persist_to_database: bool = True,
+    db_session: AsyncSession = Depends(get_db_session),
 ):
     try:
         # Use the command pattern for clean separation of concerns
@@ -80,9 +80,9 @@ async def annotate_sequences_v2(
 
 @router.post("/annotate-with-persistence", response_model=dict)
 async def annotate_and_persist_sequences_v2(
-        request: AnnotationRequestV2,
-        organism: Optional[str] = None,
-        db_session: AsyncSession = Depends(get_db_session),
+    request: AnnotationRequestV2,
+    organism: Optional[str] = None,
+    db_session: AsyncSession = Depends(get_db_session),
 ):
     """
     Annotate sequences and persist them as biologic entities.
@@ -148,9 +148,9 @@ async def annotate_and_persist_sequences_v2(
 # Biologic Entity Endpoints
 @router.get("/biologics", response_model=list[BiologicResponse])
 async def list_biologics_v2(
-        skip: int = 0,
-        limit: int = 100,
-        db_session: AsyncSession = Depends(get_db_session),
+    skip: int = 0,
+    limit: int = 100,
+    db_session: AsyncSession = Depends(get_db_session),
 ):
     """List all biologic entities with pagination."""
     try:
@@ -173,8 +173,8 @@ async def list_biologics_v2(
 
 @router.get("/biologics/{biologic_id}", response_model=BiologicResponse)
 async def get_biologic_v2(
-        biologic_id: str,
-        db_session: AsyncSession = Depends(get_db_session),
+    biologic_id: str,
+    db_session: AsyncSession = Depends(get_db_session),
 ):
     """Get a specific biologic entity by ID."""
     try:
@@ -201,8 +201,8 @@ async def get_biologic_v2(
 # MSA Endpoints
 @router.post("/msa-viewer/upload")
 async def upload_msa_sequences_v2(
-        file: Optional[UploadFile] = File(None),
-        sequences: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    sequences: Optional[str] = Form(None),
 ):
     """Upload sequences for MSA analysis"""
     try:
@@ -280,7 +280,7 @@ async def create_msa_v2(request: MSACreationRequest):
             len(seq_input.get_all_chains()) for seq_input in request.sequences
         )
         use_background = (
-                total_sequences > 10
+            total_sequences > 10
         )  # Use background for >10 sequences
 
         if use_background:

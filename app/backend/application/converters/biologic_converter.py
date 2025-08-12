@@ -143,5 +143,3 @@ class BiologicConverterImpl(
                 f"Error converting Pydantic model to domain entity: {e}"
             )
             raise
-
-

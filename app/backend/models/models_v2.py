@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional, Any, Dict
+from typing import List, Optional, Any, Dict, Tuple, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field, ConfigDict
@@ -20,6 +20,7 @@ class Region(BaseModel):
     name: str
     start: int
     stop: int
+    sequence: Optional[str]
     features: List[RegionFeature] = Field(default_factory=list)
 
 
@@ -32,12 +33,17 @@ class Domain(BaseModel):
     isotype: Optional[str] = None
     species: Optional[str] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    numbering: Optional[List[Union[Tuple, int]]] = None
+    hit_table: Optional[List[Any]] = None
+    germlines: Optional[Dict[str, Any]] = None
+    alignment_details: Optional[Any] = None
 
 
 class Chain(BaseModel):
     name: str
     sequence: str
     domains: List[Domain] = Field(default_factory=list)
+    isotype: Optional[str] = None
 
 
 class Sequence(BaseModel):

@@ -127,8 +127,10 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
             annotated_sequences = []
             for sequence in chain.sequences:
                 # Detect and create domains from sequence data
-                detected_domains = self._detect_domains_from_sequence(sequence, numbering_scheme)
-                
+                detected_domains = self._detect_domains_from_sequence(
+                    sequence, numbering_scheme
+                )
+
                 # Annotate each detected domain
                 annotated_domains = []
                 for domain in detected_domains:
@@ -148,7 +150,7 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
                             step="domain_type_check",
                         )
                     annotated_domains.append(annotated_domain)
-                
+
                 sequence.domains = annotated_domains
                 annotated_sequences.append(sequence)
             chain.sequences = annotated_sequences
@@ -206,7 +208,10 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
         try:
             # Check if ANARCI result is already in metadata (from domain detection)
             if "anarci_result" in domain.metadata:
-                anarci_result = {"success": True, "data": domain.metadata["anarci_result"]}
+                anarci_result = {
+                    "success": True,
+                    "data": domain.metadata["anarci_result"],
+                }
             else:
                 # Get the sequence for this domain
                 domain_sequence = self._get_domain_sequence(domain)
@@ -228,20 +233,24 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
             anarci_data = anarci_result.get("data", {})
             species = domain.metadata.get("species")
             germline = domain.metadata.get("germline")
-            
+
             # If not already extracted, try to extract from ANARCI result
             if not species:
                 if anarci_data.get("alignment_details"):
                     for align_detail in anarci_data["alignment_details"]:
-                        if hasattr(align_detail, 'species'):
+                        if hasattr(align_detail, "species"):
                             species = align_detail.species
                             break
-            
+
             if not germline:
                 if anarci_data.get("hit_table"):
-                    germline_info = self._extract_germline_from_hit_table(anarci_data["hit_table"])
-                    germline = germline_info.get("id") if germline_info else None
-            
+                    germline_info = self._extract_germline_from_hit_table(
+                        anarci_data["hit_table"]
+                    )
+                    germline = (
+                        germline_info.get("id") if germline_info else None
+                    )
+
             # Create annotated domain with features
             annotated_domain = BiologicDomain(
                 domain_type=domain.domain_type,
@@ -278,11 +287,14 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
                 domain_sequence = self._get_domain_sequence(domain)
 
                 # Use HMMER for isotype detection
-                hmmer_result = self._hmmer_adapter.detect_isotype(domain_sequence)
+                hmmer_result = self._hmmer_adapter.detect_isotype(
+                    domain_sequence
+                )
 
                 if not hmmer_result.get("success", False):
                     raise AnnotationError(
-                        "HMMER isotype detection failed", step="hmmer_detection"
+                        "HMMER isotype detection failed",
+                        step="hmmer_detection",
                     )
 
             # Create annotated domain
@@ -347,18 +359,25 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
             if results:
                 for result in results:
                     numbered_list = result.get("numbered", [])
-                    
+
                     # Each item in numbered_list is (numbered_data, start, end)
                     for numbered_item in numbered_list:
-                        if isinstance(numbered_item, tuple) and len(numbered_item) == 3:
+                        if (
+                            isinstance(numbered_item, tuple)
+                            and len(numbered_item) == 3
+                        ):
                             numbered_data, start, end = numbered_item
                             if numbered_data:
                                 # Extract CDR regions from this numbered data
-                                cdr_regions = self._extract_cdr_regions(numbered_data, domain)
+                                cdr_regions = self._extract_cdr_regions(
+                                    numbered_data, domain
+                                )
                                 regions.update(cdr_regions)
 
                                 # Extract FR regions from this numbered data
-                                fr_regions = self._extract_fr_regions(numbered_data, domain)
+                                fr_regions = self._extract_fr_regions(
+                                    numbered_data, domain
+                                )
                                 regions.update(fr_regions)
 
         except Exception as e:
@@ -446,7 +465,7 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
         try:
             # Extract amino acids from numbered sequence
             region_sequence = ""
-            
+
             # Handle ANARCI format: [((pos, chain), aa), ...]
             for item in numbered:
                 if isinstance(item, tuple) and len(item) == 2:
@@ -455,7 +474,7 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
                         pos, chain = pos_tuple
                         if isinstance(pos, int) and start <= pos <= end:
                             region_sequence += aa
-            
+
             return region_sequence if region_sequence else None
         except Exception as e:
             logger.warning(f"Error extracting region sequence: {e}")
@@ -499,34 +518,42 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
             return ChainType.HEAVY
 
     def _detect_domains_from_sequence(
-        self, 
-        sequence: BiologicSequence, 
-        numbering_scheme: NumberingScheme
+        self, sequence: BiologicSequence, numbering_scheme: NumberingScheme
     ) -> List[BiologicDomain]:
         """Detect domains from sequence data using ANARCI and HMMER"""
         try:
-            logger.debug(f"Detecting domains from sequence: {sequence.sequence_data[:50]}...")
-            
+            logger.debug(
+                f"Detecting domains from sequence: {sequence.sequence_data[:50]}..."
+            )
+
             domains = []
             sequence_data = sequence.sequence_data
-            
+
             # Determine antibody type and domain structure
             antibody_type = self._detect_antibody_type(sequence_data)
             logger.debug(f"Detected antibody type: {antibody_type}")
-            
+
             if antibody_type == "scfv":
                 # scFv: 2 variable domains (VH + VL) + linker (no constant domain)
-                domains = self._detect_scfv_domains(sequence_data, numbering_scheme)
+                domains = self._detect_scfv_domains(
+                    sequence_data, numbering_scheme
+                )
             elif antibody_type == "dvd_ig":
                 # DvD-Ig: 2 variable domains + 1 constant domain
-                domains = self._detect_dvd_ig_domains(sequence_data, numbering_scheme)
+                domains = self._detect_dvd_ig_domains(
+                    sequence_data, numbering_scheme
+                )
             else:
                 # IgG: 1 variable domain + 1 constant domain
-                domains = self._detect_igg_domains(sequence_data, numbering_scheme)
-            
+                domains = self._detect_igg_domains(
+                    sequence_data, numbering_scheme
+                )
+
             # If no domains detected, create a single domain with the full sequence
             if not domains:
-                logger.warning(f"No domains detected for sequence, creating default domain")
+                logger.warning(
+                    f"No domains detected for sequence, creating default domain"
+                )
                 default_domain = BiologicDomain(
                     domain_type=DomainType.VARIABLE,
                     start_position=1,
@@ -534,14 +561,14 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
                     confidence_score=0.5,
                     metadata={
                         "sequence": sequence_data,
-                        "note": "Default domain - no specific detection"
-                    }
+                        "note": "Default domain - no specific detection",
+                    },
                 )
                 domains.append(default_domain)
-            
+
             logger.debug(f"Detected {len(domains)} domains for sequence")
             return domains
-            
+
         except Exception as e:
             logger.error(f"Error detecting domains from sequence: {e}")
             # Return a default domain if detection fails
@@ -553,115 +580,160 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
                     confidence_score=0.0,
                     metadata={
                         "sequence": sequence.sequence_data,
-                        "error": str(e)
-                    }
+                        "error": str(e),
+                    },
                 )
             ]
 
     def _detect_antibody_type(self, sequence: str) -> str:
         """Detect antibody type based on sequence characteristics"""
         sequence_upper = sequence.upper()
-        
+
         # Check for scFv linker patterns
-        if "GGGGSGGGGSGGGGSGGGGS" in sequence_upper or "GGGGSGGGGS" in sequence_upper:
+        if (
+            "GGGGSGGGGSGGGGSGGGGS" in sequence_upper
+            or "GGGGSGGGGS" in sequence_upper
+        ):
             return "scfv"
-        
+
         # Check for DvD-Ig patterns (two variable domains)
         # Look for two consecutive variable domain patterns
-        variable_patterns = ["WGQGTLVTVSS", "FGQGTKVEIK", "WGQGTQVTVSS", "FGQGTKLEIK"]
+        variable_patterns = [
+            "WGQGTLVTVSS",
+            "FGQGTKVEIK",
+            "WGQGTQVTVSS",
+            "FGQGTKLEIK",
+        ]
         pattern_count = 0
         for pattern in variable_patterns:
             if pattern in sequence_upper:
                 pattern_count += 1
-        
+
         if pattern_count >= 2:
             return "dvd_ig"
-        
+
         # Default to IgG
         return "igg"
 
-    def _detect_scfv_domains(self, sequence: str, numbering_scheme: NumberingScheme) -> List[BiologicDomain]:
+    def _detect_scfv_domains(
+        self, sequence: str, numbering_scheme: NumberingScheme
+    ) -> List[BiologicDomain]:
         """Detect domains for scFv: 2 variable domains + linker"""
         domains = []
-        
+
         # Split scFv into VH and VL domains
         vh_end, vl_start = self._detect_scfv_domain_boundaries(sequence)
-        
+
         if vh_end > 0:
             # VH domain
             vh_sequence = sequence[:vh_end]
-            vh_domain = self._create_variable_domain(vh_sequence, 1, vh_end, numbering_scheme, "VH")
+            vh_domain = self._create_variable_domain(
+                vh_sequence, 1, vh_end, numbering_scheme, "VH"
+            )
             domains.append(vh_domain)
-        
+
         if vl_start > 0 and vl_start < len(sequence):
             # VL domain
-            vl_sequence = sequence[vl_start-1:]  # -1 because positions are 1-indexed
-            vl_domain = self._create_variable_domain(vl_sequence, vl_start, len(sequence), numbering_scheme, "VL")
+            vl_sequence = sequence[
+                vl_start - 1 :
+            ]  # -1 because positions are 1-indexed
+            vl_domain = self._create_variable_domain(
+                vl_sequence, vl_start, len(sequence), numbering_scheme, "VL"
+            )
             domains.append(vl_domain)
-        
+
         return domains
 
-    def _detect_dvd_ig_domains(self, sequence: str, numbering_scheme: NumberingScheme) -> List[BiologicDomain]:
+    def _detect_dvd_ig_domains(
+        self, sequence: str, numbering_scheme: NumberingScheme
+    ) -> List[BiologicDomain]:
         """Detect domains for DvD-Ig: 2 variable domains + 1 constant domain"""
         domains = []
-        
+
         # Detect domain boundaries
         v1_end, v2_start = self._detect_dvd_ig_variable_boundaries(sequence)
         c_start = self._detect_constant_domain_start(sequence, v2_start)
-        
+
         # First variable domain
         if v1_end > 0:
             v1_sequence = sequence[:v1_end]
-            v1_domain = self._create_variable_domain(v1_sequence, 1, v1_end, numbering_scheme, "V1")
+            v1_domain = self._create_variable_domain(
+                v1_sequence, 1, v1_end, numbering_scheme, "V1"
+            )
             domains.append(v1_domain)
-        
+
         # Second variable domain
         if v2_start > 0 and v2_start < len(sequence):
             v2_end = c_start if c_start > v2_start else len(sequence)
-            v2_sequence = sequence[v2_start-1:v2_end]  # -1 because positions are 1-indexed
-            v2_domain = self._create_variable_domain(v2_sequence, v2_start, v2_end, numbering_scheme, "V2")
+            v2_sequence = sequence[
+                v2_start - 1 : v2_end
+            ]  # -1 because positions are 1-indexed
+            v2_domain = self._create_variable_domain(
+                v2_sequence, v2_start, v2_end, numbering_scheme, "V2"
+            )
             domains.append(v2_domain)
-        
+
         # Constant domain
         if c_start > 0 and c_start < len(sequence):
-            c_sequence = sequence[c_start-1:]  # -1 because positions are 1-indexed
-            c_domain = self._create_constant_domain(c_sequence, c_start, len(sequence))
+            c_sequence = sequence[
+                c_start - 1 :
+            ]  # -1 because positions are 1-indexed
+            c_domain = self._create_constant_domain(
+                c_sequence, c_start, len(sequence)
+            )
             domains.append(c_domain)
-        
+
         return domains
 
-    def _detect_igg_domains(self, sequence: str, numbering_scheme: NumberingScheme) -> List[BiologicDomain]:
+    def _detect_igg_domains(
+        self, sequence: str, numbering_scheme: NumberingScheme
+    ) -> List[BiologicDomain]:
         """Detect domains for IgG: 1 variable domain + 1 constant domain"""
         domains = []
-        
+
         # Detect domain boundaries
         v_end, c_start = self._detect_igg_domain_boundaries(sequence)
-        
+
         # Variable domain
         if v_end > 0:
             v_sequence = sequence[:v_end]
-            v_domain = self._create_variable_domain(v_sequence, 1, v_end, numbering_scheme, "V")
+            v_domain = self._create_variable_domain(
+                v_sequence, 1, v_end, numbering_scheme, "V"
+            )
             domains.append(v_domain)
-        
+
         # Constant domain
         if c_start > 0 and c_start < len(sequence):
-            c_sequence = sequence[c_start-1:]  # -1 because positions are 1-indexed
-            c_domain = self._create_constant_domain(c_sequence, c_start, len(sequence))
+            c_sequence = sequence[
+                c_start - 1 :
+            ]  # -1 because positions are 1-indexed
+            c_domain = self._create_constant_domain(
+                c_sequence, c_start, len(sequence)
+            )
             domains.append(c_domain)
-        
+
         return domains
 
-    def _create_variable_domain(self, sequence: str, start: int, end: int, numbering_scheme: NumberingScheme, domain_name: str) -> BiologicDomain:
+    def _create_variable_domain(
+        self,
+        sequence: str,
+        start: int,
+        end: int,
+        numbering_scheme: NumberingScheme,
+        domain_name: str,
+    ) -> BiologicDomain:
         """Create a variable domain with ANARCI annotation"""
         try:
-            anarci_result = self._anarci_adapter.number_sequence(sequence, numbering_scheme)
-            
+            anarci_result = self._anarci_adapter.number_sequence(
+                sequence, numbering_scheme
+            )
+
             metadata = {
                 "sequence": sequence,
                 "domain_name": domain_name,
-                "numbering_scheme": numbering_scheme.value
+                "numbering_scheme": numbering_scheme.value,
             }
-            
+
             if anarci_result.get("success", False):
                 metadata["anarci_result"] = anarci_result
                 # Extract species and germline info
@@ -676,7 +748,9 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
                             v_gene = germlines.get("v_gene", [None, 0])[0]
                             j_gene = germlines.get("j_gene", [None, 0])[0]
                             if v_gene and j_gene:
-                                metadata["germline"] = f"{v_gene[1]}/{j_gene[1]}"
+                                metadata["germline"] = (
+                                    f"{v_gene[1]}/{j_gene[1]}"
+                                )
                             elif v_gene:
                                 metadata["germline"] = v_gene[1]
                             elif j_gene:
@@ -684,16 +758,18 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
                             break
                     if "species" in metadata:
                         break
-            
+
             return BiologicDomain(
                 domain_type=DomainType.VARIABLE,
                 start_position=start,
                 end_position=end,
                 confidence_score=1.0,
-                metadata=metadata
+                metadata=metadata,
             )
         except Exception as e:
-            logger.warning(f"Error creating variable domain {domain_name}: {e}")
+            logger.warning(
+                f"Error creating variable domain {domain_name}: {e}"
+            )
             return BiologicDomain(
                 domain_type=DomainType.VARIABLE,
                 start_position=start,
@@ -702,30 +778,42 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
                 metadata={
                     "sequence": sequence,
                     "domain_name": domain_name,
-                    "error": str(e)
-                }
+                    "error": str(e),
+                },
             )
 
-    def _create_constant_domain(self, sequence: str, start: int, end: int) -> BiologicDomain:
+    def _create_constant_domain(
+        self, sequence: str, start: int, end: int
+    ) -> BiologicDomain:
         """Create a constant domain with HMMER isotype detection"""
         try:
             hmmer_result = self._hmmer_adapter.detect_isotype(sequence)
-            
+
             metadata = {
                 "sequence": sequence,
-                "isotype": hmmer_result.get("isotype") if hmmer_result.get("success", False) else None,
-                "hmmer_score": hmmer_result.get("score") if hmmer_result.get("success", False) else None
+                "isotype": (
+                    hmmer_result.get("isotype")
+                    if hmmer_result.get("success", False)
+                    else None
+                ),
+                "hmmer_score": (
+                    hmmer_result.get("score")
+                    if hmmer_result.get("success", False)
+                    else None
+                ),
             }
-            
+
             if hmmer_result.get("success", False):
                 metadata["hmmer_result"] = hmmer_result
-            
+
             return BiologicDomain(
                 domain_type=DomainType.CONSTANT,
                 start_position=start,
                 end_position=end,
-                confidence_score=1.0 if hmmer_result.get("success", False) else 0.8,
-                metadata=metadata
+                confidence_score=(
+                    1.0 if hmmer_result.get("success", False) else 0.8
+                ),
+                metadata=metadata,
             )
         except Exception as e:
             logger.warning(f"Error creating constant domain: {e}")
@@ -734,10 +822,7 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
                 start_position=start,
                 end_position=end,
                 confidence_score=0.7,
-                metadata={
-                    "sequence": sequence,
-                    "error": str(e)
-                }
+                metadata={"sequence": sequence, "error": str(e)},
             )
 
     def _detect_chain_type_from_name(self, chain_name: str) -> ChainType:
@@ -761,7 +846,9 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
             # Default to HEAVY if we can't determine
             return ChainType.HEAVY
 
-    def _extract_germline_from_hit_table(self, hit_table: List[List]) -> Dict[str, Any]:
+    def _extract_germline_from_hit_table(
+        self, hit_table: List[List]
+    ) -> Dict[str, Any]:
         """Extract germline information from ANARCI hit table"""
         if not hit_table or len(hit_table) < 2:
             return {}
@@ -771,7 +858,9 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
 
         # Find relevant column indices
         id_idx = header.index("id") if "id" in header else None
-        bitscore_idx = header.index("bitscore") if "bitscore" in header else None
+        bitscore_idx = (
+            header.index("bitscore") if "bitscore" in header else None
+        )
         e_value_idx = header.index("evalue") if "evalue" in header else None
 
         if not rows:
@@ -803,123 +892,145 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
     def _detect_scfv_domain_boundaries(self, sequence: str) -> tuple[int, int]:
         """Detect VH and VL domain boundaries in scFv sequence"""
         sequence_upper = sequence.upper()
-        
+
         # Look for linker patterns to separate VH and VL
         linker_patterns = [
             "GGGGSGGGGSGGGGSGGGGS",  # Long linker
-            "GGGGSGGGGSGGGGS",       # Medium linker
-            "GGGGSGGGGS",            # Short linker
+            "GGGGSGGGGSGGGGS",  # Medium linker
+            "GGGGSGGGGS",  # Short linker
         ]
-        
+
         for pattern in linker_patterns:
             pos = sequence_upper.find(pattern)
             if pos != -1:
                 vh_end = pos
-                vl_start = pos + len(pattern) + 1  # +1 because positions are 1-indexed
-                logger.debug(f"Found scFv linker pattern, VH ends at {vh_end}, VL starts at {vl_start}")
+                vl_start = (
+                    pos + len(pattern) + 1
+                )  # +1 because positions are 1-indexed
+                logger.debug(
+                    f"Found scFv linker pattern, VH ends at {vh_end}, VL starts at {vl_start}"
+                )
                 return vh_end, vl_start
-        
+
         # Fallback: use heuristics
         if len(sequence) > 200:
             vh_end = min(120, len(sequence) // 2)
             vl_start = vh_end + 1
-            logger.debug(f"Using heuristic for scFv: VH ends at {vh_end}, VL starts at {vl_start}")
+            logger.debug(
+                f"Using heuristic for scFv: VH ends at {vh_end}, VL starts at {vl_start}"
+            )
             return vh_end, vl_start
-        
+
         return 0, 0
 
-    def _detect_dvd_ig_variable_boundaries(self, sequence: str) -> tuple[int, int]:
+    def _detect_dvd_ig_variable_boundaries(
+        self, sequence: str
+    ) -> tuple[int, int]:
         """Detect boundaries between two variable domains in DvD-Ig"""
         sequence_upper = sequence.upper()
-        
+
         # Look for variable domain ending patterns
         variable_end_patterns = [
             "WGQGTLVTVSS",  # Heavy chain ending
-            "FGQGTKVEIK",   # Light chain ending
+            "FGQGTKVEIK",  # Light chain ending
             "WGQGTQVTVSS",  # Alternative ending
-            "FGQGTKLEIK",   # Alternative ending
+            "FGQGTKLEIK",  # Alternative ending
         ]
-        
+
         v1_end = 0
         v2_start = 0
-        
+
         # Find first variable domain end
         for pattern in variable_end_patterns:
             pos = sequence_upper.find(pattern)
             if pos != -1:
                 v1_end = pos + len(pattern)
                 break
-        
+
         # Find second variable domain start (after first variable domain)
         if v1_end > 0:
             remaining_sequence = sequence_upper[v1_end:]
             for pattern in variable_end_patterns:
                 pos = remaining_sequence.find(pattern)
                 if pos != -1:
-                    v2_start = v1_end + pos + len(pattern) + 1  # +1 because positions are 1-indexed
+                    v2_start = (
+                        v1_end + pos + len(pattern) + 1
+                    )  # +1 because positions are 1-indexed
                     break
-        
+
         return v1_end, v2_start
 
     def _detect_igg_domain_boundaries(self, sequence: str) -> tuple[int, int]:
         """Detect variable and constant domain boundaries in IgG"""
         sequence_upper = sequence.upper()
-        
+
         # Look for variable domain ending patterns
         variable_end_patterns = [
             "WGQGTLVTVSS",  # Heavy chain ending
-            "FGQGTKVEIK",   # Light chain ending
+            "FGQGTKVEIK",  # Light chain ending
             "WGQGTQVTVSS",  # Alternative ending
-            "FGQGTKLEIK",   # Alternative ending
+            "FGQGTKLEIK",  # Alternative ending
         ]
-        
+
         v_end = 0
         c_start = 0
-        
+
         for pattern in variable_end_patterns:
             pos = sequence_upper.find(pattern)
             if pos != -1:
                 v_end = pos + len(pattern)
                 c_start = v_end + 1  # Next position after variable domain
-                logger.debug(f"Found IgG variable domain ending pattern '{pattern}' at position {v_end}")
+                logger.debug(
+                    f"Found IgG variable domain ending pattern '{pattern}' at position {v_end}"
+                )
                 break
-        
+
         # If no pattern found, use heuristics
         if v_end == 0:
             if len(sequence) > 200:
                 v_end = min(128, len(sequence) // 2)
                 c_start = v_end + 1
-                logger.debug(f"Using heuristic for IgG: variable domain ends at position {v_end}")
+                logger.debug(
+                    f"Using heuristic for IgG: variable domain ends at position {v_end}"
+                )
             else:
                 v_end = len(sequence)
                 c_start = 0
-                logger.debug(f"Short IgG sequence, treating as variable domain only")
-        
+                logger.debug(
+                    f"Short IgG sequence, treating as variable domain only"
+                )
+
         return v_end, c_start
 
-    def _detect_constant_domain_start(self, sequence: str, after_position: int) -> int:
+    def _detect_constant_domain_start(
+        self, sequence: str, after_position: int
+    ) -> int:
         """Find the start of constant domain after a given position"""
         if after_position >= len(sequence):
             return 0
-            
+
         remaining_sequence = sequence[after_position:]
-        
+
         # Look for constant domain start patterns
         constant_start_patterns = [
             "QVQLKQS",  # Heavy chain constant start
             "DIVMTQS",  # Light chain constant start
             "QVQLVES",  # Alternative heavy start
         ]
-        
+
         for pattern in constant_start_patterns:
             pos = remaining_sequence.find(pattern)
             if pos != -1:
-                return after_position + pos + 1  # +1 because positions are 1-indexed
-        
+                return (
+                    after_position + pos + 1
+                )  # +1 because positions are 1-indexed
+
         # If no pattern found, look for the first occurrence of typical constant domain amino acids
         for i, char in enumerate(remaining_sequence):
             if char in "QVDE" and i > 10:  # Skip potential linker regions
-                return after_position + i + 1  # +1 because positions are 1-indexed
-        
+                return (
+                    after_position + i + 1
+                )  # +1 because positions are 1-indexed
+
         # Fallback: start after the given position
         return after_position + 1

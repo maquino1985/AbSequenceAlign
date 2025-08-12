@@ -230,7 +230,9 @@ class TestDomainEntities:
 
     def test_biologic_entity_creation(self):
         """Test creating biologic entities"""
-        entity = BiologicEntity(name="Test Antibody", biologic_type=BiologicType.ANTIBODY)
+        entity = BiologicEntity(
+            name="Test Antibody", biologic_type=BiologicType.ANTIBODY
+        )
 
         assert entity.name == "Test Antibody"
         assert entity.biologic_type == BiologicType.ANTIBODY

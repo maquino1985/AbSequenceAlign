@@ -6,7 +6,15 @@ from backend.numbering.cgg import CGG_REGIONS
 from backend.numbering.chothia import CHOTHIA_REGIONS
 from backend.numbering.imgt import IMGT_REGIONS
 from backend.numbering.kabat import KABAT_REGIONS
-from backend.utils.sequence_types import Chain, Domain
+
+# from backend.utils.sequence_types import Chain, Domain
+from backend.models.models_v2 import (
+    Domain,
+    Chain,
+    ChainType,
+    DomainType,
+    Region,
+)
 
 
 @dataclass
@@ -63,11 +71,10 @@ class AntibodyRegionAnnotator:
         region_defs = SCHEME_MAP[scheme]
         region_map = region_defs[chain_type]
         if not domain.numbering:
-            domain.regions = {}
+            domain.regions = []
             return domain
         numbering = domain.numbering[0]  # Use only the residue numbering
         pos_to_idx = RegionIndexHelper.build_pos_to_idx(numbering)
-        regions: Dict[str, AntibodyRegion] = {}
         for region, (start, stop) in region_map.items():
             start_idx, stop_idx = RegionIndexHelper.find_region_indices(
                 pos_to_idx, start, stop
@@ -75,9 +82,9 @@ class AntibodyRegionAnnotator:
             seq = RegionIndexHelper.extract_region_sequence(
                 numbering, start_idx, stop_idx
             )
-            regions[region] = AntibodyRegion(region, start, stop, seq)
-        # Convert to dict with formatted positions and sequences
-        domain.regions = regions
+            domain.regions.append(
+                Region(name=region, sequence=seq, start=start[0], stop=stop[0])
+            )
         return domain
 
     @staticmethod

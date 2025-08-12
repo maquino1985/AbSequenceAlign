@@ -96,7 +96,7 @@ class HmmerAdapter(AbstractExternalToolAdapter):
                 "data": result,
                 "isotype": result.get("best_isotype"),
                 "score": result.get("best_score"),
-                "evalue": result.get("best_evalue")
+                "evalue": result.get("best_evalue"),
             }
         except Exception as e:
             raise HmmerError(
@@ -124,7 +124,7 @@ class HmmerAdapter(AbstractExternalToolAdapter):
             "./data/isotype_hmms",
             "./app/backend/data/isotype_hmms",
             "../../data/isotype_hmms",  # From backend directory to project root
-            "../data/isotype_hmms",     # Alternative path
+            "../data/isotype_hmms",  # Alternative path
         ]
 
         for path in common_paths:

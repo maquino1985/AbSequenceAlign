@@ -469,7 +469,7 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
             # Convert to response
             from datetime import datetime
             from backend.database import UUIDv7
-            
+
             biologic_response = BiologicResponse(
                 id=str(biologic.id) if biologic.id else UUIDv7()(),
                 name=biologic.name,
@@ -517,7 +517,7 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
                 # We need to extract the chain_sequence and add it to the chain
                 if orm_sequence.chain_sequences:
                     chain_sequences.extend(orm_sequence.chain_sequences)
-            
+
             # Set the chain_sequences on the chain
             chain.sequences = chain_sequences
 
@@ -538,7 +538,9 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
                 # Get the actual sequence from the chain_sequence
                 sequence = chain_sequence.sequence
                 biologic_sequence = (
-                    self._create_biologic_sequence_from_orm_sequence(sequence=sequence)
+                    self._create_biologic_sequence_from_orm_sequence(
+                        sequence=sequence
+                    )
                 )
                 biologic_sequences.append(biologic_sequence)
 
@@ -567,7 +569,11 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
             biologic_domains = []
             for chain_sequence in sequence.chain_sequences:
                 for domain in chain_sequence.domains:
-                    biologic_domain = self._create_biologic_domain_from_sequence_domain(domain)
+                    biologic_domain = (
+                        self._create_biologic_domain_from_sequence_domain(
+                            domain
+                        )
+                    )
                     biologic_domains.append(biologic_domain)
 
             # Create domain entity
@@ -595,8 +601,10 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
             # Convert features to biologic features
             biologic_features = []
             for feature in sequence_domain.features:
-                biologic_feature = self._create_biologic_feature_from_sequence_domain(
-                    sequence_domain=sequence_domain
+                biologic_feature = (
+                    self._create_biologic_feature_from_sequence_domain(
+                        sequence_domain=sequence_domain
+                    )
                 )
                 biologic_features.append(biologic_feature)
 
@@ -629,12 +637,13 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
                 "sequence_type": biologic_sequence.sequence_type,
                 "domain_count": len(biologic_sequence.domains),
             }
-            
+
             sequence = Sequence(
                 sequence_type=biologic_sequence.sequence_type,
                 sequence_data=biologic_sequence.sequence_data,
                 length=len(biologic_sequence.sequence_data),
-                description=biologic_sequence.description or f"{biologic_sequence.sequence_type} sequence",
+                description=biologic_sequence.description
+                or f"{biologic_sequence.sequence_type} sequence",
                 metadata_json=metadata_json,
             )
 
@@ -670,7 +679,8 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
                 # Create features for each feature in the domain
                 for feature in domain.features:
                     domain_feature = self._create_domain_feature_from_feature(
-                        sequence_domain=sequence_domain, biologic_feature=feature
+                        sequence_domain=sequence_domain,
+                        biologic_feature=feature,
                     )
                     sequence_domain.features.append(domain_feature)
 
@@ -708,15 +718,15 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
             if sequence.domains:
                 # Get domain type from the first domain
                 first_domain = sequence.domains[0]
-                if hasattr(first_domain, 'domain_type'):
+                if hasattr(first_domain, "domain_type"):
                     domain_type = first_domain.domain_type
-                elif hasattr(first_domain, 'domain_name'):
+                elif hasattr(first_domain, "domain_name"):
                     # Try to infer from domain name
-                    if 'constant' in first_domain.domain_name.lower():
+                    if "constant" in first_domain.domain_name.lower():
                         domain_type = "CONSTANT"
-                    elif 'linker' in first_domain.domain_name.lower():
+                    elif "linker" in first_domain.domain_name.lower():
                         domain_type = "LINKER"
-            
+
             biologic_domain = BiologicDomain(
                 domain_type=domain_type,
                 start_position=0,
@@ -734,7 +744,9 @@ class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):
             raise
 
     def _create_domain_feature_from_feature(
-        self, sequence_domain: SequenceDomain, biologic_feature: BiologicFeature
+        self,
+        sequence_domain: SequenceDomain,
+        biologic_feature: BiologicFeature,
     ) -> DomainFeature:
         """Create a DomainFeature ORM model from a BiologicFeature domain entity."""
         try:
@@ -881,4 +893,3 @@ class ValidationBiologicServiceImpl(BiologicServiceImpl):
 
 # Alias for backward compatibility
 BiologicService = BiologicServiceImpl
-

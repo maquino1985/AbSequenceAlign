@@ -205,10 +205,12 @@ class SequenceDomainCreate(BaseModel):
     )
     end_position: int = Field(..., description="End position in the sequence")
     species: Optional[str] = Field(
-        None, description="Species the domain was annotated against (e.g., human, mouse, rat)"
+        None,
+        description="Species the domain was annotated against (e.g., human, mouse, rat)",
     )
     germline: Optional[str] = Field(
-        None, description="Best matching germline gene (e.g., IGHV1-2*02, IGHG1*01)"
+        None,
+        description="Best matching germline gene (e.g., IGHV1-2*02, IGHG1*01)",
     )
     confidence_score: Optional[int] = Field(
         None, ge=0, le=100, description="Confidence score (0-100)"

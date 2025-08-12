@@ -393,7 +393,7 @@ class TestProcessAnnotationCommand:
     def test_validate_case_insensitive_numbering_schemes(self):
         """Test validation with different case variations"""
         valid_variations = ["IMGT", "imgt", "ImGt", "Kabat", "CHOTHIA"]
-        
+
         for scheme in valid_variations:
             request_data = {
                 "sequences": {"seq1": Mock(spec=BiologicEntity)},

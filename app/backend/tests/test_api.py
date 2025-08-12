@@ -71,38 +71,36 @@ def test_annotate_invalid():
     assert "Invalid amino acids" in response.json()["detail"][0]["msg"]
 
 
-def test_annotate_multiple_chains():
+def test_v2_annotate_multiple_chains(multiple_sequences):
     """Test annotation with multiple chains per sequence"""
-    response = client.post(
-        "/api/v1/annotate",
-        json={
-            "sequences": [
-                {
-                    "name": "igg_test",
-                    "heavy_chain": "EVQLVESGGGLVQPGGSLRLSCAASGFTFSYFAMSWVRQAPGKGLEWVATISGGGGNTYYLDRVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCVRQTYGGFGYWGQGTLVTVSS",
-                    "light_chain": "DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK",
-                },
-                {
-                    "name": "kih_test",
-                    "heavy_chain_1": "ELQLQESGPGLVKPSETLSLTCAVSGVSFSDYHWAWIRDPPGKGLEWIGDINHRGHTNYNPSLKSRVTVSIDTSKNQFSLKLSSVTAADTAVYFCARDFPNFIFDFWGQGTLVTVSS",
-                    "heavy_chain_2": "ELQLQESGPGLVKPSETLSLTCAVSGVSFSDYHWAWIRDPPGKGLEWIGDINHRGHTNYNPSLKSRVTVSIDTSKNQFSLKLSSVTAADTAVYFCARDFPNFIFDFWGQGTLVTVSS",
-                    "light_chain_1": "DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK",
-                    "light_chain_2": "DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK",
-                },
-            ],
-            "numbering_scheme": "imgt",
-        },
-    )
+    response = client.post("/api/v2/annotate", json=multiple_sequences)
     assert response.status_code == 200
-    result = response.json()["data"]["annotation_result"]
-    assert result["total_sequences"] > 0
-    assert result["numbering_scheme"] == "imgt"
+    result = response.json()["data"]
+    assert len(result["results"][0]["data"]["sequence"]["chains"]) == 2
+    assert result["summary"]["successful"] == 2
+    assert (
+        len(
+            result["results"][0]["data"]["sequence"]["chains"][0]["domains"][
+                0
+            ]["regions"]
+        )
+        == 7
+    )
+    assert (
+        len(
+            result["results"][0]["data"]["sequence"]["chains"][0]["domains"][
+                0
+            ]["regions"]
+        )
+        == 7
+    )
+    assert len(result["results"][1]["data"]["sequence"]["chains"]) == 4
 
 
 def test_annotate_with_custom_chains():
     """Test annotation with custom chain labels"""
     response = client.post(
-        "/api/v1/annotate",
+        "/api/v2/annotate",
         json={
             "sequences": [
                 {
@@ -117,9 +115,8 @@ def test_annotate_with_custom_chains():
         },
     )
     assert response.status_code == 200
-    result = response.json()["data"]["annotation_result"]
-    assert result["total_sequences"] > 0
-    assert result["numbering_scheme"] == "imgt"
+    result = response.json()["data"]
+    assert result["summary"]["successful"] == 1
 
 
 # Additional tests for /align, /dataset, /datasets, /alignment can be added as needed.

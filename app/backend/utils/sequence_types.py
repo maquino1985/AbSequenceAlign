@@ -1,5 +1,7 @@
 from typing import List, Tuple, Optional, Dict, Any
 
+from backend.domain import ChainType
+
 SequenceType = Tuple[str, str]
 NumberingType = Optional[List[Tuple[str, int, int]]]
 AlignmentDetailsType = Optional[Dict[str, Any]]
@@ -8,11 +10,18 @@ HitTableType = Optional[List[List[Any]]]
 
 class Chain:
     def __init__(
-        self, name: str, sequence: str, domains: List["Domain"]
+        self,
+        name: str,
+        sequence: str,
+        domains: List["Domain"],
+        chain_type: ChainType,
+        isotype: str = "",
     ) -> None:
         self.name: str = name
         self.sequence: str = sequence
         self.domains: List["Domain"] = domains
+        self.chain_type: ChainType = chain_type
+        self.isotype: str = isotype
         for domain in self.domains:
             domain.chain = self
 
@@ -27,7 +36,7 @@ class Domain:
         numbering: NumberingType,
         alignment_details: AlignmentDetailsType,
         hit_table: HitTableType,
-        isotype: str,
+        # isotype: str,
         germlines: dict,
         species: str,
         chain: "Chain" = None,
@@ -38,7 +47,7 @@ class Domain:
         self.hit_table: HitTableType = hit_table
         self.species: str = species
         self.germlines: dict = germlines
-        self.isotype: str = isotype
+        # self.isotype: str = isotype
         self.chain: Optional["Chain"] = chain
         # New fields for constant region information
         self.domain_type: str = "V"  # 'V' for variable, 'C' for constant

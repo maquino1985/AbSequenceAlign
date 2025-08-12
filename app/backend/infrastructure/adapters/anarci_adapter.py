@@ -54,7 +54,9 @@ class AnarciAdapter(AbstractExternalToolAdapter):
         """Check if ANARCI is available on the system"""
         return self.is_available()
 
-    def execute(self, input_data: str, scheme: NumberingScheme = NumberingScheme.IMGT) -> Dict[str, Any]:
+    def execute(
+        self, input_data: str, scheme: NumberingScheme = NumberingScheme.IMGT
+    ) -> Dict[str, Any]:
         """Execute ANARCI on the input sequence"""
         if not self._validate_input(input_data):
             raise AnarciError("Invalid input data", tool_name=self.tool_name)
@@ -165,8 +167,9 @@ class AnarciAdapter(AbstractExternalToolAdapter):
         try:
             anarci_scheme = scheme
             from anarci import run_anarci
-            if scheme == 'cgg':
-                anarchi_scheme = 'kabat'
+
+            if scheme == "cgg":
+                anarchi_scheme = "kabat"
             # Run ANARCI
             anarci_result = run_anarci(
                 sequences,
@@ -174,34 +177,57 @@ class AnarciAdapter(AbstractExternalToolAdapter):
                 allowed_species=allowed_species,
                 assign_germline=True,
             )
-            
+
             # Handle different return formats from ANARCI
             if isinstance(anarci_result, tuple):
                 if len(anarci_result) == 2:
                     # New format: (data, used_scheme)
                     data, used_scheme = anarci_result
                     if isinstance(data, tuple) and len(data) == 4:
-                        sequences_out, numbered, alignment_details, hit_tables = data
+                        (
+                            sequences_out,
+                            numbered,
+                            alignment_details,
+                            hit_tables,
+                        ) = data
                     else:
-                        raise AnarciError("Unexpected ANARCI data format", tool_name=self.tool_name)
+                        raise AnarciError(
+                            "Unexpected ANARCI data format",
+                            tool_name=self.tool_name,
+                        )
                 elif len(anarci_result) == 4:
                     # Format: (sequences_out, numbered, alignment_details, hit_tables)
-                    sequences_out, numbered, alignment_details, hit_tables = anarci_result
+                    sequences_out, numbered, alignment_details, hit_tables = (
+                        anarci_result
+                    )
                     used_scheme = scheme  # Use the input scheme
                 elif len(anarci_result) == 5:
                     # Old format: (sequences_out, numbered, alignment_details, hit_tables, used_scheme)
-                    sequences_out, numbered, alignment_details, hit_tables, used_scheme = anarci_result
+                    (
+                        sequences_out,
+                        numbered,
+                        alignment_details,
+                        hit_tables,
+                        used_scheme,
+                    ) = anarci_result
                 else:
-                    raise AnarciError(f"Unexpected ANARCI tuple length: {len(anarci_result)}", tool_name=self.tool_name)
+                    raise AnarciError(
+                        f"Unexpected ANARCI tuple length: {len(anarci_result)}",
+                        tool_name=self.tool_name,
+                    )
             else:
-                raise AnarciError("Unexpected ANARCI return format", tool_name=self.tool_name)
+                raise AnarciError(
+                    "Unexpected ANARCI return format", tool_name=self.tool_name
+                )
 
             # Process results
             results = []
             for i, (seq_name, seq_sequence) in enumerate(sequences_out):
                 seq_numbered = numbered[i] if i < len(numbered) else []
                 if scheme == NumberingScheme.CGG:
-                    converted_seq_numbered = self._convert_cgg_number(seq_sequence)
+                    converted_seq_numbered = self._convert_cgg_number(
+                        seq_sequence
+                    )
                 seq_aligns = (
                     alignment_details[i] if i < len(alignment_details) else []
                 )
