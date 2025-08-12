@@ -38,7 +38,7 @@ class HmmerAdapter(AbstractExternalToolAdapter):
         """Check if HMMER is available on the system"""
         try:
             result = subprocess.run(
-                ["hmmsearch", "--help"],
+                ["hmmsearch", "-h"],
                 capture_output=True,
                 text=True,
                 timeout=5,
@@ -89,7 +89,15 @@ class HmmerAdapter(AbstractExternalToolAdapter):
             raise HmmerError("Invalid sequence", tool_name=self.tool_name)
 
         try:
-            return self._detect_isotype(sequence)
+            result = self._detect_isotype(sequence)
+            # Return result in the format expected by the annotation service
+            return {
+                "success": result.get("best_isotype") is not None,
+                "data": result,
+                "isotype": result.get("best_isotype"),
+                "score": result.get("best_score"),
+                "evalue": result.get("best_evalue")
+            }
         except Exception as e:
             raise HmmerError(
                 f"Isotype detection failed: {str(e)}", tool_name=self.tool_name
@@ -298,12 +306,12 @@ class HmmerAdapter(AbstractExternalToolAdapter):
             }
 
         try:
-            score = float(fields[13])  # domain_score
-            evalue = float(fields[12])  # domain_evalue
-            hmm_from = int(fields[5])  # hmm_from
-            hmm_to = int(fields[6])  # hmm_to
-            ali_from = int(fields[7])  # ali_from
-            ali_to = int(fields[8])  # ali_to
+            score = float(fields[13])  # domain score
+            evalue = float(fields[11])  # domain i-Evalue
+            hmm_from = int(fields[15])  # hmm from
+            hmm_to = int(fields[16])  # hmm to
+            ali_from = int(fields[17])  # ali from
+            ali_to = int(fields[18])  # ali to
 
             return {
                 "isotype": isotype,

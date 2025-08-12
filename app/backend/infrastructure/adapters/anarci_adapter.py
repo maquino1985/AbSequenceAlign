@@ -163,12 +163,14 @@ class AnarciAdapter(AbstractExternalToolAdapter):
             allowed_species = ["human", "mouse", "rat"]
 
         try:
+            anarci_scheme = scheme
             from anarci import run_anarci
-
+            if scheme == 'cgg':
+                anarchi_scheme = 'kabat'
             # Run ANARCI
             anarci_result = run_anarci(
                 sequences,
-                scheme=scheme,
+                scheme=anarci_scheme,
                 allowed_species=allowed_species,
                 assign_germline=True,
             )
@@ -198,6 +200,8 @@ class AnarciAdapter(AbstractExternalToolAdapter):
             results = []
             for i, (seq_name, seq_sequence) in enumerate(sequences_out):
                 seq_numbered = numbered[i] if i < len(numbered) else []
+                if scheme == NumberingScheme.CGG:
+                    converted_seq_numbered = self._convert_cgg_number(seq_sequence)
                 seq_aligns = (
                     alignment_details[i] if i < len(alignment_details) else []
                 )
@@ -300,3 +304,6 @@ class AnarciAdapter(AbstractExternalToolAdapter):
             )
 
         return processed
+
+    def _convert_cgg_number(self, seq_sequence):
+        pass

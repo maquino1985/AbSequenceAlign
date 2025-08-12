@@ -33,6 +33,8 @@ from backend.infrastructure.adapters.hmmer_adapter import HmmerAdapter
 from backend.utils.validation_utils import ValidationUtils
 from backend.logger import logger
 
+from backend.annotation.anarci_result_processor import AnarciResultProcessor
+
 
 class AnnotationService(AbstractProcessingSubject, IAnnotationService):
     """Service for orchestrating biologic sequence annotation"""
@@ -56,8 +58,13 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
         numbering_scheme: NumberingScheme = NumberingScheme.IMGT,
     ) -> ProcessingResult:
         """Annotate a complete biologic sequence"""
+        # logger.info(f"Starting annotation for sequence: {sequence.name}")
+
         try:
-            logger.info(f"Starting annotation for sequence: {sequence.name}")
+            processor = AnarciResultProcessor(
+                sequence, numbering_scheme=numbering_scheme.value
+            )
+            print(processor.results)
             self.notify_step_completed("start", 0.0)
 
             # Validate sequence
@@ -78,7 +85,6 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
                     i / total_chains
                 ) * 0.8  # 80% of work is chain processing
                 self.notify_step_completed(f"chain_{i+1}", progress)
-
                 annotated_chain = self.annotate_chain(chain, numbering_scheme)
                 annotated_chains.append(annotated_chain)
 
@@ -504,70 +510,19 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
             domains = []
             sequence_data = sequence.sequence_data
             
-            # Use ANARCI to detect variable domains
-            anarci_result = self._anarci_adapter.number_sequence(
-                sequence_data, numbering_scheme
-            )
+            # Determine antibody type and domain structure
+            antibody_type = self._detect_antibody_type(sequence_data)
+            logger.debug(f"Detected antibody type: {antibody_type}")
             
-
-            
-            if anarci_result.get("success", False):
-                # Extract variable domain information
-                numbered = anarci_result.get("data", {}).get("results", [])
-                if numbered:
-                    # Create variable domain
-                    variable_domain = BiologicDomain(
-                        domain_type=DomainType.VARIABLE,
-                        start_position=1,  # Will be updated with actual positions
-                        end_position=len(sequence_data),
-                        confidence_score=1.0,
-                        metadata={
-                            "sequence": sequence_data,
-                            "anarci_result": anarci_result,
-                            "numbering_scheme": numbering_scheme.value
-                        }
-                    )
-                    domains.append(variable_domain)
-                    
-                    # Extract species and germline info from alignment details
-                    for result in numbered:
-                        alignment_details = result.get("alignment_details", [])
-                        for alignment in alignment_details:
-                            if alignment.get("species"):
-                                variable_domain.metadata["species"] = alignment["species"]
-                            if alignment.get("germlines"):
-                                germlines = alignment["germlines"]
-                                v_gene = germlines.get("v_gene", [None, 0])[0]
-                                j_gene = germlines.get("j_gene", [None, 0])[0]
-                                if v_gene and j_gene:
-                                    variable_domain.metadata["germline"] = f"{v_gene[1]}/{j_gene[1]}"
-                                elif v_gene:
-                                    variable_domain.metadata["germline"] = v_gene[1]
-                                elif j_gene:
-                                    variable_domain.metadata["germline"] = j_gene[1]
-                                break
-                        if "species" in variable_domain.metadata:
-                            break
-            
-            # Use HMMER to detect constant domains (handle missing HMM files gracefully)
-            try:
-                hmmer_result = self._hmmer_adapter.detect_isotype(sequence_data)
-                if hmmer_result.get("success", False):
-                    # Create constant domain
-                    constant_domain = BiologicDomain(
-                        domain_type=DomainType.CONSTANT,
-                        start_position=1,  # Will be updated with actual positions
-                        end_position=len(sequence_data),
-                        confidence_score=1.0,
-                        metadata={
-                            "sequence": sequence_data,
-                            "hmmer_result": hmmer_result
-                        }
-                    )
-                    domains.append(constant_domain)
-            except Exception as hmmer_error:
-                logger.warning(f"HMMER detection failed (this is expected in development): {hmmer_error}")
-                # Continue without constant domain detection
+            if antibody_type == "scfv":
+                # scFv: 2 variable domains (VH + VL) + linker (no constant domain)
+                domains = self._detect_scfv_domains(sequence_data, numbering_scheme)
+            elif antibody_type == "dvd_ig":
+                # DvD-Ig: 2 variable domains + 1 constant domain
+                domains = self._detect_dvd_ig_domains(sequence_data, numbering_scheme)
+            else:
+                # IgG: 1 variable domain + 1 constant domain
+                domains = self._detect_igg_domains(sequence_data, numbering_scheme)
             
             # If no domains detected, create a single domain with the full sequence
             if not domains:
@@ -603,6 +558,188 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
                 )
             ]
 
+    def _detect_antibody_type(self, sequence: str) -> str:
+        """Detect antibody type based on sequence characteristics"""
+        sequence_upper = sequence.upper()
+        
+        # Check for scFv linker patterns
+        if "GGGGSGGGGSGGGGSGGGGS" in sequence_upper or "GGGGSGGGGS" in sequence_upper:
+            return "scfv"
+        
+        # Check for DvD-Ig patterns (two variable domains)
+        # Look for two consecutive variable domain patterns
+        variable_patterns = ["WGQGTLVTVSS", "FGQGTKVEIK", "WGQGTQVTVSS", "FGQGTKLEIK"]
+        pattern_count = 0
+        for pattern in variable_patterns:
+            if pattern in sequence_upper:
+                pattern_count += 1
+        
+        if pattern_count >= 2:
+            return "dvd_ig"
+        
+        # Default to IgG
+        return "igg"
+
+    def _detect_scfv_domains(self, sequence: str, numbering_scheme: NumberingScheme) -> List[BiologicDomain]:
+        """Detect domains for scFv: 2 variable domains + linker"""
+        domains = []
+        
+        # Split scFv into VH and VL domains
+        vh_end, vl_start = self._detect_scfv_domain_boundaries(sequence)
+        
+        if vh_end > 0:
+            # VH domain
+            vh_sequence = sequence[:vh_end]
+            vh_domain = self._create_variable_domain(vh_sequence, 1, vh_end, numbering_scheme, "VH")
+            domains.append(vh_domain)
+        
+        if vl_start > 0 and vl_start < len(sequence):
+            # VL domain
+            vl_sequence = sequence[vl_start-1:]  # -1 because positions are 1-indexed
+            vl_domain = self._create_variable_domain(vl_sequence, vl_start, len(sequence), numbering_scheme, "VL")
+            domains.append(vl_domain)
+        
+        return domains
+
+    def _detect_dvd_ig_domains(self, sequence: str, numbering_scheme: NumberingScheme) -> List[BiologicDomain]:
+        """Detect domains for DvD-Ig: 2 variable domains + 1 constant domain"""
+        domains = []
+        
+        # Detect domain boundaries
+        v1_end, v2_start = self._detect_dvd_ig_variable_boundaries(sequence)
+        c_start = self._detect_constant_domain_start(sequence, v2_start)
+        
+        # First variable domain
+        if v1_end > 0:
+            v1_sequence = sequence[:v1_end]
+            v1_domain = self._create_variable_domain(v1_sequence, 1, v1_end, numbering_scheme, "V1")
+            domains.append(v1_domain)
+        
+        # Second variable domain
+        if v2_start > 0 and v2_start < len(sequence):
+            v2_end = c_start if c_start > v2_start else len(sequence)
+            v2_sequence = sequence[v2_start-1:v2_end]  # -1 because positions are 1-indexed
+            v2_domain = self._create_variable_domain(v2_sequence, v2_start, v2_end, numbering_scheme, "V2")
+            domains.append(v2_domain)
+        
+        # Constant domain
+        if c_start > 0 and c_start < len(sequence):
+            c_sequence = sequence[c_start-1:]  # -1 because positions are 1-indexed
+            c_domain = self._create_constant_domain(c_sequence, c_start, len(sequence))
+            domains.append(c_domain)
+        
+        return domains
+
+    def _detect_igg_domains(self, sequence: str, numbering_scheme: NumberingScheme) -> List[BiologicDomain]:
+        """Detect domains for IgG: 1 variable domain + 1 constant domain"""
+        domains = []
+        
+        # Detect domain boundaries
+        v_end, c_start = self._detect_igg_domain_boundaries(sequence)
+        
+        # Variable domain
+        if v_end > 0:
+            v_sequence = sequence[:v_end]
+            v_domain = self._create_variable_domain(v_sequence, 1, v_end, numbering_scheme, "V")
+            domains.append(v_domain)
+        
+        # Constant domain
+        if c_start > 0 and c_start < len(sequence):
+            c_sequence = sequence[c_start-1:]  # -1 because positions are 1-indexed
+            c_domain = self._create_constant_domain(c_sequence, c_start, len(sequence))
+            domains.append(c_domain)
+        
+        return domains
+
+    def _create_variable_domain(self, sequence: str, start: int, end: int, numbering_scheme: NumberingScheme, domain_name: str) -> BiologicDomain:
+        """Create a variable domain with ANARCI annotation"""
+        try:
+            anarci_result = self._anarci_adapter.number_sequence(sequence, numbering_scheme)
+            
+            metadata = {
+                "sequence": sequence,
+                "domain_name": domain_name,
+                "numbering_scheme": numbering_scheme.value
+            }
+            
+            if anarci_result.get("success", False):
+                metadata["anarci_result"] = anarci_result
+                # Extract species and germline info
+                numbered = anarci_result.get("data", {}).get("results", [])
+                for result in numbered:
+                    alignment_details = result.get("alignment_details", [])
+                    for alignment in alignment_details:
+                        if alignment.get("species"):
+                            metadata["species"] = alignment["species"]
+                        if alignment.get("germlines"):
+                            germlines = alignment["germlines"]
+                            v_gene = germlines.get("v_gene", [None, 0])[0]
+                            j_gene = germlines.get("j_gene", [None, 0])[0]
+                            if v_gene and j_gene:
+                                metadata["germline"] = f"{v_gene[1]}/{j_gene[1]}"
+                            elif v_gene:
+                                metadata["germline"] = v_gene[1]
+                            elif j_gene:
+                                metadata["germline"] = j_gene[1]
+                            break
+                    if "species" in metadata:
+                        break
+            
+            return BiologicDomain(
+                domain_type=DomainType.VARIABLE,
+                start_position=start,
+                end_position=end,
+                confidence_score=1.0,
+                metadata=metadata
+            )
+        except Exception as e:
+            logger.warning(f"Error creating variable domain {domain_name}: {e}")
+            return BiologicDomain(
+                domain_type=DomainType.VARIABLE,
+                start_position=start,
+                end_position=end,
+                confidence_score=0.8,
+                metadata={
+                    "sequence": sequence,
+                    "domain_name": domain_name,
+                    "error": str(e)
+                }
+            )
+
+    def _create_constant_domain(self, sequence: str, start: int, end: int) -> BiologicDomain:
+        """Create a constant domain with HMMER isotype detection"""
+        try:
+            hmmer_result = self._hmmer_adapter.detect_isotype(sequence)
+            
+            metadata = {
+                "sequence": sequence,
+                "isotype": hmmer_result.get("isotype") if hmmer_result.get("success", False) else None,
+                "hmmer_score": hmmer_result.get("score") if hmmer_result.get("success", False) else None
+            }
+            
+            if hmmer_result.get("success", False):
+                metadata["hmmer_result"] = hmmer_result
+            
+            return BiologicDomain(
+                domain_type=DomainType.CONSTANT,
+                start_position=start,
+                end_position=end,
+                confidence_score=1.0 if hmmer_result.get("success", False) else 0.8,
+                metadata=metadata
+            )
+        except Exception as e:
+            logger.warning(f"Error creating constant domain: {e}")
+            return BiologicDomain(
+                domain_type=DomainType.CONSTANT,
+                start_position=start,
+                end_position=end,
+                confidence_score=0.7,
+                metadata={
+                    "sequence": sequence,
+                    "error": str(e)
+                }
+            )
+
     def _detect_chain_type_from_name(self, chain_name: str) -> ChainType:
         """Detect chain type from chain name"""
         chain_name_lower = chain_name.lower()
@@ -613,7 +750,7 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
             return ChainType.HEAVY
         elif any(
             keyword in chain_name_lower
-            for keyword in ["light", "l", "vl", "kappa", "lambda"]
+            for keyword in ["light", "l", "vl", "kappa", "lambda", "k", "l"]
         ):
             return ChainType.LIGHT
         elif any(
@@ -662,3 +799,127 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
         """Notify about an error during processing"""
         logger.error(f"Annotation error: {error}")
         self.notify_processing_failed(error)
+
+    def _detect_scfv_domain_boundaries(self, sequence: str) -> tuple[int, int]:
+        """Detect VH and VL domain boundaries in scFv sequence"""
+        sequence_upper = sequence.upper()
+        
+        # Look for linker patterns to separate VH and VL
+        linker_patterns = [
+            "GGGGSGGGGSGGGGSGGGGS",  # Long linker
+            "GGGGSGGGGSGGGGS",       # Medium linker
+            "GGGGSGGGGS",            # Short linker
+        ]
+        
+        for pattern in linker_patterns:
+            pos = sequence_upper.find(pattern)
+            if pos != -1:
+                vh_end = pos
+                vl_start = pos + len(pattern) + 1  # +1 because positions are 1-indexed
+                logger.debug(f"Found scFv linker pattern, VH ends at {vh_end}, VL starts at {vl_start}")
+                return vh_end, vl_start
+        
+        # Fallback: use heuristics
+        if len(sequence) > 200:
+            vh_end = min(120, len(sequence) // 2)
+            vl_start = vh_end + 1
+            logger.debug(f"Using heuristic for scFv: VH ends at {vh_end}, VL starts at {vl_start}")
+            return vh_end, vl_start
+        
+        return 0, 0
+
+    def _detect_dvd_ig_variable_boundaries(self, sequence: str) -> tuple[int, int]:
+        """Detect boundaries between two variable domains in DvD-Ig"""
+        sequence_upper = sequence.upper()
+        
+        # Look for variable domain ending patterns
+        variable_end_patterns = [
+            "WGQGTLVTVSS",  # Heavy chain ending
+            "FGQGTKVEIK",   # Light chain ending
+            "WGQGTQVTVSS",  # Alternative ending
+            "FGQGTKLEIK",   # Alternative ending
+        ]
+        
+        v1_end = 0
+        v2_start = 0
+        
+        # Find first variable domain end
+        for pattern in variable_end_patterns:
+            pos = sequence_upper.find(pattern)
+            if pos != -1:
+                v1_end = pos + len(pattern)
+                break
+        
+        # Find second variable domain start (after first variable domain)
+        if v1_end > 0:
+            remaining_sequence = sequence_upper[v1_end:]
+            for pattern in variable_end_patterns:
+                pos = remaining_sequence.find(pattern)
+                if pos != -1:
+                    v2_start = v1_end + pos + len(pattern) + 1  # +1 because positions are 1-indexed
+                    break
+        
+        return v1_end, v2_start
+
+    def _detect_igg_domain_boundaries(self, sequence: str) -> tuple[int, int]:
+        """Detect variable and constant domain boundaries in IgG"""
+        sequence_upper = sequence.upper()
+        
+        # Look for variable domain ending patterns
+        variable_end_patterns = [
+            "WGQGTLVTVSS",  # Heavy chain ending
+            "FGQGTKVEIK",   # Light chain ending
+            "WGQGTQVTVSS",  # Alternative ending
+            "FGQGTKLEIK",   # Alternative ending
+        ]
+        
+        v_end = 0
+        c_start = 0
+        
+        for pattern in variable_end_patterns:
+            pos = sequence_upper.find(pattern)
+            if pos != -1:
+                v_end = pos + len(pattern)
+                c_start = v_end + 1  # Next position after variable domain
+                logger.debug(f"Found IgG variable domain ending pattern '{pattern}' at position {v_end}")
+                break
+        
+        # If no pattern found, use heuristics
+        if v_end == 0:
+            if len(sequence) > 200:
+                v_end = min(128, len(sequence) // 2)
+                c_start = v_end + 1
+                logger.debug(f"Using heuristic for IgG: variable domain ends at position {v_end}")
+            else:
+                v_end = len(sequence)
+                c_start = 0
+                logger.debug(f"Short IgG sequence, treating as variable domain only")
+        
+        return v_end, c_start
+
+    def _detect_constant_domain_start(self, sequence: str, after_position: int) -> int:
+        """Find the start of constant domain after a given position"""
+        if after_position >= len(sequence):
+            return 0
+            
+        remaining_sequence = sequence[after_position:]
+        
+        # Look for constant domain start patterns
+        constant_start_patterns = [
+            "QVQLKQS",  # Heavy chain constant start
+            "DIVMTQS",  # Light chain constant start
+            "QVQLVES",  # Alternative heavy start
+        ]
+        
+        for pattern in constant_start_patterns:
+            pos = remaining_sequence.find(pattern)
+            if pos != -1:
+                return after_position + pos + 1  # +1 because positions are 1-indexed
+        
+        # If no pattern found, look for the first occurrence of typical constant domain amino acids
+        for i, char in enumerate(remaining_sequence):
+            if char in "QVDE" and i > 10:  # Skip potential linker regions
+                return after_position + i + 1  # +1 because positions are 1-indexed
+        
+        # Fallback: start after the given position
+        return after_position + 1

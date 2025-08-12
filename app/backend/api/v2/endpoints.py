@@ -1,17 +1,31 @@
 from typing import Optional
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.annotation.sequence_processor import SequenceProcessor
+from backend.application.commands import ProcessAnnotationCommand
+from backend.application.handlers import WorkflowHandler
+from backend.application.services.annotation_service import (
+    AnnotationService,
+)
+from backend.application.services.biologic_service import (
+    BiologicService,
+)
+from backend.application.services.response_service import (
+    ResponseService,
+)
+from backend.application.services.validation_service import (
+    ValidationService,
+)
 from backend.database.engine import get_db_session
 from backend.jobs.job_manager import job_manager
 from backend.logger import logger
-from backend.models.models import MSACreationRequest, MSAAnnotationRequest
 from backend.models.biologic_models import BiologicResponse
-from backend.models.requests_v2 import AnnotationRequestV2
+from backend.models.models import MSACreationRequest, MSAAnnotationRequest
 from backend.models.models_v2 import AnnotationResultV2
+from backend.models.requests_v2 import AnnotationRequestV2
 from backend.msa.msa_annotation import MSAAnnotationEngine
 from backend.msa.msa_engine import MSAEngine
 from fastapi import APIRouter, HTTPException, File, Form, UploadFile, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -23,28 +37,12 @@ async def health_check_v2():
 
 @router.post("/annotate")
 async def annotate_sequences_v2(
-    request: AnnotationRequestV2,
-    persist_to_database: bool = True,
-    db_session: AsyncSession = Depends(get_db_session),
+        request: AnnotationRequestV2,
+        persist_to_database: bool = True,
+        db_session: AsyncSession = Depends(get_db_session),
 ):
     try:
         # Use the command pattern for clean separation of concerns
-        from backend.application.commands import ProcessAnnotationCommand
-        from backend.application.handlers import WorkflowHandler
-        from backend.application.services.annotation_service import (
-            AnnotationService,
-        )
-        from backend.application.services.validation_service import (
-            ValidationService,
-        )
-        from backend.application.services.response_service import (
-            ResponseService,
-        )
-        from backend.application.services.biologic_service import (
-            BiologicService,
-        )
-
-        # Convert request sequences to the format expected by the service
         input_dict = {}
         for seq in request.sequences:
             chain_data = seq.get_all_chains()
@@ -69,7 +67,7 @@ async def annotate_sequences_v2(
 
         # Execute the workflow
         result = await handler.handle(command)
-        
+
         if result["success"]:
             return result["data"]
         else:
@@ -82,9 +80,9 @@ async def annotate_sequences_v2(
 
 @router.post("/annotate-with-persistence", response_model=dict)
 async def annotate_and_persist_sequences_v2(
-    request: AnnotationRequestV2,
-    organism: Optional[str] = None,
-    db_session: AsyncSession = Depends(get_db_session),
+        request: AnnotationRequestV2,
+        organism: Optional[str] = None,
+        db_session: AsyncSession = Depends(get_db_session),
 ):
     """
     Annotate sequences and persist them as biologic entities.
@@ -150,9 +148,9 @@ async def annotate_and_persist_sequences_v2(
 # Biologic Entity Endpoints
 @router.get("/biologics", response_model=list[BiologicResponse])
 async def list_biologics_v2(
-    skip: int = 0,
-    limit: int = 100,
-    db_session: AsyncSession = Depends(get_db_session),
+        skip: int = 0,
+        limit: int = 100,
+        db_session: AsyncSession = Depends(get_db_session),
 ):
     """List all biologic entities with pagination."""
     try:
@@ -175,8 +173,8 @@ async def list_biologics_v2(
 
 @router.get("/biologics/{biologic_id}", response_model=BiologicResponse)
 async def get_biologic_v2(
-    biologic_id: str,
-    db_session: AsyncSession = Depends(get_db_session),
+        biologic_id: str,
+        db_session: AsyncSession = Depends(get_db_session),
 ):
     """Get a specific biologic entity by ID."""
     try:
@@ -203,8 +201,8 @@ async def get_biologic_v2(
 # MSA Endpoints
 @router.post("/msa-viewer/upload")
 async def upload_msa_sequences_v2(
-    file: Optional[UploadFile] = File(None),
-    sequences: Optional[str] = Form(None),
+        file: Optional[UploadFile] = File(None),
+        sequences: Optional[str] = Form(None),
 ):
     """Upload sequences for MSA analysis"""
     try:
@@ -282,7 +280,7 @@ async def create_msa_v2(request: MSACreationRequest):
             len(seq_input.get_all_chains()) for seq_input in request.sequences
         )
         use_background = (
-            total_sequences > 10
+                total_sequences > 10
         )  # Use background for >10 sequences
 
         if use_background:

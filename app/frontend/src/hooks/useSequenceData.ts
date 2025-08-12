@@ -106,13 +106,20 @@ export const useSequenceData = () => {
     }));
   }, []);
 
-  const setSequencesV2 = useCallback((annotationResult: AnnotationResultV2) => {
+  const setSequencesV2 = useCallback((annotationResult: any) => {
+    console.log('setSequencesV2 called with:', annotationResult);
     const sequences: SequenceData[] = [];
 
-    // Handle the new workflow response structure
-    if (annotationResult.results) {
-      annotationResult.results.forEach((result, seqIndex) => {
+    // Handle the actual backend response structure
+    // The backend returns: { success: true, data: { results: [{ data: { sequence: {...} } }] } }
+    
+    if (annotationResult.success && annotationResult.data?.results?.length > 0) {
+      console.log('Processing results array:', annotationResult.data.results);
+      
+      // Process each result in the array
+      annotationResult.data.results.forEach((result: any, index: number) => {
         if (result.success && result.data?.sequence) {
+          console.log(`Processing sequence ${index}:`, result.data.sequence);
           const seqInfo = result.data.sequence;
           
           const chains = seqInfo.chains.map((chain, chainIdx) => {
@@ -131,7 +138,7 @@ export const useSequenceData = () => {
                   else if (baseRegionName.startsWith('CDR')) regionType = 'CDR';
 
                   annotations.push({
-                    id: `${seqInfo.name || `seq_${seqIndex}`}_${chain.name}_${seqIdx}_${domainIdx}_${featureIdx}_${baseRegionName}`,
+                    id: `${seqInfo.name || 'sequence'}_${chain.name}_${seqIdx}_${domainIdx}_${featureIdx}_${baseRegionName}`,
                     name: baseRegionName,
                     start: feature.start_position,
                     stop: feature.end_position,
@@ -147,11 +154,45 @@ export const useSequenceData = () => {
                     }
                   });
                 });
+
+                // Create placeholder regions for domains without features (constant and linker domains)
+                if (domain.features.length === 0) {
+                  let regionType: Region['type'] = 'FR';
+                  let regionName = 'Unknown';
+                  
+                  if (domainType === 'LINKER') {
+                    regionType = 'LINKER';
+                    regionName = 'LINKER';
+                  } else if (domainType === 'C') {
+                    regionType = 'CONSTANT';
+                    regionName = 'CONSTANT';
+                  }
+
+                  // Only create placeholder regions for LINKER and C domains
+                  if (domainType === 'LINKER' || domainType === 'C') {
+                    annotations.push({
+                      id: `${seqInfo.name || 'sequence'}_${chain.name}_${seqIdx}_${domainIdx}_placeholder_${regionName}`,
+                      name: regionName,
+                      start: domain.start_position,
+                      stop: domain.end_position,
+                      sequence: '', // Empty sequence for placeholder
+                      type: regionType,
+                      color: getRegionColor(regionName),
+                      features: [],
+                      details: {
+                        isotype: domain.metadata?.isotype,
+                        domain_type: domain.domain_type,
+                        species: domain.species,
+                        germline: domain.germline,
+                      }
+                    });
+                  }
+                }
               });
             });
 
             return {
-              id: `${seqInfo.name || `seq_${seqIndex}`}_chain_${chainIdx}`,
+              id: `${seqInfo.name || 'sequence'}_chain_${chainIdx}`,
               type: chain.chain_type,
               sequence: chain.sequences[0]?.sequence_data || '',
               annotations
@@ -162,7 +203,7 @@ export const useSequenceData = () => {
           let sequenceSpecies: string | undefined;
           for (const chain of chains) {
             for (const annotation of chain.annotations) {
-              if (annotation.details.species) {
+              if (annotation.details?.species) {
                 sequenceSpecies = annotation.details.species;
                 break;
               }
@@ -171,8 +212,8 @@ export const useSequenceData = () => {
           }
 
           sequences.push({
-            id: seqInfo.name || `seq_${seqIndex}`,
-            name: seqInfo.name || `Sequence ${seqIndex + 1}`,
+            id: seqInfo.name || `sequence_${index}`,
+            name: seqInfo.name || `Sequence ${index + 1}`,
             chains,
             species: sequenceSpecies
           });

@@ -4,7 +4,6 @@ Implements the Converter pattern for type transformations.
 """
 
 from uuid import uuid4
-from typing import Dict, Any
 
 from backend.core.base_classes import AbstractBiologicConverter
 from backend.database.models import Biologic

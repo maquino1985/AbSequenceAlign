@@ -11,8 +11,10 @@ from ..services.validation_service import ValidationService
 from ..services.response_service import ResponseService
 from ..services.biologic_service import BiologicService
 from backend.logger import logger
+from backend.domain.models import NumberingScheme
 
-
+from backend.domain.entities import BiologicEntity, BiologicChain, BiologicSequence
+from backend.domain.models import ChainType, BiologicType
 class WorkflowHandler(BaseHandler):
     """Handler for complete annotation workflow commands"""
 
@@ -63,7 +65,6 @@ class WorkflowHandler(BaseHandler):
             organism = command_result.data["organism"]
             
             # Convert numbering scheme string to enum
-            from backend.domain.models import NumberingScheme
             numbering_scheme_map = {
                 "imgt": NumberingScheme.IMGT,
                 "kabat": NumberingScheme.KABAT,
@@ -79,12 +80,17 @@ class WorkflowHandler(BaseHandler):
             for sequence_name, sequence_data in sequences.items():
                 try:
                     # Create domain entity from sequence data
-                    from backend.domain.entities import BiologicEntity, BiologicChain, BiologicSequence
-                    from backend.domain.models import ChainType, BiologicType
+
 
                     # Convert sequence data to domain entities
                     chains = []
                     for chain_name, chain_sequence in sequence_data.items():
+
+                        annotation_result = (
+                            self.annotation_service.annotate_sequence(
+                                {chain_name: chain_sequence}, numbering_scheme
+                            )
+                        )
                         # Create sequence
                         biologic_sequence = BiologicSequence(
                             sequence_type="PROTEIN",
@@ -114,11 +120,7 @@ class WorkflowHandler(BaseHandler):
                     )
 
                     # Perform annotation (domains will be created during annotation)
-                    annotation_result = (
-                        self.annotation_service.annotate_sequence(
-                            sequence, numbering_scheme
-                        )
-                    )
+
 
                     if annotation_result.success:
                         results.append(

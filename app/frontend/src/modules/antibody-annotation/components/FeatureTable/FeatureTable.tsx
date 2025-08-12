@@ -99,6 +99,7 @@ export const FeatureTable: React.FC<FeatureTableProps> = ({
                   size="small"
                   color={getChipColor(region.type)}
                   variant="outlined"
+                  data-testid={`chip-${region.name}`}
                   sx={region.type === 'LINKER' ? { fontStyle: 'italic' } : undefined}
                 />
               </TableCell>
