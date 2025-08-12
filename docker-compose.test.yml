@@ -88,7 +88,7 @@ services:
   frontend-server:
     build:
       context: ./app/frontend
-      dockerfile: Dockerfile.base
+      dockerfile: Dockerfile.dev
       args:
         BASE_IMAGE: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY_OWNER:-maquino1985}/absequencealign-frontend-base:latest
     container_name: absequencealign-frontend-server
