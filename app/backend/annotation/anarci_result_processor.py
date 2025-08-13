@@ -221,7 +221,7 @@ class AnarciResultProcessor:
                                 Region(
                                     name="LINKER",
                                     start=prev_domain_end,
-                                    stop=domain_end,
+                                    stop=domain_start,
                                     sequence=linker_seq,
                                 )
                             ],
@@ -249,11 +249,11 @@ class AnarciResultProcessor:
 
                             start_rel = to_int(region.start)
                             stop_rel = to_int(region.stop)
-                            # Convert domain-relative numbering start to index offset using numbering list
-                            # Here, ANARCI numbering positions are 1-based; domain_start is 0-based index into raw_sequence
-                            # We therefore add domain_start - 1 to convert to absolute 1-based positions
-                            start_abs = domain_start + (start_rel - 1)
-                            stop_abs = domain_start + (stop_rel - 1)
+                            # Convert domain-relative numbering positions to absolute positions
+                            # ANARCI numbering positions are 1-based; domain_start is 0-based index into raw_sequence
+                            # We add domain_start to convert to absolute 0-based positions, then add 1 for 1-based output
+                            start_abs = domain_start + start_rel
+                            stop_abs = domain_start + stop_rel
                             # domain_region = Region(name=region.name, start=start_abs, stop=stop_abs, sequence=region.sequence)
                             region.start = start_abs
                             region.stop = stop_abs
