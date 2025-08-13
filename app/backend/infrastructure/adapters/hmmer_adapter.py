@@ -9,7 +9,7 @@ import os
 from typing import Dict, Any, List, Optional
 import logging
 
-from ...core.base_classes import AbstractExternalToolAdapter
+from ...core.interfaces import AbstractExternalToolAdapter
 from ...core.exceptions import (
     HmmerError,
 )
@@ -34,11 +34,11 @@ class HmmerAdapter(AbstractExternalToolAdapter):
             "IGHM",
         ]
 
-    def _check_availability(self) -> bool:
+    def is_available(self) -> bool:
         """Check if HMMER is available on the system"""
         try:
             result = subprocess.run(
-                ["hmmsearch", "--help"],
+                ["hmmsearch", "-h"],
                 capture_output=True,
                 text=True,
                 timeout=5,
@@ -47,6 +47,22 @@ class HmmerAdapter(AbstractExternalToolAdapter):
         except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
             self._logger.warning("HMMER not available via command line")
             return False
+
+    def validate_output(self, output: Dict[str, Any]) -> bool:
+        """Validate HMMER output"""
+        if not output or not isinstance(output, dict):
+            return False
+
+        # Check for required keys in HMMER output
+        required_keys = ["success", "data"]
+        if not all(key in output for key in required_keys):
+            return False
+
+        return output.get("success", False)
+
+    def _check_availability(self) -> bool:
+        """Check if HMMER is available on the system"""
+        return self.is_available()
 
     def execute(self, input_data: str) -> Dict[str, Any]:
         """Execute HMMER on the input sequence"""
@@ -73,7 +89,15 @@ class HmmerAdapter(AbstractExternalToolAdapter):
             raise HmmerError("Invalid sequence", tool_name=self.tool_name)
 
         try:
-            return self._detect_isotype(sequence)
+            result = self._detect_isotype(sequence)
+            # Return result in the format expected by the annotation service
+            return {
+                "success": result.get("best_isotype") is not None,
+                "data": result,
+                "isotype": result.get("best_isotype"),
+                "score": result.get("best_score"),
+                "evalue": result.get("best_evalue"),
+            }
         except Exception as e:
             raise HmmerError(
                 f"Isotype detection failed: {str(e)}", tool_name=self.tool_name
@@ -86,12 +110,21 @@ class HmmerAdapter(AbstractExternalToolAdapter):
         if hmm_dir and os.path.exists(hmm_dir):
             return hmm_dir
 
+        # Try to get from PROJECT_ROOT_DIR environment variable
+        project_root = os.environ.get("PROJECT_ROOT_DIR")
+        if project_root:
+            hmm_dir = os.path.join(project_root, "data", "isotype_hmms")
+            if os.path.exists(hmm_dir):
+                return hmm_dir
+
         # Try common locations
         common_paths = [
             "/usr/local/share/hmmer/isotype_hmms",
             "/opt/hmmer/isotype_hmms",
             "./data/isotype_hmms",
             "./app/backend/data/isotype_hmms",
+            "../../data/isotype_hmms",  # From backend directory to project root
+            "../data/isotype_hmms",  # Alternative path
         ]
 
         for path in common_paths:
@@ -273,12 +306,12 @@ class HmmerAdapter(AbstractExternalToolAdapter):
             }
 
         try:
-            score = float(fields[13])  # domain_score
-            evalue = float(fields[12])  # domain_evalue
-            hmm_from = int(fields[5])  # hmm_from
-            hmm_to = int(fields[6])  # hmm_to
-            ali_from = int(fields[7])  # ali_from
-            ali_to = int(fields[8])  # ali_to
+            score = float(fields[13])  # domain score
+            evalue = float(fields[11])  # domain i-Evalue
+            hmm_from = int(fields[15])  # hmm from
+            hmm_to = int(fields[16])  # hmm to
+            ali_from = int(fields[17])  # ali from
+            ali_to = int(fields[18])  # ali to
 
             return {
                 "isotype": isotype,

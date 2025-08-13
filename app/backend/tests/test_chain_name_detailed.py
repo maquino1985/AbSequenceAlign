@@ -9,7 +9,7 @@ from backend.annotation.annotation_engine import (
 from backend.models.models import SequenceInput, NumberingScheme
 
 
-def test_trace_chain_name_processing():
+def test_trace_chain_name_processing() -> None:
     """Trace what happens to chain names through the entire pipeline."""
 
     # Create test input with specific name

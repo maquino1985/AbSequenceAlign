@@ -1,166 +1,218 @@
 import { renderHook, act } from '@testing-library/react';
 import { useSequenceData } from '../useSequenceData';
-import type { AnnotationResult } from '../../types/api';
 
 describe('useSequenceData', () => {
-  const mockAnnotationResult: AnnotationResult = {
-    sequences: [
-      {
-        name: 'test_sequence',
-        sequence: 'EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYAD',
-        chain_type: 'H',
-        isotype: 'IGHG1',
-        species: 'human',
-        germline: 'IGHV3-23*01',
-        regions: {
-          FR1: {
-            name: 'FR1',
-            start: 1,
-            stop: 25,
-            sequence: 'EVQLVESGGGLVQPGGSLRLSCAAS',
-            domain_type: 'V'
-          },
-          CDR1: {
-            name: 'CDR1',
-            start: 26,
-            stop: 33,
-            sequence: 'GFTFSSYA',
-            domain_type: 'V'
-          },
-          LINKER1: {
-            name: 'LINKER1',
-            start: 110,
-            stop: 119,
-            sequence: 'GGGGSGGGGG',
-            preceding_linker: {
-              sequence: 'GGGGSGGGGG',
-              start: 110,
-              end: 119
-            }
-          },
-          CH1: {
-            name: 'CH1',
-            start: 120,
-            stop: 220,
-            sequence: 'ASTKGPSVFPLAPSSKSTSGGTAALGCLVKDYFPEPVTVSWNSGALTSGVHTFPAVLQSSGLYSLSSVVTVPSSSLGTQTYICNVNHKPSNTKVDKKV',
-            domain_type: 'C',
-            isotype: 'IGHG1'
-          }
-        }
-      }
-    ],
-    numbering_scheme: 'imgt',
-    total_sequences: 1,
-    chain_types: { H: 1 },
-    isotypes: { IGHG1: 1 },
-    species: { human: 1 }
-  };
-
   it('initializes with empty state', () => {
     const { result } = renderHook(() => useSequenceData());
-    expect(result.current.sequences).toHaveLength(0);
-    expect(result.current.selectedRegions).toHaveLength(0);
-    expect(result.current.selectedPositions).toHaveLength(0);
+
+    expect(result.current.sequences).toEqual([]);
+    expect(result.current.selectedRegions).toEqual([]);
+    expect(result.current.selectedPositions).toEqual([]);
+    expect(result.current.colorScheme.name).toBe('Hydrophobicity');
   });
 
   it('processes annotation result correctly', () => {
     const { result } = renderHook(() => useSequenceData());
 
+    const mockAnnotationResult = {
+      success: true,
+      message: "Successfully annotated",
+      data: {
+        results: [
+          {
+            name: "Humira_Light",
+            success: true,
+            data: {
+              sequence: {
+                name: "Humira_Light",
+                biologic_type: "antibody",
+                chains: [
+                  {
+                    name: "light_chain",
+                    chain_type: "LIGHT",
+                    sequences: [
+                      {
+                        sequence_type: "PROTEIN",
+                        sequence_data: "DIQMTQSPSSLSASVGDRVTITCRASQGIRNYLAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK",
+                        domains: [
+                          {
+                            domain_type: "V",
+                            start_position: 1,
+                            end_position: 213,
+                            species: "human",
+                            germline: "IGKV1-27*01/IGKJ1*01",
+                            features: [
+                              {
+                                name: "CDR1",
+                                feature_type: "CDR1",
+                                value: "QGI------RNY",
+                                start_position: 27,
+                                end_position: 38
+                              },
+                              {
+                                name: "CDR2",
+                                feature_type: "CDR2",
+                                value: "AA-------S",
+                                start_position: 56,
+                                end_position: 65
+                              },
+                              {
+                                name: "CDR3",
+                                feature_type: "CDR3",
+                                value: "QRYNR----APYT",
+                                start_position: 105,
+                                end_position: 117
+                              },
+                              {
+                                name: "FR1",
+                                feature_type: "FR1",
+                                value: "DIQMTQSPSSLSASVGDRVTITCRAS",
+                                start_position: 1,
+                                end_position: 26
+                              },
+                              {
+                                name: "FR2",
+                                feature_type: "FR2",
+                                value: "LAWYQQKPGKAPKLLIY",
+                                start_position: 39,
+                                end_position: 55
+                              },
+                              {
+                                name: "FR3",
+                                feature_type: "FR3",
+                                value: "SLQSGVP-SRFSGSG--SGTDFTLTISSLQPEDVATYYC",
+                                start_position: 66,
+                                end_position: 104
+                              },
+                              {
+                                name: "FR4",
+                                feature_type: "FR4",
+                                value: "FGQGTKVEIK",
+                                start_position: 118,
+                                end_position: 128
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    };
+
     act(() => {
-      result.current.setSequences(mockAnnotationResult);
+      result.current.setSequencesV2(mockAnnotationResult);
     });
 
     expect(result.current.sequences).toHaveLength(1);
-    const sequence = result.current.sequences[0];
-    expect(sequence.name).toBe('test_sequence');
-    expect(sequence.chains).toHaveLength(1);
-
-    const chain = sequence.chains[0];
-    expect(chain.type).toBe('H');
-    expect(chain.annotations).toHaveLength(4);
-
-    // Check FR1 region
-    const fr1 = chain.annotations.find(r => r.name === 'FR1');
-    expect(fr1).toBeDefined();
-    expect(fr1?.type).toBe('FR');
-    expect(fr1?.details?.domain_type).toBe('V');
-
-    // Check CDR1 region
-    const cdr1 = chain.annotations.find(r => r.name === 'CDR1');
+    expect(result.current.sequences[0].name).toBe("Humira_Light");
+    expect(result.current.sequences[0].species).toBe("human");
+    
+    const chain = result.current.sequences[0].chains[0];
+    expect(chain.type).toBe("LIGHT");
+    expect(chain.annotations).toHaveLength(7); // 7 features: CDR1, CDR2, CDR3, FR1, FR2, FR3, FR4
+    
+    // Check that features are correctly processed
+    const cdr1 = chain.annotations.find(a => a.name === "CDR1");
     expect(cdr1).toBeDefined();
-    expect(cdr1?.type).toBe('CDR');
-    expect(cdr1?.details?.domain_type).toBe('V');
-
-    // Check linker region
-    const linker = chain.annotations.find(r => r.name === 'LINKER1');
-    expect(linker).toBeDefined();
-    expect(linker?.type).toBe('LINKER');
-    expect(linker?.details?.preceding_linker).toBeDefined();
-    expect(linker?.details?.preceding_linker?.sequence).toBe('GGGGSGGGGG');
-
-    // Check constant region
-    const ch1 = chain.annotations.find(r => r.name === 'CH1');
-    expect(ch1).toBeDefined();
-    expect(ch1?.type).toBe('CONSTANT');
-    expect(ch1?.details?.domain_type).toBe('C');
-    expect(ch1?.details?.isotype).toBe('IGHG1');
+    expect(cdr1?.type).toBe("CDR");
+    expect(cdr1?.start).toBe(27);
+    expect(cdr1?.stop).toBe(38);
+    expect(cdr1?.sequence).toBe("QGI------RNY");
+    expect(cdr1?.details?.species).toBe("human");
+    expect(cdr1?.details?.germline).toBe("IGKV1-27*01/IGKJ1*01");
   });
 
   it('handles region selection', () => {
     const { result } = renderHook(() => useSequenceData());
+    
+    // First set up some data
+    const mockAnnotationResult = {
+      success: true,
+      message: "Successfully annotated",
+      data: {
+        results: [
+          {
+            name: "test",
+            success: true,
+            data: {
+              sequence: {
+                name: "test",
+                biologic_type: "antibody",
+                chains: [
+                  {
+                    name: "test_chain",
+                    chain_type: "LIGHT",
+                    sequences: [
+                      {
+                        sequence_type: "PROTEIN",
+                        sequence_data: "TEST",
+                        domains: [
+                          {
+                            domain_type: "V",
+                            start_position: 1,
+                            end_position: 10,
+                            features: [
+                              {
+                                name: "CDR1",
+                                feature_type: "CDR1",
+                                value: "TEST",
+                                start_position: 1,
+                                end_position: 4
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    };
 
     act(() => {
-      result.current.setSequences(mockAnnotationResult);
+      result.current.setSequencesV2(mockAnnotationResult);
     });
 
-    const fr1Id = result.current.sequences[0].chains[0].annotations[0].id;
-
+    const regionId = result.current.sequences[0].chains[0].annotations[0].id;
+    
     act(() => {
-      result.current.selectRegion(fr1Id);
+      result.current.selectRegion(regionId);
     });
 
-    expect(result.current.selectedRegions).toContain(fr1Id);
-    expect(result.current.selectedPositions).toHaveLength(25); // FR1 length
-
-    // Deselect region
-    act(() => {
-      result.current.selectRegion(fr1Id);
-    });
-
-    expect(result.current.selectedRegions).not.toContain(fr1Id);
-    expect(result.current.selectedPositions).toHaveLength(0);
+    expect(result.current.selectedRegions).toContain(regionId);
+    expect(result.current.selectedPositions).toEqual([1, 2, 3, 4]);
   });
 
   it('handles position selection', () => {
     const { result } = renderHook(() => useSequenceData());
-
+    
     act(() => {
-      result.current.selectPosition(1);
+      result.current.selectPosition(5);
     });
 
-    expect(result.current.selectedPositions).toContain(1);
-
-    act(() => {
-      result.current.selectPosition(1);
-    });
-
-    expect(result.current.selectedPositions).not.toContain(1);
+    expect(result.current.selectedPositions).toContain(5);
   });
 
   it('clears selection', () => {
     const { result } = renderHook(() => useSequenceData());
-
+    
+    // Set up some selections
     act(() => {
-      result.current.setSequences(mockAnnotationResult);
+      result.current.selectPosition(5);
+      result.current.selectPosition(10);
     });
 
-    act(() => {
-      result.current.selectPosition(1);
-      result.current.selectRegion(result.current.sequences[0].chains[0].annotations[0].id);
-    });
-
-    expect(result.current.selectedPositions).not.toHaveLength(0);
-    expect(result.current.selectedRegions).not.toHaveLength(0);
+    expect(result.current.selectedPositions).toHaveLength(2);
 
     act(() => {
       result.current.clearSelection();

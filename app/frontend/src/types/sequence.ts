@@ -26,6 +26,8 @@ export interface Region {
   details?: {
     isotype?: string;
     domain_type?: string;
+    species?: string;
+    germline?: string;
     preceding_linker?: {
       sequence: string;
       start: number;

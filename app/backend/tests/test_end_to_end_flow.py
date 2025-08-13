@@ -12,7 +12,7 @@ from backend.models.models import (
 )
 
 
-def test_fasta_to_annotation_flow():
+def test_fasta_to_annotation_flow() -> None:
     """Test the complete flow from FASTA string to annotation result."""
 
     # Simulate FASTA input like what comes from the frontend

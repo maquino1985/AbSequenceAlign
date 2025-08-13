@@ -8,7 +8,7 @@ from backend.annotation.annotation_engine import (
 from backend.models.models import SequenceInput, NumberingScheme
 
 
-def test_chain_name_preservation_single_sequence():
+def test_chain_name_preservation_single_sequence() -> None:
     """Test that a single sequence with custom name preserves the name."""
 
     # Example sequence with custom name
@@ -32,7 +32,7 @@ def test_chain_name_preservation_single_sequence():
     ), f"Expected 'Custom_Heavy_Chain_VH1', got '{returned_sequence.name}'"
 
 
-def test_chain_name_preservation_multiple_sequences():
+def test_chain_name_preservation_multiple_sequences() -> None:
     """Test that multiple sequences with custom names preserve their names."""
 
     sequence_inputs = [
@@ -63,7 +63,7 @@ def test_chain_name_preservation_multiple_sequences():
         ), f"Expected '{expected_name}' in returned names {returned_names}"
 
 
-def test_chain_name_preservation_with_custom_chains():
+def test_chain_name_preservation_with_custom_chains() -> None:
     """Test that custom chain names are preserved."""
 
     sequence_input = SequenceInput(

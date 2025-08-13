@@ -8,7 +8,7 @@ from backend.annotation.annotation_engine import (
 from backend.models.models import SequenceInput, NumberingScheme
 
 
-def test_custom_chains_preserve_names():
+def test_custom_chains_preserve_names() -> None:
     """Test that custom_chains preserves original FASTA header names."""
 
     # This simulates the NEW frontend approach using custom_chains

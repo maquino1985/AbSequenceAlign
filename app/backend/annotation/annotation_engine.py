@@ -1,7 +1,7 @@
 # This file is now deprecated. AnnotationEngine and related logic have been replaced by AnarciResultProcessor and annotate_sequences_with_processor.
 # All annotation should use the new pipeline.
 
-from typing import List
+from typing import List, Dict
 
 # If you need annotation, import annotate_sequences_with_processor from this module.
 from .anarci_result_processor import AnarciResultProcessor
@@ -43,9 +43,9 @@ def annotate_sequences_with_processor(
         input_dict, numbering_scheme=numbering_scheme.value
     )
     all_sequence_infos = []
-    chain_types = {}
-    isotypes = {}
-    species_counts = {}
+    chain_types: Dict[str, str] = {}
+    isotypes: Dict[str, str] = {}
+    species_counts: Dict[str, int] = {}
 
     for result_obj in processor.results:
         for chain in result_obj.chains:
@@ -72,8 +72,8 @@ def annotate_sequences_with_processor(
                     }
                 elif domain.domain_type == "V" and hasattr(domain, "regions"):
                     # Keep original region names; positions are absolute now
-                    for region_name, region_data in domain.regions.items():
-                        all_regions[region_name] = region_data
+                    for region in domain.regions:
+                        all_regions[region.name] = region
 
             # Create a single SequenceInfo for the entire chain
             info = SequenceInfo(

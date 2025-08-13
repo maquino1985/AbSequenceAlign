@@ -3,14 +3,15 @@ Processor factory for creating different types of processors.
 Implements the Factory pattern to provide a clean way to create processors.
 """
 
-from typing import Dict, Type
 import logging
+from typing import Dict, Type
 
+from backend.core.interfaces import Processor
 from ...core.base_classes import AbstractFactory
-from ...core.interfaces import Processor
+from ...core.interfaces import BiologicProcessor
 
 
-class ProcessorFactory(AbstractFactory[Processor]):
+class ProcessorFactory(AbstractFactory[BiologicProcessor]):
     """Factory for creating processors"""
 
     def __init__(self):

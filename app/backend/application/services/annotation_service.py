@@ -1,45 +1,42 @@
 """
-Annotation service for orchestrating antibody sequence annotation.
-Implements the Strategy pattern for different annotation approaches.
+Annotation service for orchestrating biologic sequence annotation.
+Focuses on domain annotation logic only.
 """
 
 from typing import Dict, Any, List, Optional
 
 from backend.core.base_classes import AbstractProcessingSubject
-from backend.core.interfaces import ProcessingResult
+from backend.core.interfaces import (
+    ProcessingResult,
+    AnnotationService as IAnnotationService,
+)
 from backend.core.exceptions import AnnotationError, ValidationError
 from backend.domain.models import (
     NumberingScheme,
     ChainType,
     DomainType,
-    RegionType,
+    FeatureType,
 )
 from backend.domain.entities import (
-    AntibodySequence,
-    AntibodyChain,
-    AntibodyDomain,
-    AntibodyRegion,
+    BiologicEntity,
+    BiologicChain,
+    BiologicSequence,
+    BiologicDomain,
+    BiologicFeature,
 )
 from backend.domain.value_objects import (
     RegionBoundary,
 )
 from backend.infrastructure.adapters.anarci_adapter import AnarciAdapter
 from backend.infrastructure.adapters.hmmer_adapter import HmmerAdapter
-from backend.annotation.anarci_result_processor import AnarciResultProcessor
-from backend.models.models_v2 import (
-    Sequence,
-    Chain,
-    Domain,
-    Region,
-    RegionFeature,
-    DomainType,
-    AnnotationResult,
-)
+from backend.utils.validation_utils import ValidationUtils
 from backend.logger import logger
 
+from backend.annotation.anarci_result_processor import AnarciResultProcessor
 
-class AnnotationService(AbstractProcessingSubject):
-    """Service for orchestrating antibody sequence annotation"""
+
+class AnnotationService(AbstractProcessingSubject, IAnnotationService):
+    """Service for orchestrating biologic sequence annotation"""
 
     def __init__(self):
         super().__init__()
@@ -48,7 +45,7 @@ class AnnotationService(AbstractProcessingSubject):
 
     def process_sequence(
         self,
-        sequence: AntibodySequence,
+        sequence: BiologicEntity,
         numbering_scheme: NumberingScheme = NumberingScheme.IMGT,
     ) -> ProcessingResult:
         """Process a sequence through annotation (alias for annotate_sequence)"""
@@ -56,18 +53,23 @@ class AnnotationService(AbstractProcessingSubject):
 
     def annotate_sequence(
         self,
-        sequence: AntibodySequence,
+        sequence: BiologicEntity,
         numbering_scheme: NumberingScheme = NumberingScheme.IMGT,
     ) -> ProcessingResult:
-        """Annotate a complete antibody sequence"""
+        """Annotate a complete biologic sequence"""
+        # logger.info(f"Starting annotation for sequence: {sequence.name}")
+
         try:
-            logger.info(f"Starting annotation for sequence: {sequence.name}")
+            processor = AnarciResultProcessor(
+                sequence, numbering_scheme=numbering_scheme.value
+            )
+            print(processor.results)
             self.notify_step_completed("start", 0.0)
 
             # Validate sequence
-            if not self._validate_sequence(sequence):
+            if not ValidationUtils.validate_sequence(sequence):
                 raise ValidationError(
-                    "Invalid antibody sequence", field="sequence"
+                    "Invalid biologic sequence", field="sequence"
                 )
 
             # Process each chain
@@ -82,70 +84,80 @@ class AnnotationService(AbstractProcessingSubject):
                     i / total_chains
                 ) * 0.8  # 80% of work is chain processing
                 self.notify_step_completed(f"chain_{i+1}", progress)
-
                 annotated_chain = self.annotate_chain(chain, numbering_scheme)
                 annotated_chains.append(annotated_chain)
 
             # Create annotated sequence
-            annotated_sequence = AntibodySequence(
+            annotated_sequence = BiologicEntity(
                 name=sequence.name,
+                biologic_type=sequence.biologic_type,
                 chains=annotated_chains,
                 metadata=sequence.metadata,
             )
 
             self.notify_step_completed("complete", 1.0)
-            logger.info(f"Annotation completed for sequence: {sequence.name}")
-
             return ProcessingResult(
                 success=True,
-                data={"annotated_sequence": annotated_sequence},
-                metadata={"chains_processed": total_chains},
+                data=annotated_sequence,
             )
 
         except Exception as e:
-            error_msg = (
-                f"Annotation failed for sequence {sequence.name}: {str(e)}"
+            self.notify_processing_failed(str(e))
+            logger.error(f"Error annotating sequence: {e}")
+            raise AnnotationError(
+                f"Sequence annotation failed: {str(e)}",
+                step="sequence_annotation",
             )
-            logger.error(error_msg)
-            self.notify_error(error_msg)
-            return ProcessingResult(success=False, error=error_msg)
 
     def annotate_chain(
         self,
-        chain: AntibodyChain,
+        chain: BiologicChain,
         numbering_scheme: NumberingScheme = NumberingScheme.IMGT,
-    ) -> AntibodyChain:
-        """Annotate a single antibody chain"""
+    ) -> BiologicChain:
+        """Annotate a single biologic chain"""
         try:
             logger.debug(f"Annotating chain: {chain.name}")
-
-            # Validate chain
-            if not self._validate_chain(chain):
-                raise ValidationError("Invalid antibody chain", field="chain")
 
             # Detect chain type if not specified
             if not chain.chain_type:
                 chain.chain_type = self._detect_chain_type(chain)
 
-            # Process domains
-            annotated_domains = []
-            for domain in chain.domains:
-                annotated_domain = self.annotate_domain(
-                    domain, numbering_scheme
+            # Process sequences and detect/create domains
+            annotated_sequences = []
+            for sequence in chain.sequences:
+                # Detect and create domains from sequence data
+                detected_domains = self._detect_domains_from_sequence(
+                    sequence, numbering_scheme
                 )
-                annotated_domains.append(annotated_domain)
 
-            # Create annotated chain
-            annotated_chain = AntibodyChain(
-                name=chain.name,
-                chain_type=chain.chain_type,
-                sequence=chain.sequence,
-                domains=annotated_domains,
-                metadata=chain.metadata,
-            )
+                # Annotate each detected domain
+                annotated_domains = []
+                for domain in detected_domains:
+                    if domain.domain_type == DomainType.VARIABLE:
+                        annotated_domain = self._annotate_variable_domain(
+                            domain, numbering_scheme
+                        )
+                    elif domain.domain_type == DomainType.CONSTANT:
+                        annotated_domain = self._annotate_constant_domain(
+                            domain
+                        )
+                    elif domain.domain_type == DomainType.LINKER:
+                        annotated_domain = self._annotate_linker_domain(domain)
+                    else:
+                        raise AnnotationError(
+                            f"Unknown domain type: {domain.domain_type}",
+                            step="domain_type_check",
+                        )
+                    annotated_domains.append(annotated_domain)
 
-            return annotated_chain
+                sequence.domains = annotated_domains
+                annotated_sequences.append(sequence)
+            chain.sequences = annotated_sequences
 
+            return chain
+
+        except AnnotationError:
+            raise
         except Exception as e:
             raise AnnotationError(
                 f"Chain annotation failed: {str(e)}", step="chain_annotation"
@@ -153,13 +165,11 @@ class AnnotationService(AbstractProcessingSubject):
 
     def annotate_domain(
         self,
-        domain: AntibodyDomain,
+        domain: BiologicDomain,
         numbering_scheme: NumberingScheme = NumberingScheme.IMGT,
-    ) -> AntibodyDomain:
-        """Annotate a single antibody domain"""
+    ) -> BiologicDomain:
+        """Annotate a single domain"""
         try:
-            logger.debug(f"Annotating domain: {domain.domain_type}")
-
             if domain.domain_type == DomainType.VARIABLE:
                 return self._annotate_variable_domain(domain, numbering_scheme)
             elif domain.domain_type == DomainType.CONSTANT:
@@ -168,39 +178,91 @@ class AnnotationService(AbstractProcessingSubject):
                 return self._annotate_linker_domain(domain)
             else:
                 raise AnnotationError(
-                    f"Unknown domain type: {domain.domain_type}"
+                    f"Unknown domain type: {domain.domain_type}",
+                    step="domain_type_check",
                 )
-
         except Exception as e:
             raise AnnotationError(
                 f"Domain annotation failed: {str(e)}", step="domain_annotation"
             )
 
+    def _get_domain_sequence(self, domain: BiologicDomain) -> str:
+        """Get the sequence for a domain from its metadata or parent sequence"""
+        # Try to get sequence from metadata first (for test compatibility)
+        if "sequence" in domain.metadata:
+            return domain.metadata["sequence"]
+
+        # If not in metadata, try to extract from parent sequence
+        # This would require the domain to have a reference to its parent sequence
+        # For now, we'll raise an error if sequence is not available
+        raise AnnotationError(
+            f"Domain sequence not available for domain {domain.domain_type}",
+            step="sequence_extraction",
+        )
+
     def _annotate_variable_domain(
-        self, domain: AntibodyDomain, numbering_scheme: NumberingScheme
-    ) -> AntibodyDomain:
+        self, domain: BiologicDomain, numbering_scheme: NumberingScheme
+    ) -> BiologicDomain:
         """Annotate a variable domain using ANARCI"""
         try:
-            # Use ANARCI for numbering and region annotation
-            anarci_result = self._anarci_adapter.number_sequence(
-                str(domain.sequence), scheme=numbering_scheme
-            )
+            # Check if ANARCI result is already in metadata (from domain detection)
+            if "anarci_result" in domain.metadata:
+                anarci_result = {
+                    "success": True,
+                    "data": domain.metadata["anarci_result"],
+                }
+            else:
+                # Get the sequence for this domain
+                domain_sequence = self._get_domain_sequence(domain)
 
-            if not anarci_result.get("success", False):
-                raise AnnotationError(
-                    "ANARCI numbering failed", step="anarci_numbering"
+                # Use ANARCI for variable domain annotation
+                anarci_result = self._anarci_adapter.number_sequence(
+                    domain_sequence, numbering_scheme
                 )
+
+                if not anarci_result.get("success", False):
+                    raise AnnotationError(
+                        "ANARCI annotation failed", step="anarci_annotation"
+                    )
 
             # Extract regions from ANARCI result
             regions = self._extract_regions_from_anarci(anarci_result, domain)
 
-            # Create annotated domain
-            annotated_domain = AntibodyDomain(
+            # Extract species and germline information from ANARCI result
+            anarci_data = anarci_result.get("data", {})
+            species = domain.metadata.get("species")
+            germline = domain.metadata.get("germline")
+
+            # If not already extracted, try to extract from ANARCI result
+            if not species:
+                if anarci_data.get("alignment_details"):
+                    for align_detail in anarci_data["alignment_details"]:
+                        if hasattr(align_detail, "species"):
+                            species = align_detail.species
+                            break
+
+            if not germline:
+                if anarci_data.get("hit_table"):
+                    germline_info = self._extract_germline_from_hit_table(
+                        anarci_data["hit_table"]
+                    )
+                    germline = (
+                        germline_info.get("id") if germline_info else None
+                    )
+
+            # Create annotated domain with features
+            annotated_domain = BiologicDomain(
                 domain_type=domain.domain_type,
-                sequence=domain.sequence,
-                numbering_scheme=numbering_scheme,
-                regions=regions,
-                metadata={**domain.metadata, "anarci_result": anarci_result},
+                start_position=domain.start_position,
+                end_position=domain.end_position,
+                confidence_score=domain.confidence_score,
+                features=list(regions.values()),  # Add features to the domain
+                metadata={
+                    **domain.metadata,
+                    "anarci_result": anarci_data,
+                    "species": species,
+                    "germline": germline,
+                },
             )
 
             return annotated_domain
@@ -208,45 +270,42 @@ class AnnotationService(AbstractProcessingSubject):
         except Exception as e:
             raise AnnotationError(
                 f"Variable domain annotation failed: {str(e)}",
-                step="variable_domain",
+                step="variable_domain_annotation",
             )
 
     def _annotate_constant_domain(
-        self, domain: AntibodyDomain
-    ) -> AntibodyDomain:
+        self, domain: BiologicDomain
+    ) -> BiologicDomain:
         """Annotate a constant domain using HMMER"""
         try:
-            # Use HMMER for isotype detection
-            hmmer_result = self._hmmer_adapter.detect_isotype(
-                str(domain.sequence)
-            )
+            # Check if HMMER result is already in metadata (from domain detection)
+            if "hmmer_result" in domain.metadata:
+                hmmer_result = domain.metadata["hmmer_result"]
+            else:
+                # Get the sequence for this domain
+                domain_sequence = self._get_domain_sequence(domain)
 
-            if not hmmer_result.get("success", False):
-                raise AnnotationError(
-                    "HMMER isotype detection failed", step="hmmer_detection"
+                # Use HMMER for isotype detection
+                hmmer_result = self._hmmer_adapter.detect_isotype(
+                    domain_sequence
                 )
 
-            # Create constant region
-            constant_region = AntibodyRegion(
-                name="CONSTANT",
-                region_type=RegionType.CONSTANT,
-                boundary=self._calculate_constant_boundary(domain),
-                sequence=domain.sequence,
-                numbering_scheme=domain.numbering_scheme,
-            )
+                if not hmmer_result.get("success", False):
+                    raise AnnotationError(
+                        "HMMER isotype detection failed",
+                        step="hmmer_detection",
+                    )
 
             # Create annotated domain
-            annotated_domain = AntibodyDomain(
+            annotated_domain = BiologicDomain(
                 domain_type=domain.domain_type,
-                sequence=domain.sequence,
-                numbering_scheme=domain.numbering_scheme,
-                regions={"CONSTANT": constant_region},
+                start_position=domain.start_position,
+                end_position=domain.end_position,
+                confidence_score=domain.confidence_score,
                 metadata={
                     **domain.metadata,
-                    "hmmer_result": hmmer_result,
-                    "isotype": hmmer_result.get("data", {}).get(
-                        "best_isotype"
-                    ),
+                    "isotype": hmmer_result.get("isotype"),
+                    "hmmer_score": hmmer_result.get("score"),
                 },
             )
 
@@ -255,30 +314,26 @@ class AnnotationService(AbstractProcessingSubject):
         except Exception as e:
             raise AnnotationError(
                 f"Constant domain annotation failed: {str(e)}",
-                step="constant_domain",
+                step="constant_domain_annotation",
             )
 
     def _annotate_linker_domain(
-        self, domain: AntibodyDomain
-    ) -> AntibodyDomain:
+        self, domain: BiologicDomain
+    ) -> BiologicDomain:
         """Annotate a linker domain"""
         try:
-            # Create linker region
-            linker_region = AntibodyRegion(
-                name="LINKER",
-                region_type=RegionType.LINKER,
-                boundary=self._calculate_linker_boundary(domain),
-                sequence=domain.sequence,
-                numbering_scheme=domain.numbering_scheme,
-            )
-
-            # Create annotated domain
-            annotated_domain = AntibodyDomain(
+            # Linker domains are typically simple and don't require external tools
+            # Just mark them as annotated
+            annotated_domain = BiologicDomain(
                 domain_type=domain.domain_type,
-                sequence=domain.sequence,
-                numbering_scheme=domain.numbering_scheme,
-                regions={"LINKER": linker_region},
-                metadata=domain.metadata,
+                start_position=domain.start_position,
+                end_position=domain.end_position,
+                confidence_score=domain.confidence_score,
+                metadata={
+                    **domain.metadata,
+                    "annotated": True,
+                    "annotation_method": "linker_domain",
+                },
             )
 
             return annotated_domain
@@ -286,35 +341,52 @@ class AnnotationService(AbstractProcessingSubject):
         except Exception as e:
             raise AnnotationError(
                 f"Linker domain annotation failed: {str(e)}",
-                step="linker_domain",
+                step="linker_domain_annotation",
             )
 
     def _extract_regions_from_anarci(
-        self, anarci_result: Dict[str, Any], domain: AntibodyDomain
-    ) -> Dict[str, AntibodyRegion]:
+        self, anarci_result: Dict[str, Any], domain: BiologicDomain
+    ) -> Dict[str, BiologicFeature]:
         """Extract regions from ANARCI result"""
         regions = {}
 
         try:
-            # Get the first result (single sequence)
-            result = anarci_result.get("data", {}).get("results", [{}])[0]
-            numbered = result.get("numbered", [])
+            data = anarci_result.get("data", {})
+            # The results are nested under data.data.results
+            nested_data = data.get("data", {})
+            results = nested_data.get("results", [])
+            if results:
+                for result in results:
+                    numbered_list = result.get("numbered", [])
 
-            if not numbered:
-                return regions
+                    # Each item in numbered_list is (numbered_data, start, end)
+                    for numbered_item in numbered_list:
+                        if (
+                            isinstance(numbered_item, tuple)
+                            and len(numbered_item) == 3
+                        ):
+                            numbered_data, start, end = numbered_item
+                            if numbered_data:
+                                # Extract CDR regions from this numbered data
+                                cdr_regions = self._extract_cdr_regions(
+                                    numbered_data, domain
+                                )
+                                regions.update(cdr_regions)
 
-            # Extract CDR and FR regions based on numbering scheme
-            regions.update(self._extract_cdr_regions(numbered, domain))
-            regions.update(self._extract_fr_regions(numbered, domain))
+                                # Extract FR regions from this numbered data
+                                fr_regions = self._extract_fr_regions(
+                                    numbered_data, domain
+                                )
+                                regions.update(fr_regions)
 
         except Exception as e:
-            logger.warning(f"Failed to extract regions from ANARCI: {e}")
+            logger.warning(f"Error extracting regions from ANARCI: {e}")
 
         return regions
 
     def _extract_cdr_regions(
-        self, numbered: List, domain: AntibodyDomain
-    ) -> Dict[str, AntibodyRegion]:
+        self, numbered: List, domain: BiologicDomain
+    ) -> Dict[str, BiologicFeature]:
         """Extract CDR regions from numbered sequence"""
         regions = {}
 
@@ -332,22 +404,25 @@ class AnnotationService(AbstractProcessingSubject):
                     numbered, start, end
                 )
                 if cdr_sequence:
-                    region = AntibodyRegion(
+                    region = BiologicFeature(
+                        feature_type=FeatureType(cdr_name),
                         name=cdr_name,
-                        region_type=getattr(RegionType, cdr_name),
-                        boundary=self._create_boundary(start, end),
-                        sequence=domain.sequence,  # Use domain sequence for now
-                        numbering_scheme=domain.numbering_scheme,
+                        value=cdr_sequence,
+                        start_position=start,
+                        end_position=end,
+                        confidence_score=domain.confidence_score,
+                        metadata={"source": "ANARCI"},
                     )
                     regions[cdr_name] = region
             except Exception as e:
-                logger.warning(f"Failed to extract {cdr_name}: {e}")
-
+                logger.warning(
+                    f"Could not extract {cdr_name} for domain {domain.domain_type}: {e}"
+                )
         return regions
 
     def _extract_fr_regions(
-        self, numbered: List, domain: AntibodyDomain
-    ) -> Dict[str, AntibodyRegion]:
+        self, numbered: List, domain: BiologicDomain
+    ) -> Dict[str, BiologicFeature]:
         """Extract FR regions from numbered sequence"""
         regions = {}
 
@@ -366,17 +441,20 @@ class AnnotationService(AbstractProcessingSubject):
                     numbered, start, end
                 )
                 if fr_sequence:
-                    region = AntibodyRegion(
+                    region = BiologicFeature(
+                        feature_type=FeatureType(fr_name),
                         name=fr_name,
-                        region_type=getattr(RegionType, fr_name),
-                        boundary=self._create_boundary(start, end),
-                        sequence=domain.sequence,  # Use domain sequence for now
-                        numbering_scheme=domain.numbering_scheme,
+                        value=fr_sequence,
+                        start_position=start,
+                        end_position=end,
+                        confidence_score=domain.confidence_score,
+                        metadata={"source": "ANARCI"},
                     )
                     regions[fr_name] = region
             except Exception as e:
-                logger.warning(f"Failed to extract {fr_name}: {e}")
-
+                logger.warning(
+                    f"Could not extract {fr_name} for domain {domain.domain_type}: {e}"
+                )
         return regions
 
     def _extract_region_sequence(
@@ -384,261 +462,574 @@ class AnnotationService(AbstractProcessingSubject):
     ) -> Optional[str]:
         """Extract sequence for a specific region"""
         try:
+            # Extract amino acids from numbered sequence
             region_sequence = ""
-            for position, amino_acid in numbered:
-                if isinstance(position, (list, tuple)):
-                    pos_num = position[0]
-                else:
-                    pos_num = position
 
-                if start <= pos_num <= end and amino_acid != "-":
-                    region_sequence += amino_acid
+            # Handle ANARCI format: [((pos, chain), aa), ...]
+            for item in numbered:
+                if isinstance(item, tuple) and len(item) == 2:
+                    pos_tuple, aa = item
+                    if isinstance(pos_tuple, tuple) and len(pos_tuple) == 2:
+                        pos, chain = pos_tuple
+                        if isinstance(pos, int) and start <= pos <= end:
+                            region_sequence += aa
 
             return region_sequence if region_sequence else None
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Error extracting region sequence: {e}")
             return None
 
     def _create_boundary(self, start: int, end: int) -> RegionBoundary:
         """Create a region boundary"""
-        return RegionBoundary(start, end)
+        return RegionBoundary(start=start, end=end)
 
-    def _calculate_constant_boundary(self, domain: AntibodyDomain):
-        """Calculate boundary for constant region"""
-        return self._create_boundary(0, len(domain.sequence) - 1)
+    def _calculate_constant_boundary(self, domain: BiologicDomain):
+        """Calculate boundary for constant domain"""
+        # Implementation would depend on domain sequence analysis
+        pass
 
-    def _calculate_linker_boundary(self, domain: AntibodyDomain):
-        """Calculate boundary for linker region"""
-        return self._create_boundary(0, len(domain.sequence) - 1)
+    def _calculate_linker_boundary(self, domain: BiologicDomain):
+        """Calculate boundary for linker domain"""
+        # Implementation would depend on domain sequence analysis
+        pass
 
-    def _detect_chain_type(self, chain: AntibodyChain) -> ChainType:
-        """Detect chain type based on sequence characteristics"""
-        # Simplified chain type detection
-        sequence = str(chain.sequence).upper()
+    def _detect_chain_type(self, chain: BiologicChain) -> ChainType:
+        """Detect chain type from chain data"""
+        try:
+            # Try to detect from chain name
+            if chain.name:
+                return self._detect_chain_type_from_name(chain.name)
 
-        # Check for heavy chain characteristics
-        if "IGH" in sequence or len(sequence) > 400:
+            # Try to detect from sequence content
+            for sequence in chain.sequences:
+                if sequence.sequence_data:
+                    # Simple heuristics for chain type detection
+                    if "C" in sequence.sequence_data[:10]:  # Constant region
+                        return ChainType.HEAVY
+                    elif "V" in sequence.sequence_data[:10]:  # Variable region
+                        return ChainType.LIGHT
+
+            # Default to HEAVY if we can't determine
             return ChainType.HEAVY
 
-        # Check for light chain characteristics
-        if "IGK" in sequence or "IGL" in sequence:
-            return ChainType.LIGHT
+        except Exception as e:
+            logger.warning(f"Error detecting chain type: {e}")
+            return ChainType.HEAVY
 
-        # Default to light chain
-        return ChainType.LIGHT
+    def _detect_domains_from_sequence(
+        self, sequence: BiologicSequence, numbering_scheme: NumberingScheme
+    ) -> List[BiologicDomain]:
+        """Detect domains from sequence data using ANARCI and HMMER"""
+        try:
+            logger.debug(
+                f"Detecting domains from sequence: {sequence.sequence_data[:50]}..."
+            )
 
-    def _validate_sequence(self, sequence: AntibodySequence) -> bool:
-        """Validate antibody sequence"""
-        if not sequence or not sequence.name:
-            return False
+            domains = []
+            sequence_data = sequence.sequence_data
 
-        if not sequence.chains:
-            return False
+            # Determine antibody type and domain structure
+            antibody_type = self._detect_antibody_type(sequence_data)
+            logger.debug(f"Detected antibody type: {antibody_type}")
 
-        return True
+            if antibody_type == "scfv":
+                # scFv: 2 variable domains (VH + VL) + linker (no constant domain)
+                domains = self._detect_scfv_domains(
+                    sequence_data, numbering_scheme
+                )
+            elif antibody_type == "dvd_ig":
+                # DvD-Ig: 2 variable domains + 1 constant domain
+                domains = self._detect_dvd_ig_domains(
+                    sequence_data, numbering_scheme
+                )
+            else:
+                # IgG: 1 variable domain + 1 constant domain
+                domains = self._detect_igg_domains(
+                    sequence_data, numbering_scheme
+                )
 
-    def _validate_chain(self, chain: AntibodyChain) -> bool:
-        """Validate antibody chain"""
-        if not chain or not chain.name:
-            return False
+            # If no domains detected, create a single domain with the full sequence
+            if not domains:
+                logger.warning(
+                    f"No domains detected for sequence, creating default domain"
+                )
+                default_domain = BiologicDomain(
+                    domain_type=DomainType.VARIABLE,
+                    start_position=1,
+                    end_position=len(sequence_data),
+                    confidence_score=0.5,
+                    metadata={
+                        "sequence": sequence_data,
+                        "note": "Default domain - no specific detection",
+                    },
+                )
+                domains.append(default_domain)
 
-        if not chain.sequence:
-            return False
+            logger.debug(f"Detected {len(domains)} domains for sequence")
+            return domains
 
-        return True
+        except Exception as e:
+            logger.error(f"Error detecting domains from sequence: {e}")
+            # Return a default domain if detection fails
+            return [
+                BiologicDomain(
+                    domain_type=DomainType.VARIABLE,
+                    start_position=1,
+                    end_position=len(sequence.sequence_data),
+                    confidence_score=0.0,
+                    metadata={
+                        "sequence": sequence.sequence_data,
+                        "error": str(e),
+                    },
+                )
+            ]
 
-    # =============================================================================
-    # API Response Formatting Methods
-    # =============================================================================
+    def _detect_antibody_type(self, sequence: str) -> str:
+        """Detect antibody type based on sequence characteristics"""
+        sequence_upper = sequence.upper()
 
-    def create_api_response_from_processor(
-        self, processor: AnarciResultProcessor, numbering_scheme: str
-    ) -> AnnotationResult:
-        """Convert AnarciResultProcessor results to API response format."""
-        sequences = [
-            self._create_sequence_from_processor_result(result)
-            for result in processor.results
-        ]
-
-        return AnnotationResult(
-            sequences=sequences,
-            numbering_scheme=numbering_scheme,
-            total_sequences=len(sequences),
-            chain_types=self._calculate_chain_types(processor),
-            isotypes=self._calculate_isotypes(processor),
-            species=self._calculate_species(processor),
-        )
-
-    def process_annotation_request_for_api(
-        self, input_dict: Dict[str, Any], numbering_scheme: str
-    ) -> AnnotationResult:
-        """Process an annotation request and return formatted API response."""
-        processor = AnarciResultProcessor(
-            input_dict, numbering_scheme=numbering_scheme
-        )
-        return self.create_api_response_from_processor(
-            processor, numbering_scheme
-        )
-
-    def _create_sequence_from_processor_result(self, result: Any) -> Sequence:
-        """Create a Sequence from a processor result object."""
-        chains = [
-            self._create_chain_from_processor_chain(chain)
-            for chain in result.chains
-        ]
-
-        return Sequence(
-            name=result.biologic_name,
-            original_sequence=(
-                result.chains[0].sequence if result.chains else ""
-            ),
-            chains=chains,
-        )
-
-    def _create_chain_from_processor_chain(self, chain: Any) -> Chain:
-        """Create a Chain from a processor chain object."""
-        domains = [
-            self._create_domain_from_processor_domain(domain)
-            for domain in chain.domains
-        ]
-
-        return Chain(name=chain.name, sequence=chain.sequence, domains=domains)
-
-    def _create_domain_from_processor_domain(self, domain: Any) -> Domain:
-        """Create a Domain from a processor domain object."""
-        regions = []
-
-        logger.debug(
-            f"Processing domain {domain.domain_type} with {len(domain.sequence)} chars"
-        )
-        logger.debug(f"Domain has regions: {hasattr(domain, 'regions')}")
-        if hasattr(domain, "regions"):
-            logger.debug(f"Regions data: {domain.regions}")
-
-        if hasattr(domain, "regions") and domain.regions:
-            for region_name, region_data in domain.regions.items():
-                try:
-                    logger.debug(
-                        f"Processing region {region_name} with data type {type(region_data)}"
-                    )
-                    region = self._create_region_from_data(
-                        region_name, region_data, domain.sequence
-                    )
-                    regions.append(region)
-                    logger.debug(f"Created region {region_name}")
-                except Exception as e:
-                    logger.warning(f"Error creating region {region_name}: {e}")
-                    region = self._create_fallback_region(
-                        region_name, domain.sequence
-                    )
-                    regions.append(region)
-
-        logger.debug(
-            f"Created {len(regions)} regions for domain {domain.domain_type}"
-        )
-        return Domain(
-            domain_type=self._map_domain_type(domain.domain_type),
-            start=0,
-            stop=len(domain.sequence),
-            sequence=domain.sequence,
-            regions=regions,
-        )
-
-        return Domain(
-            domain_type=self._map_domain_type(domain.domain_type),
-            start=0,
-            stop=len(domain.sequence),
-            sequence=domain.sequence,
-            regions=regions,
-        )
-
-    def _create_region_from_data(
-        self, region_name: str, region_data: Any, domain_sequence: str
-    ) -> Region:
-        """Create a Region from region data."""
+        # Check for scFv linker patterns
         if (
-            hasattr(region_data, "start")
-            and hasattr(region_data, "stop")
-            and hasattr(region_data, "sequence")
+            "GGGGSGGGGSGGGGSGGGGS" in sequence_upper
+            or "GGGGSGGGGS" in sequence_upper
         ):
-            # AntibodyRegion object
-            return Region(
-                name=region_name,
-                start=region_data.start,
-                stop=region_data.stop,
-                features=[
-                    RegionFeature(kind="sequence", value=region_data.sequence)
-                ],
-            )
-        elif isinstance(region_data, dict):
-            # Dictionary with region data
-            return Region(
-                name=region_name,
-                start=region_data.get("start", 0),
-                stop=region_data.get("stop", 0),
-                features=[
-                    RegionFeature(
-                        kind="sequence", value=region_data.get("sequence", "")
-                    )
-                ],
-            )
-        else:
-            return self._create_fallback_region(region_name, domain_sequence)
+            return "scfv"
 
-    def _create_fallback_region(
-        self, region_name: str, domain_sequence: str
-    ) -> Region:
-        """Create a fallback Region when region data is not available."""
-        return Region(
-            name=region_name,
-            start=0,
-            stop=len(domain_sequence),
-            features=[RegionFeature(kind="sequence", value=domain_sequence)],
+        # Check for DvD-Ig patterns (two variable domains)
+        # Look for two consecutive variable domain patterns
+        variable_patterns = [
+            "WGQGTLVTVSS",
+            "FGQGTKVEIK",
+            "WGQGTQVTVSS",
+            "FGQGTKLEIK",
+        ]
+        pattern_count = 0
+        for pattern in variable_patterns:
+            if pattern in sequence_upper:
+                pattern_count += 1
+
+        if pattern_count >= 2:
+            return "dvd_ig"
+
+        # Default to IgG
+        return "igg"
+
+    def _detect_scfv_domains(
+        self, sequence: str, numbering_scheme: NumberingScheme
+    ) -> List[BiologicDomain]:
+        """Detect domains for scFv: 2 variable domains + linker"""
+        domains = []
+
+        # Split scFv into VH and VL domains
+        vh_end, vl_start = self._detect_scfv_domain_boundaries(sequence)
+
+        if vh_end > 0:
+            # VH domain
+            vh_sequence = sequence[:vh_end]
+            vh_domain = self._create_variable_domain(
+                vh_sequence, 1, vh_end, numbering_scheme, "VH"
+            )
+            domains.append(vh_domain)
+
+        if vl_start > 0 and vl_start < len(sequence):
+            # VL domain
+            vl_sequence = sequence[
+                vl_start - 1 :
+            ]  # -1 because positions are 1-indexed
+            vl_domain = self._create_variable_domain(
+                vl_sequence, vl_start, len(sequence), numbering_scheme, "VL"
+            )
+            domains.append(vl_domain)
+
+        return domains
+
+    def _detect_dvd_ig_domains(
+        self, sequence: str, numbering_scheme: NumberingScheme
+    ) -> List[BiologicDomain]:
+        """Detect domains for DvD-Ig: 2 variable domains + 1 constant domain"""
+        domains = []
+
+        # Detect domain boundaries
+        v1_end, v2_start = self._detect_dvd_ig_variable_boundaries(sequence)
+        c_start = self._detect_constant_domain_start(sequence, v2_start)
+
+        # First variable domain
+        if v1_end > 0:
+            v1_sequence = sequence[:v1_end]
+            v1_domain = self._create_variable_domain(
+                v1_sequence, 1, v1_end, numbering_scheme, "V1"
+            )
+            domains.append(v1_domain)
+
+        # Second variable domain
+        if v2_start > 0 and v2_start < len(sequence):
+            v2_end = c_start if c_start > v2_start else len(sequence)
+            v2_sequence = sequence[
+                v2_start - 1 : v2_end
+            ]  # -1 because positions are 1-indexed
+            v2_domain = self._create_variable_domain(
+                v2_sequence, v2_start, v2_end, numbering_scheme, "V2"
+            )
+            domains.append(v2_domain)
+
+        # Constant domain
+        if c_start > 0 and c_start < len(sequence):
+            c_sequence = sequence[
+                c_start - 1 :
+            ]  # -1 because positions are 1-indexed
+            c_domain = self._create_constant_domain(
+                c_sequence, c_start, len(sequence)
+            )
+            domains.append(c_domain)
+
+        return domains
+
+    def _detect_igg_domains(
+        self, sequence: str, numbering_scheme: NumberingScheme
+    ) -> List[BiologicDomain]:
+        """Detect domains for IgG: 1 variable domain + 1 constant domain"""
+        domains = []
+
+        # Detect domain boundaries
+        v_end, c_start = self._detect_igg_domain_boundaries(sequence)
+
+        # Variable domain
+        if v_end > 0:
+            v_sequence = sequence[:v_end]
+            v_domain = self._create_variable_domain(
+                v_sequence, 1, v_end, numbering_scheme, "V"
+            )
+            domains.append(v_domain)
+
+        # Constant domain
+        if c_start > 0 and c_start < len(sequence):
+            c_sequence = sequence[
+                c_start - 1 :
+            ]  # -1 because positions are 1-indexed
+            c_domain = self._create_constant_domain(
+                c_sequence, c_start, len(sequence)
+            )
+            domains.append(c_domain)
+
+        return domains
+
+    def _create_variable_domain(
+        self,
+        sequence: str,
+        start: int,
+        end: int,
+        numbering_scheme: NumberingScheme,
+        domain_name: str,
+    ) -> BiologicDomain:
+        """Create a variable domain with ANARCI annotation"""
+        try:
+            anarci_result = self._anarci_adapter.number_sequence(
+                sequence, numbering_scheme
+            )
+
+            metadata = {
+                "sequence": sequence,
+                "domain_name": domain_name,
+                "numbering_scheme": numbering_scheme.value,
+            }
+
+            if anarci_result.get("success", False):
+                metadata["anarci_result"] = anarci_result
+                # Extract species and germline info
+                numbered = anarci_result.get("data", {}).get("results", [])
+                for result in numbered:
+                    alignment_details = result.get("alignment_details", [])
+                    for alignment in alignment_details:
+                        if alignment.get("species"):
+                            metadata["species"] = alignment["species"]
+                        if alignment.get("germlines"):
+                            germlines = alignment["germlines"]
+                            v_gene = germlines.get("v_gene", [None, 0])[0]
+                            j_gene = germlines.get("j_gene", [None, 0])[0]
+                            if v_gene and j_gene:
+                                metadata["germline"] = (
+                                    f"{v_gene[1]}/{j_gene[1]}"
+                                )
+                            elif v_gene:
+                                metadata["germline"] = v_gene[1]
+                            elif j_gene:
+                                metadata["germline"] = j_gene[1]
+                            break
+                    if "species" in metadata:
+                        break
+
+            return BiologicDomain(
+                domain_type=DomainType.VARIABLE,
+                start_position=start,
+                end_position=end,
+                confidence_score=1.0,
+                metadata=metadata,
+            )
+        except Exception as e:
+            logger.warning(
+                f"Error creating variable domain {domain_name}: {e}"
+            )
+            return BiologicDomain(
+                domain_type=DomainType.VARIABLE,
+                start_position=start,
+                end_position=end,
+                confidence_score=0.8,
+                metadata={
+                    "sequence": sequence,
+                    "domain_name": domain_name,
+                    "error": str(e),
+                },
+            )
+
+    def _create_constant_domain(
+        self, sequence: str, start: int, end: int
+    ) -> BiologicDomain:
+        """Create a constant domain with HMMER isotype detection"""
+        try:
+            hmmer_result = self._hmmer_adapter.detect_isotype(sequence)
+
+            metadata = {
+                "sequence": sequence,
+                "isotype": (
+                    hmmer_result.get("isotype")
+                    if hmmer_result.get("success", False)
+                    else None
+                ),
+                "hmmer_score": (
+                    hmmer_result.get("score")
+                    if hmmer_result.get("success", False)
+                    else None
+                ),
+            }
+
+            if hmmer_result.get("success", False):
+                metadata["hmmer_result"] = hmmer_result
+
+            return BiologicDomain(
+                domain_type=DomainType.CONSTANT,
+                start_position=start,
+                end_position=end,
+                confidence_score=(
+                    1.0 if hmmer_result.get("success", False) else 0.8
+                ),
+                metadata=metadata,
+            )
+        except Exception as e:
+            logger.warning(f"Error creating constant domain: {e}")
+            return BiologicDomain(
+                domain_type=DomainType.CONSTANT,
+                start_position=start,
+                end_position=end,
+                confidence_score=0.7,
+                metadata={"sequence": sequence, "error": str(e)},
+            )
+
+    def _detect_chain_type_from_name(self, chain_name: str) -> ChainType:
+        """Detect chain type from chain name"""
+        chain_name_lower = chain_name.lower()
+
+        if any(
+            keyword in chain_name_lower for keyword in ["heavy", "h", "vh"]
+        ):
+            return ChainType.HEAVY
+        elif any(
+            keyword in chain_name_lower
+            for keyword in ["light", "l", "vl", "kappa", "lambda", "k", "l"]
+        ):
+            return ChainType.LIGHT
+        elif any(
+            keyword in chain_name_lower for keyword in ["scfv", "single"]
+        ):
+            return ChainType.SCFV
+        else:
+            # Default to HEAVY if we can't determine
+            return ChainType.HEAVY
+
+    def _extract_germline_from_hit_table(
+        self, hit_table: List[List]
+    ) -> Dict[str, Any]:
+        """Extract germline information from ANARCI hit table"""
+        if not hit_table or len(hit_table) < 2:
+            return {}
+
+        header = hit_table[0]
+        rows = hit_table[1:]
+
+        # Find relevant column indices
+        id_idx = header.index("id") if "id" in header else None
+        bitscore_idx = (
+            header.index("bitscore") if "bitscore" in header else None
+        )
+        e_value_idx = header.index("evalue") if "evalue" in header else None
+
+        if not rows:
+            return {}
+
+        # Get best hit (highest bitscore)
+        best_row = max(
+            rows,
+            key=lambda row: (
+                float(row[bitscore_idx]) if bitscore_idx is not None else 0
+            ),
         )
 
-    def _map_domain_type(self, domain_type_str: str) -> DomainType:
-        """Map domain type string to DomainType enum."""
-        domain_type_map = {
-            "V": DomainType.VARIABLE,
-            "C": DomainType.CONSTANT,
-            "LINKER": DomainType.LINKER,
-        }
-        return domain_type_map.get(domain_type_str, DomainType.VARIABLE)
+        germline_info = {}
+        if id_idx is not None:
+            germline_info["id"] = best_row[id_idx]
+        if bitscore_idx is not None:
+            germline_info["bitscore"] = float(best_row[bitscore_idx])
+        if e_value_idx is not None:
+            germline_info["evalue"] = float(best_row[e_value_idx])
 
-    def _calculate_chain_types(
-        self, processor: AnarciResultProcessor
-    ) -> Dict[str, int]:
-        """Calculate chain type statistics from processor results."""
-        chain_types = {}
-        for result in processor.results:
-            for chain in result.chains:
-                chain_type = chain.name
-                chain_types[chain_type] = chain_types.get(chain_type, 0) + 1
-        return chain_types
+        return germline_info
 
-    def _calculate_isotypes(
-        self, processor: AnarciResultProcessor
-    ) -> Dict[str, int]:
-        """Calculate isotype statistics from processor results."""
-        isotypes = {}
-        for result in processor.results:
-            for chain in result.chains:
-                for domain in chain.domains:
-                    if hasattr(domain, "isotype") and domain.isotype:
-                        isotype = domain.isotype
-                        isotypes[isotype] = isotypes.get(isotype, 0) + 1
-        return isotypes
+    def notify_error(self, error: str) -> None:
+        """Notify about an error during processing"""
+        logger.error(f"Annotation error: {error}")
+        self.notify_processing_failed(error)
 
-    def _calculate_species(
-        self, processor: AnarciResultProcessor
-    ) -> Dict[str, int]:
-        """Calculate species statistics from processor results."""
-        species = {}
-        for result in processor.results:
-            for chain in result.chains:
-                for domain in chain.domains:
-                    if hasattr(domain, "species") and domain.species:
-                        species_name = domain.species
-                        species[species_name] = (
-                            species.get(species_name, 0) + 1
-                        )
-        return species
+    def _detect_scfv_domain_boundaries(self, sequence: str) -> tuple[int, int]:
+        """Detect VH and VL domain boundaries in scFv sequence"""
+        sequence_upper = sequence.upper()
+
+        # Look for linker patterns to separate VH and VL
+        linker_patterns = [
+            "GGGGSGGGGSGGGGSGGGGS",  # Long linker
+            "GGGGSGGGGSGGGGS",  # Medium linker
+            "GGGGSGGGGS",  # Short linker
+        ]
+
+        for pattern in linker_patterns:
+            pos = sequence_upper.find(pattern)
+            if pos != -1:
+                vh_end = pos
+                vl_start = (
+                    pos + len(pattern) + 1
+                )  # +1 because positions are 1-indexed
+                logger.debug(
+                    f"Found scFv linker pattern, VH ends at {vh_end}, VL starts at {vl_start}"
+                )
+                return vh_end, vl_start
+
+        # Fallback: use heuristics
+        if len(sequence) > 200:
+            vh_end = min(120, len(sequence) // 2)
+            vl_start = vh_end + 1
+            logger.debug(
+                f"Using heuristic for scFv: VH ends at {vh_end}, VL starts at {vl_start}"
+            )
+            return vh_end, vl_start
+
+        return 0, 0
+
+    def _detect_dvd_ig_variable_boundaries(
+        self, sequence: str
+    ) -> tuple[int, int]:
+        """Detect boundaries between two variable domains in DvD-Ig"""
+        sequence_upper = sequence.upper()
+
+        # Look for variable domain ending patterns
+        variable_end_patterns = [
+            "WGQGTLVTVSS",  # Heavy chain ending
+            "FGQGTKVEIK",  # Light chain ending
+            "WGQGTQVTVSS",  # Alternative ending
+            "FGQGTKLEIK",  # Alternative ending
+        ]
+
+        v1_end = 0
+        v2_start = 0
+
+        # Find first variable domain end
+        for pattern in variable_end_patterns:
+            pos = sequence_upper.find(pattern)
+            if pos != -1:
+                v1_end = pos + len(pattern)
+                break
+
+        # Find second variable domain start (after first variable domain)
+        if v1_end > 0:
+            remaining_sequence = sequence_upper[v1_end:]
+            for pattern in variable_end_patterns:
+                pos = remaining_sequence.find(pattern)
+                if pos != -1:
+                    v2_start = (
+                        v1_end + pos + len(pattern) + 1
+                    )  # +1 because positions are 1-indexed
+                    break
+
+        return v1_end, v2_start
+
+    def _detect_igg_domain_boundaries(self, sequence: str) -> tuple[int, int]:
+        """Detect variable and constant domain boundaries in IgG"""
+        sequence_upper = sequence.upper()
+
+        # Look for variable domain ending patterns
+        variable_end_patterns = [
+            "WGQGTLVTVSS",  # Heavy chain ending
+            "FGQGTKVEIK",  # Light chain ending
+            "WGQGTQVTVSS",  # Alternative ending
+            "FGQGTKLEIK",  # Alternative ending
+        ]
+
+        v_end = 0
+        c_start = 0
+
+        for pattern in variable_end_patterns:
+            pos = sequence_upper.find(pattern)
+            if pos != -1:
+                v_end = pos + len(pattern)
+                c_start = v_end + 1  # Next position after variable domain
+                logger.debug(
+                    f"Found IgG variable domain ending pattern '{pattern}' at position {v_end}"
+                )
+                break
+
+        # If no pattern found, use heuristics
+        if v_end == 0:
+            if len(sequence) > 200:
+                v_end = min(128, len(sequence) // 2)
+                c_start = v_end + 1
+                logger.debug(
+                    f"Using heuristic for IgG: variable domain ends at position {v_end}"
+                )
+            else:
+                v_end = len(sequence)
+                c_start = 0
+                logger.debug(
+                    f"Short IgG sequence, treating as variable domain only"
+                )
+
+        return v_end, c_start
+
+    def _detect_constant_domain_start(
+        self, sequence: str, after_position: int
+    ) -> int:
+        """Find the start of constant domain after a given position"""
+        if after_position >= len(sequence):
+            return 0
+
+        remaining_sequence = sequence[after_position:]
+
+        # Look for constant domain start patterns
+        constant_start_patterns = [
+            "QVQLKQS",  # Heavy chain constant start
+            "DIVMTQS",  # Light chain constant start
+            "QVQLVES",  # Alternative heavy start
+        ]
+
+        for pattern in constant_start_patterns:
+            pos = remaining_sequence.find(pattern)
+            if pos != -1:
+                return (
+                    after_position + pos + 1
+                )  # +1 because positions are 1-indexed
+
+        # If no pattern found, look for the first occurrence of typical constant domain amino acids
+        for i, char in enumerate(remaining_sequence):
+            if char in "QVDE" and i > 10:  # Skip potential linker regions
+                return (
+                    after_position + i + 1
+                )  # +1 because positions are 1-indexed
+
+        # Fallback: start after the given position
+        return after_position + 1

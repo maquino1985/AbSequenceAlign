@@ -1,16 +1,27 @@
 from typing import Optional
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.annotation.sequence_processor import SequenceProcessor
+from backend.application.commands import ProcessAnnotationCommand
+from backend.application.handlers import WorkflowHandler
+from backend.application.services.biologic_service import (
+    BiologicService,
+)
+from backend.application.services.response_service import (
+    ResponseService,
+)
+from backend.application.services.validation_service import (
+    ValidationService,
+)
 from backend.database.engine import get_db_session
 from backend.jobs.job_manager import job_manager
 from backend.logger import logger
+from backend.models.biologic_models import BiologicResponse
 from backend.models.models import MSACreationRequest, MSAAnnotationRequest
-from backend.models.models_v2 import AnnotationResult as V2AnnotationResult
 from backend.models.requests_v2 import AnnotationRequestV2
 from backend.msa.msa_annotation import MSAAnnotationEngine
 from backend.msa.msa_engine import MSAEngine
 from fastapi import APIRouter, HTTPException, File, Form, UploadFile, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -20,36 +31,167 @@ async def health_check_v2():
     return {"status": "healthy"}
 
 
-@router.post("/annotate", response_model=V2AnnotationResult)
+@router.post("/annotate")
 async def annotate_sequences_v2(
     request: AnnotationRequestV2,
     persist_to_database: bool = True,
     db_session: AsyncSession = Depends(get_db_session),
 ):
     try:
-        # Use the unified annotation service to handle the conversion
-        from backend.application.services.annotation_service import (
-            AnnotationService,
-        )
-
-        # Convert request sequences to the format expected by AnarciResultProcessor
+        # Use the command pattern for clean separation of concerns
         input_dict = {}
         for seq in request.sequences:
             chain_data = seq.get_all_chains()
             if chain_data:
                 input_dict[seq.name] = chain_data
 
-        # Use the service to process the annotation request
-        annotation_service = AnnotationService()
-        v2_result = annotation_service.process_annotation_request_for_api(
-            input_dict, request.numbering_scheme.value
+        # Create command and handler
+        command = ProcessAnnotationCommand(
+            {
+                "sequences": input_dict,
+                "numbering_scheme": request.numbering_scheme.value,
+                "persist_to_database": persist_to_database,
+            }
         )
 
-        return v2_result
+        handler = WorkflowHandler(
+            annotation_service=None,
+            validation_service=ValidationService(),
+            response_service=ResponseService(),
+            biologic_service=BiologicService(),
+        )
+
+        # Execute the workflow
+        result = await handler.handle(command)
+
+        if result["success"]:
+            return result["data"]
+        else:
+            raise HTTPException(status_code=400, detail=result["error"])
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Annotation failed: {e}")
+
+
+@router.post("/annotate-with-persistence", response_model=dict)
+async def annotate_and_persist_sequences_v2(
+    request: AnnotationRequestV2,
+    organism: Optional[str] = None,
+    db_session: AsyncSession = Depends(get_db_session),
+):
+    """
+    Annotate sequences and persist them as biologic entities.
+
+    This endpoint demonstrates the integration pattern:
+    1. Use domain entities for annotation (business logic)
+    2. Convert to ORM models for persistence
+    3. Return Pydantic models for API responses
+    """
+    try:
+        from backend.application.commands import ProcessAnnotationCommand
+        from backend.application.handlers import WorkflowHandler
+        from backend.application.services.annotation_service import (
+            AnnotationService,
+        )
+        from backend.application.services.validation_service import (
+            ValidationService,
+        )
+        from backend.application.services.response_service import (
+            ResponseService,
+        )
+        from backend.application.services.biologic_service import (
+            BiologicService,
+        )
+
+        # Convert request sequences to the format expected by the service
+        input_dict = {}
+        for seq in request.sequences:
+            chain_data = seq.get_all_chains()
+            if chain_data:
+                input_dict[seq.name] = chain_data
+
+        # Create command and handler for persistence workflow
+        command = ProcessAnnotationCommand(
+            {
+                "sequences": input_dict,
+                "numbering_scheme": request.numbering_scheme.value,
+                "persist_to_database": True,
+                "organism": organism,
+            }
+        )
+
+        handler = WorkflowHandler(
+            annotation_service=AnnotationService(),
+            validation_service=ValidationService(),
+            response_service=ResponseService(),
+            biologic_service=BiologicService(),
+        )
+
+        # Execute the workflow with persistence
+        result = await handler.handle(command)
+
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Annotation with persistence failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Annotation with persistence failed: {e}"
+        )
+
+
+# Biologic Entity Endpoints
+@router.get("/biologics", response_model=list[BiologicResponse])
+async def list_biologics_v2(
+    skip: int = 0,
+    limit: int = 100,
+    db_session: AsyncSession = Depends(get_db_session),
+):
+    """List all biologic entities with pagination."""
+    try:
+        from backend.application.services.biologic_service import (
+            BiologicService,
+        )
+
+        biologic_service = BiologicService()
+        biologics = await biologic_service.list_biologics(
+            db_session=db_session, skip=skip, limit=limit
+        )
+
+        return biologics
+    except Exception as e:
+        logger.error(f"Failed to list biologics: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to list biologics: {e}"
+        )
+
+
+@router.get("/biologics/{biologic_id}", response_model=BiologicResponse)
+async def get_biologic_v2(
+    biologic_id: str,
+    db_session: AsyncSession = Depends(get_db_session),
+):
+    """Get a specific biologic entity by ID."""
+    try:
+        from backend.application.services.biologic_service import (
+            BiologicService,
+        )
+        from backend.core.exceptions import EntityNotFoundError
+
+        biologic_service = BiologicService()
+        biologic = await biologic_service.get_biologic(
+            db_session=db_session, biologic_id=biologic_id
+        )
+
+        return biologic
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to get biologic {biologic_id}: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get biologic: {e}"
+        )
 
 
 # MSA Endpoints
@@ -129,6 +271,7 @@ async def upload_msa_sequences_v2(
 async def create_msa_v2(request: MSACreationRequest):
     """Create multiple sequence alignment"""
     try:
+        print(f"Received MSA creation request: {request}")
         # Determine if we should use background processing
         total_sequences = sum(
             len(seq_input.get_all_chains()) for seq_input in request.sequences

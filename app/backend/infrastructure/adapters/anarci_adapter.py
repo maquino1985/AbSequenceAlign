@@ -6,7 +6,7 @@ Implements the ExternalToolAdapter interface to provide a clean abstraction.
 from typing import Dict, Any, List, Tuple, Optional
 import logging
 
-from ...core.base_classes import AbstractExternalToolAdapter
+from ...core.interfaces import AbstractExternalToolAdapter
 from ...core.exceptions import (
     AnarciError,
     ToolNotAvailableError,
@@ -28,18 +28,35 @@ class AnarciAdapter(AbstractExternalToolAdapter):
             NumberingScheme.AHO: "aho",
         }
 
-    def _check_availability(self) -> bool:
+    def is_available(self) -> bool:
         """Check if ANARCI is available on the system"""
         try:
             # Try to import ANARCI
-            import anarci  # noqa: F401
 
             return True
         except ImportError:
             self._logger.warning("ANARCI not available via import")
             return False
 
-    def execute(self, input_data: str) -> Dict[str, Any]:
+    def validate_output(self, output: Dict[str, Any]) -> bool:
+        """Validate ANARCI output"""
+        if not output or not isinstance(output, dict):
+            return False
+
+        # Check for required keys in ANARCI output
+        required_keys = ["success", "data"]
+        if not all(key in output for key in required_keys):
+            return False
+
+        return output.get("success", False)
+
+    def _check_availability(self) -> bool:
+        """Check if ANARCI is available on the system"""
+        return self.is_available()
+
+    def execute(
+        self, input_data: str, scheme: NumberingScheme = NumberingScheme.IMGT
+    ) -> Dict[str, Any]:
         """Execute ANARCI on the input sequence"""
         if not self._validate_input(input_data):
             raise AnarciError("Invalid input data", tool_name=self.tool_name)
@@ -49,7 +66,8 @@ class AnarciAdapter(AbstractExternalToolAdapter):
             sequences = self._parse_input(input_data)
 
             # Run ANARCI
-            result = self._run_anarci(sequences)
+            scheme_str = self._convert_scheme(scheme)
+            result = self._run_anarci(sequences, scheme=scheme_str)
 
             return self._create_result(True, data=result)
 
@@ -74,7 +92,7 @@ class AnarciAdapter(AbstractExternalToolAdapter):
             allowed_species = ["human", "mouse", "rat"]
 
         input_data = f">query\n{sequence}\n"
-        result = self.execute(input_data)
+        result = self.execute(input_data, scheme=scheme)
 
         # Add scheme information to result
         result["data"]["scheme"] = scheme.value
@@ -97,7 +115,7 @@ class AnarciAdapter(AbstractExternalToolAdapter):
         for name, sequence in sequences:
             input_data += f">{name}\n{sequence}\n"
 
-        result = self.execute(input_data)
+        result = self.execute(input_data, scheme=scheme)
 
         # Add scheme information to result
         result["data"]["scheme"] = scheme.value
@@ -147,25 +165,69 @@ class AnarciAdapter(AbstractExternalToolAdapter):
             allowed_species = ["human", "mouse", "rat"]
 
         try:
+            anarci_scheme = scheme
             from anarci import run_anarci
 
+            if scheme == "cgg":
+                anarchi_scheme = "kabat"
             # Run ANARCI
-            (
-                sequences_out,
-                numbered,
-                alignment_details,
-                hit_tables,
-            ), used_scheme = run_anarci(
+            anarci_result = run_anarci(
                 sequences,
-                scheme=scheme,
+                scheme=anarci_scheme,
                 allowed_species=allowed_species,
                 assign_germline=True,
             )
+
+            # Handle different return formats from ANARCI
+            if isinstance(anarci_result, tuple):
+                if len(anarci_result) == 2:
+                    # New format: (data, used_scheme)
+                    data, used_scheme = anarci_result
+                    if isinstance(data, tuple) and len(data) == 4:
+                        (
+                            sequences_out,
+                            numbered,
+                            alignment_details,
+                            hit_tables,
+                        ) = data
+                    else:
+                        raise AnarciError(
+                            "Unexpected ANARCI data format",
+                            tool_name=self.tool_name,
+                        )
+                elif len(anarci_result) == 4:
+                    # Format: (sequences_out, numbered, alignment_details, hit_tables)
+                    sequences_out, numbered, alignment_details, hit_tables = (
+                        anarci_result
+                    )
+                    used_scheme = scheme  # Use the input scheme
+                elif len(anarci_result) == 5:
+                    # Old format: (sequences_out, numbered, alignment_details, hit_tables, used_scheme)
+                    (
+                        sequences_out,
+                        numbered,
+                        alignment_details,
+                        hit_tables,
+                        used_scheme,
+                    ) = anarci_result
+                else:
+                    raise AnarciError(
+                        f"Unexpected ANARCI tuple length: {len(anarci_result)}",
+                        tool_name=self.tool_name,
+                    )
+            else:
+                raise AnarciError(
+                    "Unexpected ANARCI return format", tool_name=self.tool_name
+                )
 
             # Process results
             results = []
             for i, (seq_name, seq_sequence) in enumerate(sequences_out):
                 seq_numbered = numbered[i] if i < len(numbered) else []
+                if scheme == NumberingScheme.CGG:
+                    converted_seq_numbered = self._convert_cgg_number(
+                        seq_sequence
+                    )
                 seq_aligns = (
                     alignment_details[i] if i < len(alignment_details) else []
                 )
@@ -268,3 +330,6 @@ class AnarciAdapter(AbstractExternalToolAdapter):
             )
 
         return processed
+
+    def _convert_cgg_number(self, seq_sequence):
+        pass

@@ -1,12 +1,16 @@
 from dataclasses import dataclass
-from typing import Dict, Literal, Any
+from typing import Literal, Any
 
 from backend.annotation.region_utils import RegionIndexHelper
+from backend.models.models_v2 import (
+    Domain,
+    Chain,
+    Region,
+)
 from backend.numbering.cgg import CGG_REGIONS
 from backend.numbering.chothia import CHOTHIA_REGIONS
 from backend.numbering.imgt import IMGT_REGIONS
 from backend.numbering.kabat import KABAT_REGIONS
-from backend.utils.types import Chain, Domain
 
 
 @dataclass
@@ -63,21 +67,22 @@ class AntibodyRegionAnnotator:
         region_defs = SCHEME_MAP[scheme]
         region_map = region_defs[chain_type]
         if not domain.numbering:
-            domain.regions = {}
+            domain.regions = []
             return domain
         numbering = domain.numbering[0]  # Use only the residue numbering
         pos_to_idx = RegionIndexHelper.build_pos_to_idx(numbering)
-        regions: Dict[str, AntibodyRegion] = {}
         for region, (start, stop) in region_map.items():
+            _seq = domain.sequence[start[0] - 1 : stop[0]]
             start_idx, stop_idx = RegionIndexHelper.find_region_indices(
                 pos_to_idx, start, stop
             )
             seq = RegionIndexHelper.extract_region_sequence(
                 numbering, start_idx, stop_idx
             )
-            regions[region] = AntibodyRegion(region, start, stop, seq)
-        # Convert to dict with formatted positions and sequences
-        domain.regions = regions
+            # pos_to_idx is not working as expected. try to make full sequence from numbering and then extract the substing?
+            domain.regions.append(
+                Region(name=region, sequence=seq, start=start[0], stop=stop[0])
+            )
         return domain
 
     @staticmethod

@@ -10,6 +10,9 @@ EVQLVESGGGLVQPGRSLRLSCAASGFTFDDYAMHWVRQAPGKGLEWVSAITWNSGHIDYADSVEGRFTISRDNAKNSLY
     cy.getBySel('sequence-input').clear().type(igg, { delay: 0 });
     cy.getBySel('submit-button').click();
     
+    // Wait for processing to complete
+    cy.wait(3000);
+    
     cy.getBySel('feature-table', { timeout: 15000 }).should('be.visible');
     cy.contains('CONSTANT').should('exist');
   });
@@ -20,6 +23,9 @@ DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQP
 
     cy.getBySel('sequence-input').clear().type(dvdi, { delay: 0 });
     cy.getBySel('submit-button').click();
+    
+    // Wait for processing to complete
+    cy.wait(3000);
     
     cy.getBySel('feature-table', { timeout: 15000 }).should('be.visible');
     cy.contains('LINKER').should('exist');
@@ -32,6 +38,9 @@ AVDPVTGGSFNLTCSVSGDIQGDQVTQCLRINSESGVHWVKQAPGQGLQWIGLIDPYGGGTYNQKFKDKATLTVDKSSST
     cy.getBySel('sequence-input').clear().type(tcr, { delay: 0 });
     cy.getBySel('submit-button').click();
     
+    // Wait for processing to complete
+    cy.wait(3000);
+    
     cy.getBySel('feature-table', { timeout: 15000 }).should('be.visible');
   });
 
@@ -41,6 +50,9 @@ DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQP
 
     cy.getBySel('sequence-input').clear().type(seq, { delay: 0 });
     cy.getBySel('submit-button').click();
+    
+    // Wait for processing to complete
+    cy.wait(3000);
     
     cy.getBySel('feature-table', { timeout: 15000 }).should('be.visible');
     

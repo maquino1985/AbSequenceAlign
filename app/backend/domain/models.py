@@ -21,21 +21,31 @@ from backend.domain.value_objects import RegionBoundary
 # =============================================================================
 
 
+class BiologicType(str, Enum):
+    """Types of biologics"""
+
+    ANTIBODY = "antibody"
+    PROTEIN = "protein"
+    DNA = "dna"
+    RNA = "rna"
+
+
 class ChainType(str, Enum):
     """Types of antibody chains"""
 
-    HEAVY = "H"
-    LIGHT = "L"
-    KAPPA = "K"
-    LAMBDA = "L"
-    BETA = "B"
-    GAMMA = "G"
-    DELTA = "D"
-    EPSILON = "E"
-    ZETA = "Z"
-    ALPHA = "A"
-    THETA = "T"
-    IOTA = "I"
+    HEAVY = "HEAVY"
+    LIGHT = "LIGHT"
+    KAPPA = "KAPPA"
+    LAMBDA = "LAMBDA"
+    BETA = "BETA"
+    GAMMA = "GAMMA"
+    DELTA = "DELTA"
+    EPSILON = "EPSILON"
+    ZETA = "ZETA"
+    ALPHA = "ALPHA"
+    THETA = "THETA"
+    IOTA = "IOTA"
+    UNKNOWN = "UNKNOWN"
 
 
 class DomainType(str, Enum):
@@ -79,6 +89,13 @@ class FeatureType(str, Enum):
     ISOTYPE = "ISOTYPE"
     MUTATION = "MUTATION"
     POST_TRANSLATIONAL = "POST_TRANSLATIONAL"
+    CDR1 = "CDR1"
+    CDR2 = "CDR2"
+    CDR3 = "CDR3"
+    FR1 = "FR1"
+    FR2 = "FR2"
+    FR3 = "FR3"
+    FR4 = "FR4"
 
 
 # =============================================================================
@@ -134,6 +151,20 @@ class SequenceValidator:
         except ValueError:
             return False
 
+    @staticmethod
+    def is_valid_protein_sequence(sequence: str) -> bool:
+        """Check if a sequence is a valid protein sequence"""
+        return SequenceValidator.validate_amino_acid_sequence(sequence)
+
+    @staticmethod
+    def is_valid_dna_sequence(sequence: str) -> bool:
+        """Check if a sequence is a valid DNA sequence"""
+        if not sequence or not isinstance(sequence, str):
+            return False
+
+        valid_chars = set("ACGTN")
+        return all(char.upper() in valid_chars for char in sequence)
+
 
 class RegionCalculator:
     """Domain service for calculating region boundaries and properties"""
@@ -168,3 +199,14 @@ class RegionCalculator:
             boundary1.end + 1 == boundary2.start
             or boundary2.end + 1 == boundary1.start
         )
+
+    @staticmethod
+    def calculate_boundary(
+        start: int, end: int, sequence_length: int
+    ) -> RegionBoundary:
+        """Calculate a region boundary with validation"""
+        if start < 0 or end >= sequence_length or start > end:
+            raise ValueError(
+                f"Invalid boundary: start={start}, end={end}, length={sequence_length}"
+            )
+        return RegionBoundary(start, end)

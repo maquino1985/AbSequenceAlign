@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import type { SequenceData, Region, ColorScheme } from '../types/sequence';
 import type { AnnotationResult } from '../types/api';
-import type { AnnotationResultV2, SequenceV2, ChainV2, DomainV2, RegionV2 } from '../types/apiV2';
+import type { AnnotationResultV2 } from '../types/apiV2';
 import { COLOR_SCHEMES, getRegionColor } from '../utils/colorUtils';
 import { ColorSchemeType } from '../types/sequence';
 
@@ -106,57 +106,132 @@ export const useSequenceData = () => {
     }));
   }, []);
 
-  const setSequencesV2 = useCallback((annotationResult: AnnotationResultV2) => {
+  const setSequencesV2 = useCallback((annotationResult: any) => {
+    console.log('setSequencesV2 called with:', annotationResult);
     const sequences: SequenceData[] = [];
 
-    annotationResult.sequences.forEach((seqInfo: SequenceV2, seqIndex) => {
-      const chains = seqInfo.chains.map((chain: ChainV2, chainIdx) => {
-        const annotations: Region[] = [];
+    // Handle the v2 backend response structure
+    // The backend returns: { success: true, data: { results: [{ data: { sequence: { chains: [{ domains: [{ regions: [...] }] }] } } }] } }
+    
+    if (annotationResult.success && annotationResult.data?.results?.length > 0) {
+      console.log('Processing results array:', annotationResult.data.results);
+      
+      // Process each result in the array
+      annotationResult.data.results.forEach((result: any, index: number) => {
+        if (result.success && result.data?.sequence) {
+          console.log(`Processing sequence ${index}:`, result.data.sequence);
+          const seqInfo = result.data.sequence;
+          
+          const chains = seqInfo.chains.map((chain: any, chainIdx: number) => {
+            const annotations: Region[] = [];
 
-        chain.domains.forEach((domain: DomainV2, domainIdx) => {
-          const domainType = domain.domain_type;
-          domain.regions.forEach((r: RegionV2, regionIdx) => {
-            const baseRegionName = r.name;
-            let regionType: Region['type'] = 'FR';
-            if (domainType === 'LINKER') regionType = 'LINKER';
-            else if (domainType === 'C') regionType = 'CONSTANT';
-            else if (baseRegionName.startsWith('CDR')) regionType = 'CDR';
+            // Process domains from the first sequence in the chain
+            const domains = chain.sequences?.[0]?.domains || chain.domains || [];
+            domains.forEach((domain: any, domainIdx: number) => {
+              const domainType = domain.domain_type;
+              console.log(`Processing domain ${domainIdx}:`, domain);
+              
+              // Process regions from the domain (handle both regions and features)
+              const regions = domain.regions || domain.features || [];
+              if (Array.isArray(regions)) {
+                regions.forEach((region: any, regionIdx: number) => {
+                  const regionName = region.name;
+                  let regionType: Region['type'] = 'FR';
+                  
+                  // Determine region type based on name and domain type
+                  if (domainType === 'LINKER') {
+                    regionType = 'LINKER';
+                  } else if (domainType === 'C') {
+                    regionType = 'CONSTANT';
+                  } else if (regionName.startsWith('CDR')) {
+                    regionType = 'CDR';
+                  } else if (regionName.startsWith('FR')) {
+                    regionType = 'FR';
+                  }
 
-            const seqFeature = r.features.find((f) => f.kind === 'sequence') as { kind: string; value?: string } | undefined;
-            const sequenceText = typeof seqFeature?.value === 'string' ? seqFeature?.value : '';
+                  annotations.push({
+                    id: `${seqInfo.name || 'sequence'}_${chain.name}_${domainIdx}_${regionIdx}_${regionName}`,
+                    name: regionName,
+                    start: region.start || region.start_position,
+                    stop: region.stop || region.end_position,
+                    sequence: region.sequence || region.value || '',
+                    type: regionType,
+                    color: getRegionColor(regionName),
+                    features: [],
+                    details: {
+                      isotype: domain.isotype,
+                      domain_type: domain.domain_type,
+                      species: domain.species,
+                      germline: domain.germline || domain.germlines,
+                    }
+                  });
+                });
+              }
 
-            annotations.push({
-              id: `${seqInfo.name || `seq_${seqIndex}`}_${chain.name}_${domainIdx}_${regionIdx}_${baseRegionName}`,
-              name: baseRegionName,
-              start: r.start,
-              stop: r.stop,
-              sequence: sequenceText,
-              type: regionType,
-              color: getRegionColor(baseRegionName),
-              features: [],
-              details: {
-                isotype: domain.isotype,
-                domain_type: domain.domain_type,
+              // Create placeholder regions for domains without regions (constant and linker domains)
+              if (!regions || regions.length === 0) {
+                let regionType: Region['type'] = 'FR';
+                let regionName = 'Unknown';
+                
+                if (domainType === 'LINKER') {
+                  regionType = 'LINKER';
+                  regionName = 'LINKER';
+                } else if (domainType === 'C') {
+                  regionType = 'CONSTANT';
+                  regionName = 'CONSTANT';
+                }
+
+                // Only create placeholder regions for LINKER and C domains
+                if (domainType === 'LINKER' || domainType === 'C') {
+                  annotations.push({
+                    id: `${seqInfo.name || 'sequence'}_${chain.name}_${domainIdx}_placeholder_${regionName}`,
+                    name: regionName,
+                    start: domain.start || 0,
+                    stop: domain.stop || 0,
+                    sequence: domain.sequence || '',
+                    type: regionType,
+                    color: getRegionColor(regionName),
+                    features: [],
+                    details: {
+                      isotype: domain.isotype,
+                      domain_type: domain.domain_type,
+                      species: domain.species,
+                      germline: domain.germline || domain.germlines,
+                    }
+                  });
+                }
               }
             });
+
+            return {
+              id: `${seqInfo.name || 'sequence'}_chain_${chainIdx}`,
+              type: chain.chain_type || chain.name, // Use chain_type if available, otherwise chain name
+              sequence: chain.sequence || '',
+              annotations
+            };
           });
-        });
 
-        return {
-          id: `${seqInfo.name || `seq_${seqIndex}`}_chain_${chainIdx}`,
-          type: chain.name,
-          sequence: chain.sequence,
-          annotations
-        };
-      });
+          // Extract species from the first domain that has it
+          let sequenceSpecies: string | undefined;
+          for (const chain of chains) {
+            for (const annotation of chain.annotations) {
+              if (annotation.details?.species) {
+                sequenceSpecies = annotation.details.species;
+                break;
+              }
+            }
+            if (sequenceSpecies) break;
+          }
 
-      sequences.push({
-        id: seqInfo.name || `seq_${seqIndex}`,
-        name: seqInfo.name || `Sequence ${seqIndex + 1}`,
-        chains,
-        species: undefined
+          sequences.push({
+            id: seqInfo.name || `sequence_${index}`,
+            name: seqInfo.name || `Sequence ${index + 1}`,
+            chains,
+            species: sequenceSpecies
+          });
+        }
       });
-    });
+    }
 
     setState((prev) => ({
       ...prev,

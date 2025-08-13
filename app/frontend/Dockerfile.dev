@@ -1,0 +1,38 @@
+# Frontend Development Dockerfile - Build from scratch to avoid architecture issues
+FROM node:22.16-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies for Chromium
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Fix Rollup architecture issues for the current platform
+RUN npm rebuild rollup || (rm -rf node_modules package-lock.json && npm install && npm rebuild rollup) || npm install @rollup/rollup-linux-arm64-musl
+
+# Set environment variables
+ENV CHROME_BIN=/usr/bin/chromium-browser \
+    CHROME_PATH=/usr/lib/chromium/ \
+    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
+# Expose port
+EXPOSE 5679
+
+# Default command - run development server
+CMD ["npm", "run", "dev:port"]

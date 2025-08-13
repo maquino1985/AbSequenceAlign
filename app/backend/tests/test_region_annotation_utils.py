@@ -219,7 +219,7 @@ VL_NUMBERING = [
 ]
 
 
-def test_annotate_all_schemes_scfv():
+def test_annotate_all_schemes_scfv() -> None:
     # Annotate both domains
     vh_regions = annotate_all_schemes(VH_NUMBERING)
     vl_regions = annotate_all_schemes(VL_NUMBERING)

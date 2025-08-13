@@ -18,9 +18,6 @@ COPY app/backend ./backend
 # Copy data directory from project root
 COPY data/ ./data/
 
-# Install additional Python dependencies if needed
-RUN conda run -n AbSequenceAlign pip install --no-cache-dir uvicorn[standard] gunicorn
-
 # Create a writable directory for pytest cache
 RUN mkdir -p /tmp/pytest_cache && chmod 777 /tmp/pytest_cache
 

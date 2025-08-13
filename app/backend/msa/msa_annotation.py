@@ -117,7 +117,7 @@ class MSAAnnotationEngine:
                 annotated_sequences.append(enhanced_seq)
 
             # Create region mappings
-            region_mappings = {}
+            region_mappings: Dict[str, List[Dict[str, Any]]] = {}
             for region in all_regions:
                 region_name = region["name"]
                 if region_name not in region_mappings:
@@ -333,7 +333,7 @@ class MSAAnnotationEngine:
         Returns:
             List of region annotations
         """
-        annotations = []
+        annotations: List[Dict[str, Any]] = []
 
         if not hasattr(seq_info, "regions") or not seq_info.regions:
             return annotations

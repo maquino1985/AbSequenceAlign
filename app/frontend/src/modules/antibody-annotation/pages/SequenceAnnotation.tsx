@@ -12,6 +12,7 @@ import { FastaInput } from '../components/SequenceInput/FastaInput';
 import { DomainGraphics } from '../components/Visualization/DomainGraphics';
 import { AminoAcidSequence } from '../components/Visualization/AminoAcidSequence';
 import { FeatureTable } from '../components/FeatureTable/FeatureTable';
+import { DebugInfo } from '../components/FeatureTable/DebugInfo';
 import { useSequenceData } from '../../../hooks/useSequenceData';
 import type { NumberingScheme } from '../../../types/api';
 import { api } from '../../../services/api';
@@ -111,10 +112,30 @@ export const SequenceAnnotation: React.FC = () => {
 
       // Call API
       const resultV2: AnnotationResultV2 = await api.annotateSequencesV2(request);
+      
+      // Debug logging
+      console.log('API Response:', resultV2);
+      console.log('Response structure:', {
+        success: resultV2.success,
+        hasData: !!resultV2.data,
+        hasResults: !!resultV2.data?.results,
+        resultsLength: resultV2.data?.results?.length,
+        hasFirstResult: !!resultV2.data?.results?.[0],
+        hasSequence: !!resultV2.data?.results?.[0]?.data?.sequence,
+        hasChains: !!resultV2.data?.results?.[0]?.data?.sequence?.chains,
+        chainsLength: resultV2.data?.results?.[0]?.data?.sequence?.chains?.length
+      });
+      
       setSequencesV2(resultV2);
+      
+      // Extract summary from the v2 backend response structure
+      const firstResult = resultV2.data?.results?.[0];
+      const sequenceData = firstResult?.data?.sequence;
       const summary = {
-        numChains: resultV2.sequences?.[0]?.chains?.length || 0,
-        numDomains: (resultV2.sequences?.[0]?.chains || []).reduce((acc, c) => acc + (c.domains?.length || 0), 0)
+        numChains: sequenceData?.chains?.length || 0,
+        numDomains: (sequenceData?.chains || []).reduce((acc, c) => 
+          acc + (c.domains?.length || 0), 0
+        )
       };
       const entry: HistoryEntry = {
         id: `${Date.now()}`,
@@ -373,6 +394,9 @@ export const SequenceAnnotation: React.FC = () => {
           </Typography>
         </Paper>
       )}
+
+      {/* Debug Information - Always show */}
+      <DebugInfo />
     </Box>
   );
 };
