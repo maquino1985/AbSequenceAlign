@@ -31,7 +31,7 @@ services:
       context: .
       dockerfile: ./app/backend/Dockerfile
       args:
-        BASE_IMAGE: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY_OWNER:-maquino1985}/absequencealign-backend-base:latest
+        BASE_IMAGE: absequencealign-backend-base:latest
     container_name: absequencealign-backend-test
     environment:
       - PYTHONPATH=/app
@@ -68,7 +68,7 @@ services:
       context: ./app/frontend
       dockerfile: Dockerfile.test
       args:
-        BASE_IMAGE: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY_OWNER:-maquino1985}/absequencealign-frontend-base:latest
+        BASE_IMAGE: absequencealign-frontend-base:latest
     container_name: absequencealign-frontend-test
     environment:
       - CI=true
@@ -90,7 +90,7 @@ services:
       context: ./app/frontend
       dockerfile: Dockerfile.dev
       args:
-        BASE_IMAGE: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY_OWNER:-maquino1985}/absequencealign-frontend-base:latest
+        BASE_IMAGE: absequencealign-frontend-base:latest
     container_name: absequencealign-frontend-server
     environment:
       - CI=true
@@ -110,7 +110,7 @@ services:
       context: .
       dockerfile: ./app/backend/Dockerfile
       args:
-        BASE_IMAGE: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY_OWNER:-maquino1985}/absequencealign-backend-base:latest
+        BASE_IMAGE: absequencealign-backend-base:latest
     container_name: absequencealign-backend-server
     environment:
       - PYTHONPATH=/app
@@ -148,7 +148,7 @@ services:
       context: ./app/frontend
       dockerfile: Dockerfile.e2e
       args:
-        BASE_IMAGE: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY_OWNER:-maquino1985}/absequencealign-frontend-base:latest
+        BASE_IMAGE: absequencealign-frontend-base:latest
     container_name: absequencealign-e2e-test
     environment:
       - CI=true
@@ -169,7 +169,7 @@ services:
       context: .
       dockerfile: ./app/backend/Dockerfile
       args:
-        BASE_IMAGE: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY_OWNER:-maquino1985}/absequencealign-backend-base:latest
+        BASE_IMAGE: absequencealign-backend-base:latest
     container_name: absequencealign-integration-test
     environment:
       - PYTHONPATH=/app
@@ -206,7 +206,7 @@ services:
       context: .
       dockerfile: ./app/backend/Dockerfile
       args:
-        BASE_IMAGE: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY_OWNER:-maquino1985}/absequencealign-backend-base:latest
+        BASE_IMAGE: absequencealign-backend-base:latest
     container_name: absequencealign-database-test
     environment:
       - PYTHONPATH=/app

@@ -37,6 +37,16 @@ dependencies:
   - git
   - curl
   # Pip packages (not available in conda)
-#  - pip
-#  - pip:
-#    - git+https://github.com/oxpig/ANARCI.git
+  - pip
+  - pip:
+    - uvicorn
+    - fastapi
+    - pydantic
+    - python-multipart
+    - python-jose
+    - passlib
+    - python-dotenv
+    - httpx
+    - requests
+    - sqlalchemy
+    - asyncpg

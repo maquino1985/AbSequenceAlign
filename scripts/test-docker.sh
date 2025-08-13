@@ -120,8 +120,8 @@ fi
 # Cleanup function
 cleanup() {
     print_status "Cleaning up Docker resources..."
-    docker compose -f docker-compose.test.yml down -v --remove-orphans 2>/dev/null || true
-    docker system prune -f 2>/dev/null || true
+    # docker compose -f docker-compose.test.yml down -v --remove-orphans 2>/dev/null || true
+    # docker system prune -f 2>/dev/null || true
     print_status "Cleanup complete"
 }
 
