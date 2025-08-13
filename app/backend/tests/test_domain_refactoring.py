@@ -2,16 +2,9 @@
 Tests for domain refactoring with new biologic entities.
 """
 
-from backend.core.exceptions import ValidationError
-
 import pytest
-from backend.domain.value_objects import (
-    AminoAcidSequence,
-    RegionBoundary,
-    SequenceIdentifier,
-    ConfidenceScore,
-    AnnotationMetadata,
-)
+
+from backend.core.exceptions import ValidationError
 from backend.domain.entities import (
     BiologicEntity,
     BiologicChain,
@@ -20,13 +13,19 @@ from backend.domain.entities import (
     BiologicFeature,
 )
 from backend.domain.models import (
-    NumberingScheme,
     SequenceValidator,
     RegionCalculator,
     BiologicType,
     ChainType,
     DomainType,
     FeatureType,
+)
+from backend.domain.value_objects import (
+    AminoAcidSequence,
+    RegionBoundary,
+    SequenceIdentifier,
+    ConfidenceScore,
+    AnnotationMetadata,
 )
 
 

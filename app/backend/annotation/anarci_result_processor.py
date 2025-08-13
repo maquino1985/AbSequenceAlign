@@ -5,6 +5,7 @@ from typing import List, Optional, Dict, Any
 from anarci import run_anarci  # type: ignore[import-untyped]
 
 from backend.utils.chain_type_util import ChainTypeUtil
+from backend.core.interfaces import Processor
 from .antibody_region_annotator import AntibodyRegionAnnotator
 from .isotype_hmmer import detect_isotype_with_hmmer
 
@@ -26,7 +27,7 @@ class AnarciResultObject:
         return f"AnarciResultObject(biologic_name={self.biologic_name}, chains={self.chains})"
 
 
-class AnarciResultProcessor:
+class AnarciResultProcessor(Processor):
 
     def __init__(
         self,

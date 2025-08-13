@@ -2,10 +2,6 @@
 End-to-end test to verify the complete flow from FASTA input to annotation result.
 """
 
-from backend.annotation.annotation_engine import *
-from backend.annotation.sequence_processor import *
-from backend.models.models import *
-
 from backend.annotation.annotation_engine import (
     annotate_sequences_with_processor,
 )

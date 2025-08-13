@@ -5,7 +5,7 @@ Base handler class for all command handlers.
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
-from ..commands.base_command import BaseCommand, CommandResult
+from ..commands.base_command import BaseCommand
 
 
 class BaseHandler(ABC):

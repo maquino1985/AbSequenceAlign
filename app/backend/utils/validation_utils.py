@@ -3,7 +3,8 @@ Shared validation utilities for the AbSequenceAlign backend.
 Consolidates duplicate validation functions across the codebase.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
+
 from backend.domain.entities import BiologicEntity, BiologicChain
 from backend.logger import logger
 

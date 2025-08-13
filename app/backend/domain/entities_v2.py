@@ -4,9 +4,17 @@ Entities have identity and lifecycle, and contain business logic.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Any, Set, Union, TYPE_CHECKING
 from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Any, Set
 
+from backend.core.exceptions import ValidationError, DomainError
+from backend.domain.models import (
+    ChainType,
+    DomainType,
+    RegionType,
+    NumberingScheme,
+    FeatureType,
+)
 from backend.domain.value_objects_v2 import (
     DNASequence,
     RNASequence,
@@ -19,14 +27,6 @@ from backend.domain.value_objects_v2 import (
     AnnotationMetadata,
     BiologicAlias,
 )
-from backend.domain.models import (
-    ChainType,
-    DomainType,
-    RegionType,
-    NumberingScheme,
-    FeatureType,
-)
-from backend.core.exceptions import ValidationError, DomainError
 
 
 class DomainEntity(ABC):

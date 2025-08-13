@@ -5,15 +5,18 @@ Implements the Service pattern with Observer pattern for processing notification
 
 from typing import Dict, Any, List, Optional
 
-
+from backend.application.converters.biologic_converter import (
+    BiologicConverterImpl,
+)
 from backend.core.base_classes import AbstractProcessingSubject
+from backend.core.exceptions import ValidationError, EntityNotFoundError
 from backend.core.interfaces import (
     BiologicService as IBiologicService,
     BiologicRepository,
     BiologicProcessor,
     ProcessingResult,
 )
-from backend.core.exceptions import ValidationError, EntityNotFoundError
+from backend.database.models import Biologic
 from backend.database.models import (
     Chain,
     Sequence,
@@ -28,29 +31,12 @@ from backend.domain.entities import (
     BiologicDomain,
     BiologicFeature,
 )
-from backend.domain.value_objects import (
-    ConfidenceScore,
-)
+from backend.logger import logger
 from backend.models.biologic_models import (
-    ChainResponse,
-    ChainCreate,
-    SequenceResponse,
-    SequenceCreate,
     BiologicCreate,
     BiologicResponse,
     BiologicUpdate,
 )
-from backend.database.models import Biologic
-from backend.infrastructure.repositories.biologic_repository import (
-    BiologicRepositoryImpl,
-)
-from backend.application.processors.biologic_processor import (
-    BiologicProcessorImpl,
-)
-from backend.application.converters.biologic_converter import (
-    BiologicConverterImpl,
-)
-from backend.logger import logger
 
 
 class BiologicServiceImpl(AbstractProcessingSubject, IBiologicService):

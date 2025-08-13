@@ -18,6 +18,7 @@ U = TypeVar("U")
 # =============================================================================
 
 
+# flake8: noqa: 821
 class ProcessingObserver(ABC):
     """Observer interface for processing events"""
 
@@ -325,6 +326,14 @@ class BiologicService(ProcessingSubject, ABC):
         self, search_criteria: Dict[str, Any]
     ) -> List["BiologicResponse"]:
         """Search biologics by criteria"""
+        pass
+
+
+class Processor(ABC):
+
+    @abstractmethod
+    def process(self, data: Any) -> Any:
+        """Process the input data and return the result"""
         pass
 
 

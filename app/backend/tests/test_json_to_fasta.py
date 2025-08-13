@@ -2,6 +2,8 @@
 Tests for JSON to FASTA conversion utilities
 """
 
+from typing import Dict, Any, List
+
 from backend.utils.json_to_fasta import (
     json_seqs_to_fasta,
     json_seqs_to_fasta_simple,

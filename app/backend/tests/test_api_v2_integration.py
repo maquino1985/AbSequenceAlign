@@ -5,15 +5,14 @@ Tests the complete response structure to ensure frontend compatibility.
 
 import pytest
 from fastapi.testclient import TestClient
-from backend.main import app
-from backend.logger import logger
+
 from backend.domain.models import (
     BiologicType,
-    ChainType,
     DomainType,
-    FeatureType,
     NumberingScheme,
 )
+from backend.logger import logger
+from backend.main import app
 
 client = TestClient(app)
 

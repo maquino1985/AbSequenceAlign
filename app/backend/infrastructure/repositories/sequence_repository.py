@@ -3,14 +3,13 @@ Repository for antibody sequence data persistence.
 Implements the Repository pattern for data access abstraction.
 """
 
-from typing import List, Optional, Dict, Any
-from datetime import datetime
 import json
 import os
+from datetime import datetime
+from typing import List, Optional, Dict, Any
 
 from backend.core.interfaces import Repository
 from backend.domain.entities import BiologicEntity
-
 from backend.logger import logger
 
 
@@ -259,7 +258,6 @@ class SequenceRepository(Repository[BiologicEntity]):
         from backend.domain.entities import (
             BiologicChain,
             BiologicDomain,
-            BiologicFeature,
         )
 
         # Reconstruct chains

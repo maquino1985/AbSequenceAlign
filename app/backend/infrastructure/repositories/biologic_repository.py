@@ -3,22 +3,21 @@ Repository for managing biologic entities in the database.
 Implements the Repository pattern with async operations.
 """
 
-from sqlalchemy import select, and_
-from backend.logger import logger
 import uuid
 from typing import List, Optional, Dict, Any
+
+from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from backend.core.interfaces import BiologicRepository
 from backend.database.models import (
     Biologic,
     Chain,
-    Sequence,
     ChainSequence,
     SequenceDomain,
-    DomainFeature,
 )
-from backend.core.interfaces import BiologicRepository
+from backend.logger import logger
 
 
 class BiologicRepositoryImpl(BiologicRepository[Biologic]):

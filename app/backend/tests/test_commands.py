@@ -2,9 +2,8 @@
 Tests for command objects in the command pattern implementation.
 """
 
-import pytest
 from datetime import datetime
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from backend.application.commands import (
     BaseCommand,
@@ -15,10 +14,7 @@ from backend.application.commands import (
 )
 from backend.domain.entities import (
     BiologicEntity,
-    BiologicChain,
-    BiologicSequence,
 )
-from backend.domain.models import ChainType, DomainType
 
 
 class TestCommandResult:

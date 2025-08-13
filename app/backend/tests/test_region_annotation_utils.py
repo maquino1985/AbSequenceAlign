@@ -1,5 +1,4 @@
 from backend.region_annotation_utils import annotate_all_schemes
-from backend.region_annotation_utils import *
 
 # Example scFv sequence (VH-linker-VL)
 SCFV_SEQ = (

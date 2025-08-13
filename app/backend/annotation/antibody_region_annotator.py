@@ -1,20 +1,16 @@
 from dataclasses import dataclass
-from typing import Dict, Literal, Any
+from typing import Literal, Any
 
 from backend.annotation.region_utils import RegionIndexHelper
+from backend.models.models_v2 import (
+    Domain,
+    Chain,
+    Region,
+)
 from backend.numbering.cgg import CGG_REGIONS
 from backend.numbering.chothia import CHOTHIA_REGIONS
 from backend.numbering.imgt import IMGT_REGIONS
 from backend.numbering.kabat import KABAT_REGIONS
-
-# from backend.utils.sequence_types import Chain, Domain
-from backend.models.models_v2 import (
-    Domain,
-    Chain,
-    ChainType,
-    DomainType,
-    Region,
-)
 
 
 @dataclass

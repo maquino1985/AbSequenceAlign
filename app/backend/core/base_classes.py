@@ -3,23 +3,22 @@ Abstract base classes providing common functionality and enforcing contracts.
 These classes implement the Template Method pattern and provide shared behavior.
 """
 
-from typing import List, Dict, Any, Generic, TypeVar, Optional, TypeVar
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-import logging
+from typing import List, Dict, Any, Generic, TypeVar
 
 from .interfaces import (
     ProcessingSubject,
     ProcessingObserver,
-    ProcessingContext,
     ProcessingResult,
     ProcessingStatus,
-    ExternalToolAdapter,
 )
 
 # Type variables
 T = TypeVar("T")
 U = TypeVar("U")
+
 
 # =============================================================================
 # ABSTRACT PROCESSING CLASSES

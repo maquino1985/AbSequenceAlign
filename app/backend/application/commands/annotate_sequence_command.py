@@ -2,13 +2,12 @@
 Command for annotating biologic sequences.
 """
 
-from typing import Dict, Any, Optional
 from datetime import datetime
+from typing import Dict, Any, Optional
 
-from .base_command import BaseCommand, CommandResult
 from backend.domain.entities import BiologicEntity
-from backend.domain.models import NumberingScheme
 from backend.logger import logger
+from .base_command import BaseCommand, CommandResult
 
 
 class AnnotateSequenceCommand(BaseCommand):

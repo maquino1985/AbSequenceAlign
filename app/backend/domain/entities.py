@@ -3,13 +3,9 @@ Domain entities for the antibody sequence analysis system.
 Entities have identity and lifecycle, and contain business logic.
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from backend.domain.entities import AntibodyFeature
-
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Any
 
 from backend.core.exceptions import ValidationError
 from backend.domain.models import (
@@ -134,7 +130,7 @@ class BiologicChain(DomainEntity):
         self.sequences.append(sequence)
 
     def get_sequence_by_type(
-        self, sequence_type: str
+            self, sequence_type: str
     ) -> Optional["BiologicSequence"]:
         """Get a sequence by type"""
         for sequence in self.sequences:
@@ -247,7 +243,7 @@ class BiologicDomain(DomainEntity):
         self.features.append(feature)
 
     def get_features_by_type(
-        self, feature_type: str
+            self, feature_type: str
     ) -> List["BiologicFeature"]:
         """Get all features of a specific type"""
         return [
@@ -263,8 +259,8 @@ class BiologicDomain(DomainEntity):
     def overlaps_with(self, other: "BiologicDomain") -> bool:
         """Check if this domain overlaps with another"""
         return not (
-            self.end_position < other.start_position
-            or other.end_position < self.start_position
+                self.end_position < other.start_position
+                or other.end_position < self.start_position
         )
 
     def is_variable_domain(self) -> bool:

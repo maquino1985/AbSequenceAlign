@@ -16,7 +16,6 @@ from backend.domain.models import (
     ChainType,
     DomainType,
     FeatureType,
-    RegionType,
 )
 from backend.domain.entities import (
     BiologicEntity,
