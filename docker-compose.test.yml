@@ -73,8 +73,6 @@ services:
     environment:
       - CI=true
       - NODE_ENV=test
-    volumes:
-      - ./app/frontend:/app:ro
     command: >
       sh -c "
         npm run test &&
@@ -99,7 +97,7 @@ services:
     ports:
       - "5679:5679"
     volumes:
-      - ./app/frontend:/app:ro
+      - ./app/frontend:/app
     command: npm run dev:port
     networks:
       - test-network

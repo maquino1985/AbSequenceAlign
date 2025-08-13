@@ -30,74 +30,77 @@ describe('FeatureTable E2E Tests', () => {
             success: true,
             data: {
               sequence: {
-          name: "Humira_Heavy",
-          biologic_type: "antibody",
-          chains: [
-            {
-              name: "heavy_chain",
-              chain_type: "HEAVY",
-              sequences: [
-                {
-                  sequence_type: "PROTEIN",
-                  sequence_data: "EVQLVESGGGLVQPGGSLRLSCAASGFTFSYFAMSWVRQAPGKGLEWVATISGGGGNTYYLDRVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCVRQTYGGFGYWGQGTLVTVSS",
-                  domains: [
-                    {
-                      domain_type: "V",
-                      start_position: 1,
-                      end_position: 117,
-                      species: "human",
-                      germline: "IGHV1-69*01/IGHJ4*01",
-                      features: [
-                        {
-                          name: "CDR1",
-                          feature_type: "CDR1",
-                          value: "GFTFSYFA",
-                          start_position: 26,
-                          end_position: 33
-                        },
-                        {
-                          name: "CDR2",
-                          feature_type: "CDR2",
-                          value: "ISGGGGNT",
-                          start_position: 55,
-                          end_position: 62
-                        },
-                        {
-                          name: "CDR3",
-                          feature_type: "CDR3",
-                          value: "VRQTYGGFGYWGQGTLVTVSS",
-                          start_position: 95,
-                          end_position: 117
-                        },
-                        {
-                          name: "FR1",
-                          feature_type: "FR1",
-                          value: "EVQLVESGGGLVQPGGSLRLSCAAS",
-                          start_position: 1,
-                          end_position: 25
-                        },
-                        {
-                          name: "FR2",
-                          feature_type: "FR2",
-                          value: "MSWVRQAPGKGLEWVATIS",
-                          start_position: 34,
-                          end_position: 54
-                        },
-                        {
-                          name: "FR3",
-                          feature_type: "FR3",
-                          value: "YYLDRVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYC",
-                          start_position: 63,
-                          end_position: 94
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
+                name: "Humira_Heavy",
+                biologic_type: "antibody",
+                chains: [
+                  {
+                    name: "heavy_chain",
+                    chain_type: "HEAVY",
+                    sequences: [
+                      {
+                        sequence_type: "PROTEIN",
+                        sequence_data: "EVQLVESGGGLVQPGGSLRLSCAASGFTFSYFAMSWVRQAPGKGLEWVATISGGGGNTYYLDRVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCVRQTYGGFGYWGQGTLVTVSS",
+                        domains: [
+                          {
+                            domain_type: "V",
+                            start_position: 1,
+                            end_position: 117,
+                            species: "human",
+                            germline: "IGHV1-69*01/IGHJ4*01",
+                            features: [
+                              {
+                                name: "CDR1",
+                                feature_type: "CDR1",
+                                value: "GFTFSYFA",
+                                start_position: 26,
+                                end_position: 33
+                              },
+                              {
+                                name: "CDR2",
+                                feature_type: "CDR2",
+                                value: "ISGGGGNT",
+                                start_position: 55,
+                                end_position: 62
+                              },
+                              {
+                                name: "CDR3",
+                                feature_type: "CDR3",
+                                value: "VRQTYGGFGYWGQGTLVTVSS",
+                                start_position: 95,
+                                end_position: 117
+                              },
+                              {
+                                name: "FR1",
+                                feature_type: "FR1",
+                                value: "EVQLVESGGGLVQPGGSLRLSCAAS",
+                                start_position: 1,
+                                end_position: 25
+                              },
+                              {
+                                name: "FR2",
+                                feature_type: "FR2",
+                                value: "MSWVRQAPGKGLEWVATIS",
+                                start_position: 34,
+                                end_position: 54
+                              },
+                              {
+                                name: "FR3",
+                                feature_type: "FR3",
+                                value: "YYLDRVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYC",
+                                start_position: 63,
+                                end_position: 94
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
             }
-          }
-        ]
+          ]
+        }
       }
     };
 
@@ -168,66 +171,69 @@ EVQLVESGGGLVQPGGSLRLSCAASGFTFSYFAMSWVRQAPGKGLEWVATISGGGGNTYYLDRVKGRFTISRDNSKNTLY
                 name: "test_scfv",
                 biologic_type: "antibody",
                 chains: [
-            {
-              name: "scfv",
-              chain_type: "SCFV",
-              sequences: [
-                {
-                  sequence_type: "PROTEIN",
-                  sequence_data: "DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIKGGGGGSGGGGSGGGGSGGGGSQVQLKQSGAEVKKPGASVKVSCKASGYTFTDEYMNWVRQAPGKSLEWMGYINPNNGGADYNQKFQGRVTMTVDQSISTAYMELSRLRSDDSAVYFCARLGYSNPYFDFWGQGTLVKVSS",
-                  domains: [
-                    {
-                      domain_type: "V",
-                      start_position: 1,
-                      end_position: 123,
-                      species: "human",
-                      germline: "IGKV1-27*01/IGKJ1*01",
-                      features: [
-                        {
-                          name: "FR1",
-                          feature_type: "FR1",
-                          value: "DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK",
-                          start_position: 1,
-                          end_position: 123
-                        }
-                      ]
-                    },
-                    {
-                      domain_type: "LINKER",
-                      start_position: 124,
-                      end_position: 143,
-                      features: [
-                        {
-                          name: "LINKER",
-                          feature_type: "LINKER",
-                          value: "GGGGSGGGGSGGGGSGGGGS",
-                          start_position: 124,
-                          end_position: 143
-                        }
-                      ]
-                    },
-                    {
-                      domain_type: "V",
-                      start_position: 144,
-                      end_position: 247,
-                      species: "human",
-                      germline: "IGHV1-69*01/IGHJ4*01",
-                      features: [
-                        {
-                          name: "FR1",
-                          feature_type: "FR1",
-                          value: "QVQLKQSGAEVKKPGASVKVSCKASGYTFTDEYMNWVRQAPGKSLEWMGYINPNNGGADYNQKFQGRVTMTVDQSISTAYMELSRLRSDDSAVYFCARLGYSNPYFDFWGQGTLVKVSS",
-                          start_position: 144,
-                          end_position: 247
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
+                  {
+                    name: "scfv",
+                    chain_type: "SCFV",
+                    sequences: [
+                      {
+                        sequence_type: "PROTEIN",
+                        sequence_data: "DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIKGGGGGSGGGGSGGGGSGGGGSQVQLKQSGAEVKKPGASVKVSCKASGYTFTDEYMNWVRQAPGKSLEWMGYINPNNGGADYNQKFQGRVTMTVDQSISTAYMELSRLRSDDSAVYFCARLGYSNPYFDFWGQGTLVKVSS",
+                        domains: [
+                          {
+                            domain_type: "V",
+                            start_position: 1,
+                            end_position: 123,
+                            species: "human",
+                            germline: "IGKV1-27*01/IGKJ1*01",
+                            features: [
+                              {
+                                name: "FR1",
+                                feature_type: "FR1",
+                                value: "DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK",
+                                start_position: 1,
+                                end_position: 123
+                              }
+                            ]
+                          },
+                          {
+                            domain_type: "LINKER",
+                            start_position: 124,
+                            end_position: 143,
+                            features: [
+                              {
+                                name: "LINKER",
+                                feature_type: "LINKER",
+                                value: "GGGGSGGGGSGGGGSGGGGS",
+                                start_position: 124,
+                                end_position: 143
+                              }
+                            ]
+                          },
+                          {
+                            domain_type: "V",
+                            start_position: 144,
+                            end_position: 247,
+                            species: "human",
+                            germline: "IGHV1-69*01/IGHJ4*01",
+                            features: [
+                              {
+                                name: "FR1",
+                                feature_type: "FR1",
+                                value: "QVQLKQSGAEVKKPGASVKVSCKASGYTFTDEYMNWVRQAPGKSLEWMGYINPNNGGADYNQKFQGRVTMTVDQSISTAYMELSRLRSDDSAVYFCARLGYSNPYFDFWGQGTLVKVSS",
+                                start_position: 144,
+                                end_position: 247
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
             }
-          }
-        ]
+          ]
+        }
       }
     };
 
