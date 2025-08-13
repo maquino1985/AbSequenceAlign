@@ -1,7 +1,7 @@
 # This file is now deprecated. AnnotationEngine and related logic have been replaced by AnarciResultProcessor and annotate_sequences_with_processor.
 # All annotation should use the new pipeline.
 
-from typing import List
+from typing import List, Dict
 
 # If you need annotation, import annotate_sequences_with_processor from this module.
 from .anarci_result_processor import AnarciResultProcessor
@@ -72,8 +72,8 @@ def annotate_sequences_with_processor(
                     }
                 elif domain.domain_type == "V" and hasattr(domain, "regions"):
                     # Keep original region names; positions are absolute now
-                    for region_name, region_data in domain.regions.items():
-                        all_regions[region_name] = region_data
+                    for region in domain.regions:
+                        all_regions[region.name] = region
 
             # Create a single SequenceInfo for the entire chain
             info = SequenceInfo(

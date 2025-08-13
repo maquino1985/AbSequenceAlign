@@ -3,9 +3,6 @@ from typing import Optional
 from backend.annotation.sequence_processor import SequenceProcessor
 from backend.application.commands import ProcessAnnotationCommand
 from backend.application.handlers import WorkflowHandler
-from backend.application.services.annotation_service import (
-    AnnotationService,
-)
 from backend.application.services.biologic_service import (
     BiologicService,
 )
@@ -20,7 +17,6 @@ from backend.jobs.job_manager import job_manager
 from backend.logger import logger
 from backend.models.biologic_models import BiologicResponse
 from backend.models.models import MSACreationRequest, MSAAnnotationRequest
-from backend.models.models_v2 import AnnotationResultV2
 from backend.models.requests_v2 import AnnotationRequestV2
 from backend.msa.msa_annotation import MSAAnnotationEngine
 from backend.msa.msa_engine import MSAEngine
@@ -59,7 +55,7 @@ async def annotate_sequences_v2(
         )
 
         handler = WorkflowHandler(
-            annotation_service=AnnotationService(),
+            annotation_service=None,
             validation_service=ValidationService(),
             response_service=ResponseService(),
             biologic_service=BiologicService(),
@@ -275,6 +271,7 @@ async def upload_msa_sequences_v2(
 async def create_msa_v2(request: MSACreationRequest):
     """Create multiple sequence alignment"""
     try:
+        print(f"Received MSA creation request: {request}")
         # Determine if we should use background processing
         total_sequences = sum(
             len(seq_input.get_all_chains()) for seq_input in request.sequences

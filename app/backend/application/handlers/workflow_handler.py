@@ -2,25 +2,16 @@
 Handler for complete annotation workflow commands.
 """
 
-from pprint import pprint
 from typing import Dict, Any, List
 
-from annotation.anarci_result_processor import (
+from backend.annotation.anarci_result_processor import (
     AnarciResultProcessor,
     AnarciResultObject,
 )
-from backend.domain.entities import (
-    BiologicEntity,
-    BiologicChain,
-    BiologicSequence,
-)
-from backend.domain.models import BiologicType
 from backend.domain.models import NumberingScheme
 from backend.logger import logger
-from domain import BiologicDomain, DomainType, BiologicFeature
 from .base_handler import BaseHandler
 from ..commands.base_command import BaseCommand
-from ..services.annotation_service import AnnotationService
 from ..services.biologic_service import BiologicService
 from ..services.response_service import ResponseService
 from ..services.validation_service import ValidationService
@@ -31,7 +22,7 @@ class WorkflowHandler(BaseHandler):
 
     def __init__(
         self,
-        annotation_service: AnnotationService,
+        annotation_service: AnarciResultProcessor,
         validation_service: ValidationService,
         response_service: ResponseService,
         biologic_service: BiologicService,
@@ -89,11 +80,10 @@ class WorkflowHandler(BaseHandler):
             )
 
             # Process each sequence
-            answer = []
             processor = AnarciResultProcessor(
                 input_dict=sequences, numbering_scheme=numbering_scheme
             )
-
+            answer = []
             anarci_results: List[AnarciResultObject] = processor.results
             for anarci_result in anarci_results:
                 try:

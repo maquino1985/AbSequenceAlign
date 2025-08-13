@@ -76,12 +76,14 @@ class AntibodyRegionAnnotator:
         numbering = domain.numbering[0]  # Use only the residue numbering
         pos_to_idx = RegionIndexHelper.build_pos_to_idx(numbering)
         for region, (start, stop) in region_map.items():
+            _seq = domain.sequence[start[0] - 1 : stop[0]]
             start_idx, stop_idx = RegionIndexHelper.find_region_indices(
                 pos_to_idx, start, stop
             )
             seq = RegionIndexHelper.extract_region_sequence(
                 numbering, start_idx, stop_idx
             )
+            # pos_to_idx is not working as expected. try to make full sequence from numbering and then extract the substing?
             domain.regions.append(
                 Region(name=region, sequence=seq, start=start[0], stop=stop[0])
             )

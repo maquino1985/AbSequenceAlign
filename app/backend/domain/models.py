@@ -45,6 +45,7 @@ class ChainType(str, Enum):
     ALPHA = "ALPHA"
     THETA = "THETA"
     IOTA = "IOTA"
+    UNKNOWN = "UNKNOWN"
 
 
 class DomainType(str, Enum):

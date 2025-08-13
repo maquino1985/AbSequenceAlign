@@ -3,7 +3,7 @@ from backend.domain import ChainType
 
 class ChainTypeUtil:
     @staticmethod
-    def extract_chain_type(seq_aligns):
+    def extract_chain_type(seq_aligns) -> ChainType:
         """
         Extracts the chain type from a sequence alignment dictionary.
 
@@ -14,7 +14,7 @@ class ChainTypeUtil:
             str: The chain type extracted from the first key in the dictionary.
         """
         if not seq_aligns:
-            return "Unknown"
+            return ChainType.UNKNOWN
 
         # Get the first key in the dictionary
         best_alignment = next(iter(seq_aligns))
