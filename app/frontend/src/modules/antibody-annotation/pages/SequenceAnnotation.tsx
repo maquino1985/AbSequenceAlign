@@ -128,13 +128,13 @@ export const SequenceAnnotation: React.FC = () => {
       
       setSequencesV2(resultV2);
       
-      // Extract summary from the actual backend response structure
+      // Extract summary from the v2 backend response structure
       const firstResult = resultV2.data?.results?.[0];
       const sequenceData = firstResult?.data?.sequence;
       const summary = {
         numChains: sequenceData?.chains?.length || 0,
         numDomains: (sequenceData?.chains || []).reduce((acc, c) => 
-          acc + (c.sequences?.reduce((acc2, s) => acc2 + (s.domains?.length || 0), 0) || 0), 0
+          acc + (c.domains?.length || 0), 0
         )
       };
       const entry: HistoryEntry = {

@@ -110,8 +110,8 @@ export const useSequenceData = () => {
     console.log('setSequencesV2 called with:', annotationResult);
     const sequences: SequenceData[] = [];
 
-    // Handle the actual backend response structure
-    // The backend returns: { success: true, data: { results: [{ data: { sequence: {...} } }] } }
+    // Handle the v2 backend response structure
+    // The backend returns: { success: true, data: { results: [{ data: { sequence: { chains: [{ domains: [{ regions: [...] }] }] } } }] } }
     
     if (annotationResult.success && annotationResult.data?.results?.length > 0) {
       console.log('Processing results array:', annotationResult.data.results);
@@ -122,79 +122,89 @@ export const useSequenceData = () => {
           console.log(`Processing sequence ${index}:`, result.data.sequence);
           const seqInfo = result.data.sequence;
           
-          const chains = seqInfo.chains.map((chain, chainIdx) => {
+          const chains = seqInfo.chains.map((chain: any, chainIdx: number) => {
             const annotations: Region[] = [];
 
-            chain.sequences.forEach((sequence, seqIdx) => {
-              sequence.domains.forEach((domain, domainIdx) => {
-                const domainType = domain.domain_type;
-                
-                // Convert features to regions
-                domain.features.forEach((feature, featureIdx) => {
-                  const baseRegionName = feature.name;
+            // Process domains directly from the chain
+            chain.domains.forEach((domain: any, domainIdx: number) => {
+              const domainType = domain.domain_type;
+              console.log(`Processing domain ${domainIdx}:`, domain);
+              
+              // Process regions from the domain
+              if (domain.regions && Array.isArray(domain.regions)) {
+                domain.regions.forEach((region: any, regionIdx: number) => {
+                  const regionName = region.name;
                   let regionType: Region['type'] = 'FR';
-                  if (domainType === 'LINKER') regionType = 'LINKER';
-                  else if (domainType === 'C') regionType = 'CONSTANT';
-                  else if (baseRegionName.startsWith('CDR')) regionType = 'CDR';
+                  
+                  // Determine region type based on name and domain type
+                  if (domainType === 'LINKER') {
+                    regionType = 'LINKER';
+                  } else if (domainType === 'C') {
+                    regionType = 'CONSTANT';
+                  } else if (regionName.startsWith('CDR')) {
+                    regionType = 'CDR';
+                  } else if (regionName.startsWith('FR')) {
+                    regionType = 'FR';
+                  }
 
                   annotations.push({
-                    id: `${seqInfo.name || 'sequence'}_${chain.name}_${seqIdx}_${domainIdx}_${featureIdx}_${baseRegionName}`,
-                    name: baseRegionName,
-                    start: feature.start_position,
-                    stop: feature.end_position,
-                    sequence: typeof feature.value === 'string' ? feature.value : '',
+                    id: `${seqInfo.name || 'sequence'}_${chain.name}_${domainIdx}_${regionIdx}_${regionName}`,
+                    name: regionName,
+                    start: region.start,
+                    stop: region.stop,
+                    sequence: region.sequence || '',
                     type: regionType,
-                    color: getRegionColor(baseRegionName),
+                    color: getRegionColor(regionName),
                     features: [],
                     details: {
-                      isotype: undefined,
+                      isotype: domain.isotype,
                       domain_type: domain.domain_type,
                       species: domain.species,
-                      germline: domain.germline,
+                      germline: domain.germlines,
                     }
                   });
                 });
+              }
 
-                // Create placeholder regions for domains without features (constant and linker domains)
-                if (domain.features.length === 0) {
-                  let regionType: Region['type'] = 'FR';
-                  let regionName = 'Unknown';
-                  
-                  if (domainType === 'LINKER') {
-                    regionType = 'LINKER';
-                    regionName = 'LINKER';
-                  } else if (domainType === 'C') {
-                    regionType = 'CONSTANT';
-                    regionName = 'CONSTANT';
-                  }
-
-                  // Only create placeholder regions for LINKER and C domains
-                  if (domainType === 'LINKER' || domainType === 'C') {
-                    annotations.push({
-                      id: `${seqInfo.name || 'sequence'}_${chain.name}_${seqIdx}_${domainIdx}_placeholder_${regionName}`,
-                      name: regionName,
-                      start: domain.start_position,
-                      stop: domain.end_position,
-                      sequence: '', // Empty sequence for placeholder
-                      type: regionType,
-                      color: getRegionColor(regionName),
-                      features: [],
-                      details: {
-                        isotype: domain.metadata?.isotype,
-                        domain_type: domain.domain_type,
-                        species: domain.species,
-                        germline: domain.germline,
-                      }
-                    });
-                  }
+              // Create placeholder regions for domains without regions (constant and linker domains)
+              if (!domain.regions || domain.regions.length === 0) {
+                let regionType: Region['type'] = 'FR';
+                let regionName = 'Unknown';
+                
+                if (domainType === 'LINKER') {
+                  regionType = 'LINKER';
+                  regionName = 'LINKER';
+                } else if (domainType === 'C') {
+                  regionType = 'CONSTANT';
+                  regionName = 'CONSTANT';
                 }
-              });
+
+                // Only create placeholder regions for LINKER and C domains
+                if (domainType === 'LINKER' || domainType === 'C') {
+                  annotations.push({
+                    id: `${seqInfo.name || 'sequence'}_${chain.name}_${domainIdx}_placeholder_${regionName}`,
+                    name: regionName,
+                    start: domain.start || 0,
+                    stop: domain.stop || 0,
+                    sequence: domain.sequence || '',
+                    type: regionType,
+                    color: getRegionColor(regionName),
+                    features: [],
+                    details: {
+                      isotype: domain.isotype,
+                      domain_type: domain.domain_type,
+                      species: domain.species,
+                      germline: domain.germlines,
+                    }
+                  });
+                }
+              }
             });
 
             return {
               id: `${seqInfo.name || 'sequence'}_chain_${chainIdx}`,
-              type: chain.chain_type,
-              sequence: chain.sequences[0]?.sequence_data || '',
+              type: chain.name, // Use chain name as type
+              sequence: chain.sequence || '',
               annotations
             };
           });

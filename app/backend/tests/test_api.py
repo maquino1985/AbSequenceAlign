@@ -77,7 +77,9 @@ def test_v2_annotate_multiple_chains(multiple_sequences):
     assert response.status_code == 200
     result = response.json()["data"]
     assert len(result["results"][0]["data"]["sequence"]["chains"]) == 2
-    assert result["summary"]["successful"] == 2
+    assert len(result["results"][1]["data"]["sequence"]["chains"]) == 4
+    assert len(result["results"][2]["data"]["sequence"]["chains"]) == 1
+    assert result["summary"]["successful"] == 3
     assert (
         len(
             result["results"][0]["data"]["sequence"]["chains"][0]["domains"][
@@ -93,6 +95,12 @@ def test_v2_annotate_multiple_chains(multiple_sequences):
             ]["regions"]
         )
         == 7
+    )
+    assert (
+        len(
+            result["results"][2]["data"]["sequence"]["chains"][0]["domains"]
+        )
+        == 3
     )
     assert len(result["results"][1]["data"]["sequence"]["chains"]) == 4
 

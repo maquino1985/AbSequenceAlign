@@ -70,3 +70,4 @@ export const DebugInfo: React.FC = () => {
     </Paper>
   );
 };
+
