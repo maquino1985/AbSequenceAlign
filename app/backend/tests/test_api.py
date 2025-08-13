@@ -97,9 +97,7 @@ def test_v2_annotate_multiple_chains(multiple_sequences):
         == 7
     )
     assert (
-        len(
-            result["results"][2]["data"]["sequence"]["chains"][0]["domains"]
-        )
+        len(result["results"][2]["data"]["sequence"]["chains"][0]["domains"])
         == 3
     )
     assert len(result["results"][1]["data"]["sequence"]["chains"]) == 4
