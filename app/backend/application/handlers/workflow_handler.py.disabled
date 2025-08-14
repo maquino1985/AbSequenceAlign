@@ -8,7 +8,7 @@ from backend.annotation.anarci_result_processor import (
     AnarciResultProcessor,
     AnarciResultObject,
 )
-from backend.domain.models import NumberingScheme
+from backend.core.constants import NumberingScheme
 from backend.logger import logger
 from .base_handler import BaseHandler
 from ..commands.base_command import BaseCommand

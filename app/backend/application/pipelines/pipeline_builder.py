@@ -12,7 +12,7 @@ from backend.core.base_classes import (
 )
 from backend.core.interfaces import ProcessingResult
 from backend.core.exceptions import ProcessingError
-from backend.domain.models import NumberingScheme
+from backend.core.constants import NumberingScheme
 from backend.logger import logger
 
 

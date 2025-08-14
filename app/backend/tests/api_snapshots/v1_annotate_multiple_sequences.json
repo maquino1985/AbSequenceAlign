@@ -1,0 +1,23 @@
+{
+  "response": {
+    "data": {
+      "annotation_result": {
+        "chain_types": {},
+        "isotypes": {},
+        "numbering_scheme": "imgt",
+        "sequences": [],
+        "species": {},
+        "total_sequences": 0
+      },
+      "statistics": {
+        "chain_types": {},
+        "isotypes": {},
+        "species": {}
+      }
+    },
+    "error": null,
+    "message": "Successfully annotated 0 sequences",
+    "success": true
+  },
+  "status_code": 200
+}

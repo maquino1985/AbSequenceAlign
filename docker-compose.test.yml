@@ -50,7 +50,7 @@ services:
       - DB_ECHO=false
       - DB_ECHO_POOL=false
     volumes:
-      - ./app/backend:/app/backend:ro
+      - ./app/backend:/app/backend
       - ./data:/app/data:ro
     depends_on:
       postgres-test:
@@ -253,3 +253,4 @@ volumes:
   postgres_test_data:
   cypress-videos:
   cypress-screenshots:
+  snapshot_test_data:

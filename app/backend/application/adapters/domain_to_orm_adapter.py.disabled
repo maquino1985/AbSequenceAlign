@@ -1,0 +1,235 @@
+"""
+Adapter for converting domain entities to SQLAlchemy ORM models.
+
+This adapter handles the conversion from domain entities (business logic layer)
+to SQLAlchemy ORM models (database layer).
+"""
+
+from typing import Dict, List, Optional, Any
+from uuid import uuid4
+from datetime import datetime
+
+from backend.domain.entities import (
+    BiologicEntity,
+    BiologicChain,
+    BiologicSequence,
+    BiologicDomain,
+    BiologicFeature,
+)
+from backend.database.models_v2 import (
+    Biologic,
+    BiologicAlias,
+    BiologicChain as BiologicChainORM,
+    ProteinSequence as BiologicSequenceORM,
+    SequenceDomain,
+    DomainFeature,
+    ChainType,
+    DomainType,
+    FeatureType,
+)
+
+
+class DomainToORMAdapter:
+    """Adapter for converting domain entities to SQLAlchemy ORM models"""
+
+    @staticmethod
+    def biologic_entity_to_orm(
+        entity: BiologicEntity,
+        biologic_id: Optional[str] = None,
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None,
+    ) -> Biologic:
+        """Convert BiologicEntity to Biologic ORM model"""
+        
+        # Generate ID if not provided
+        if biologic_id is None:
+            biologic_id = str(uuid4())
+            
+        # Use current time if not provided
+        if created_at is None:
+            created_at = datetime.utcnow()
+        if updated_at is None:
+            updated_at = datetime.utcnow()
+            
+        return Biologic(
+            id=biologic_id,
+            name=entity.name,
+            description=entity.description,
+            source=entity.organism,  # Map organism to source
+            biologic_type=entity.biologic_type.value,
+            metadata_json=entity.metadata,
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+
+    @staticmethod
+    def biologic_chain_to_orm(
+        chain: BiologicChain,
+        biologic_id: str,
+        chain_id: Optional[str] = None,
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None,
+    ) -> BiologicChainORM:
+        """Convert BiologicChain to BiologicChain ORM model"""
+        
+        # Generate ID if not provided
+        if chain_id is None:
+            chain_id = str(uuid4())
+            
+        # Use current time if not provided
+        if created_at is None:
+            created_at = datetime.utcnow()
+        if updated_at is None:
+            updated_at = datetime.utcnow()
+            
+        return BiologicChainORM(
+            id=chain_id,
+            biologic_id=biologic_id,
+            name=chain.name,
+            chain_type=chain.chain_type.value,
+            description=chain.description,
+            metadata_json=chain.metadata,
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+
+    @staticmethod
+    def biologic_sequence_to_orm(
+        sequence: BiologicSequence,
+        chain_id: str,
+        sequence_id: Optional[str] = None,
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None,
+    ) -> BiologicSequenceORM:
+        """Convert BiologicSequence to BiologicSequence ORM model"""
+        
+        # Generate ID if not provided
+        if sequence_id is None:
+            sequence_id = str(uuid4())
+            
+        # Use current time if not provided
+        if created_at is None:
+            created_at = datetime.utcnow()
+        if updated_at is None:
+            updated_at = datetime.utcnow()
+            
+        return BiologicSequenceORM(
+            id=sequence_id,
+            chain_id=chain_id,
+            sequence_type=sequence.sequence_type,  # Already a string
+            sequence_data=sequence.sequence_data,
+            description=sequence.description,
+            metadata_json=sequence.metadata,
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+
+    @staticmethod
+    def biologic_domain_to_orm(
+        domain: BiologicDomain,
+        sequence_id: str,
+        domain_id: Optional[str] = None,
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None,
+    ) -> SequenceDomain:
+        """Convert BiologicDomain to SequenceDomain ORM model"""
+        
+        # Generate ID if not provided
+        if domain_id is None:
+            domain_id = str(uuid4())
+            
+        # Use current time if not provided
+        if created_at is None:
+            created_at = datetime.utcnow()
+        if updated_at is None:
+            updated_at = datetime.utcnow()
+            
+        return SequenceDomain(
+            id=domain_id,
+            sequence_id=sequence_id,
+            domain_type=domain.domain_type.value,
+            start_position=domain.start_position,
+            end_position=domain.end_position,
+            sequence_data=domain.sequence_data,
+            description=domain.description,
+            metadata_json=domain.metadata,
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+
+    @staticmethod
+    def biologic_feature_to_orm(
+        feature: BiologicFeature,
+        domain_id: str,
+        feature_id: Optional[str] = None,
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None,
+    ) -> DomainFeature:
+        """Convert BiologicFeature to DomainFeature ORM model"""
+        
+        # Generate ID if not provided
+        if feature_id is None:
+            feature_id = str(uuid4())
+            
+        # Use current time if not provided
+        if created_at is None:
+            created_at = datetime.utcnow()
+        if updated_at is None:
+            updated_at = datetime.utcnow()
+            
+        return DomainFeature(
+            id=feature_id,
+            domain_id=domain_id,
+            feature_type=feature.feature_type.value,
+            start_position=feature.start_position,
+            end_position=feature.end_position,
+            sequence_data=feature.sequence_data,
+            description=feature.description,
+            metadata_json=feature.metadata,
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+
+    @staticmethod
+    def biologic_entity_to_full_orm(
+        entity: BiologicEntity,
+        biologic_id: Optional[str] = None,
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None,
+    ) -> Biologic:
+        """Convert BiologicEntity to full ORM model with all nested objects"""
+        
+        # Convert main entity
+        biologic_orm = DomainToORMAdapter.biologic_entity_to_orm(
+            entity, biologic_id, created_at, updated_at
+        )
+        
+        # Convert chains
+        for chain in entity.chains:
+            chain_orm = DomainToORMAdapter.biologic_chain_to_orm(
+                chain, biologic_orm.id
+            )
+            biologic_orm.chains.append(chain_orm)
+            
+            # Convert sequences for this chain
+            for sequence in chain.sequences:
+                sequence_orm = DomainToORMAdapter.biologic_sequence_to_orm(
+                    sequence, chain_orm.id
+                )
+                chain_orm.sequences.append(sequence_orm)
+                
+                # Convert domains for this sequence
+                for domain in sequence.domains:
+                    domain_orm = DomainToORMAdapter.biologic_domain_to_orm(
+                        domain, sequence_orm.id
+                    )
+                    sequence_orm.domains.append(domain_orm)
+                    
+                    # Convert features for this domain
+                    for feature in domain.features:
+                        feature_orm = DomainToORMAdapter.biologic_feature_to_orm(
+                            feature, domain_orm.id
+                        )
+                        domain_orm.features.append(feature_orm)
+        
+        return biologic_orm

@@ -1,0 +1,118 @@
+"""
+Adapter for converting Pydantic models to domain entities.
+
+This adapter handles the conversion from Pydantic models (API request layer)
+to domain entities (business logic layer).
+"""
+
+from typing import Dict, List, Optional, Any
+
+from backend.domain.entities import (
+    BiologicEntity,
+    BiologicChain,
+    BiologicSequence,
+    BiologicDomain,
+    BiologicFeature,
+)
+from backend.domain.models import (
+    BiologicType,
+    ChainType,
+    DomainType,
+    FeatureType,
+)
+from backend.models.biologic_models import (
+    BiologicCreate,
+    BiologicAliasCreate,
+    ChainCreate,
+    SequenceCreate,
+    SequenceDomainCreate,
+    DomainFeatureCreate,
+)
+
+
+class PydanticToDomainAdapter:
+    """Adapter for converting Pydantic models to domain entities"""
+
+    @staticmethod
+    def biologic_create_to_entity(create_model: BiologicCreate) -> BiologicEntity:
+        """Convert BiologicCreate to BiologicEntity"""
+        
+        # Convert biologic_type string to enum
+        biologic_type = BiologicType(create_model.biologic_type)
+        
+        return BiologicEntity(
+            name=create_model.name,
+            description=create_model.description,
+            organism=create_model.organism,
+            biologic_type=biologic_type,
+            metadata=create_model.metadata,
+        )
+
+
+
+    @staticmethod
+    def chain_create_to_entity(create_model: ChainCreate) -> BiologicChain:
+        """Convert ChainCreate to BiologicChain"""
+        
+        # Convert chain_type string to enum (convert to uppercase)
+        chain_type = ChainType(create_model.chain_type.upper())
+        
+        return BiologicChain(
+            name=create_model.name,
+            chain_type=chain_type,
+            metadata=create_model.metadata,
+        )
+
+
+
+    @staticmethod
+    def sequence_create_to_entity(create_model: SequenceCreate) -> BiologicSequence:
+        """Convert SequenceCreate to BiologicSequence"""
+        
+        return BiologicSequence(
+            sequence_type=create_model.sequence_type.upper(),  # Convert to uppercase
+            sequence_data=create_model.sequence_data,
+            description=create_model.description,
+            metadata=create_model.metadata,
+        )
+
+
+
+    @staticmethod
+    def domain_create_to_entity(create_model: SequenceDomainCreate) -> BiologicDomain:
+        """Convert SequenceDomainCreate to BiologicDomain"""
+        
+        # Convert domain_type string to enum (map to correct values)
+        domain_type_map = {
+            "variable": DomainType.VARIABLE,
+            "constant": DomainType.CONSTANT,
+            "linker": DomainType.LINKER,
+        }
+        domain_type = domain_type_map.get(create_model.domain_type.lower(), DomainType.VARIABLE)
+        
+        return BiologicDomain(
+            domain_type=domain_type,
+            start_position=create_model.start_position,
+            end_position=create_model.end_position,
+            description=create_model.description,
+            metadata=create_model.metadata,
+        )
+
+
+
+    @staticmethod
+    def feature_create_to_entity(create_model: DomainFeatureCreate) -> BiologicFeature:
+        """Convert DomainFeatureCreate to BiologicFeature"""
+        
+        # Convert feature_type string to enum (convert to uppercase)
+        feature_type = FeatureType(create_model.feature_type.upper())
+        
+        return BiologicFeature(
+            feature_type=feature_type,
+            start_position=create_model.start_position,
+            end_position=create_model.end_position,
+            description=create_model.description,
+            metadata=create_model.metadata,
+        )
+
+

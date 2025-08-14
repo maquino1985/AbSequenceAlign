@@ -11,21 +11,11 @@ from backend.core.interfaces import (
     AnnotationService as IAnnotationService,
 )
 from backend.core.exceptions import AnnotationError, ValidationError
-from backend.domain.models import (
+from backend.core.constants import (
     NumberingScheme,
     ChainType,
     DomainType,
     FeatureType,
-)
-from backend.domain.entities import (
-    BiologicEntity,
-    BiologicChain,
-    BiologicSequence,
-    BiologicDomain,
-    BiologicFeature,
-)
-from backend.domain.value_objects import (
-    RegionBoundary,
 )
 from backend.infrastructure.adapters.anarci_adapter import AnarciAdapter
 from backend.infrastructure.adapters.hmmer_adapter import HmmerAdapter
@@ -33,6 +23,7 @@ from backend.utils.validation_utils import ValidationUtils
 from backend.logger import logger
 
 from backend.annotation.anarci_result_processor import AnarciResultProcessor
+from backend.models.models_v2 import Sequence, Chain, Domain
 
 
 class AnnotationService(AbstractProcessingSubject, IAnnotationService):
@@ -45,7 +36,7 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
 
     def process_sequence(
         self,
-        sequence: BiologicEntity,
+        sequence: Sequence,
         numbering_scheme: NumberingScheme = NumberingScheme.IMGT,
     ) -> ProcessingResult:
         """Process a sequence through annotation (alias for annotate_sequence)"""
@@ -53,7 +44,7 @@ class AnnotationService(AbstractProcessingSubject, IAnnotationService):
 
     def annotate_sequence(
         self,
-        sequence: BiologicEntity,
+        sequence: Sequence,
         numbering_scheme: NumberingScheme = NumberingScheme.IMGT,
     ) -> ProcessingResult:
         """Annotate a complete biologic sequence"""

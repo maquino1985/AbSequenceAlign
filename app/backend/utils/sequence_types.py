@@ -1,6 +1,6 @@
 from typing import List, Tuple, Optional, Dict, Any
 
-from backend.domain import ChainType
+from backend.core.constants import ChainType
 
 SequenceType = Tuple[str, str]
 NumberingType = Optional[List[Tuple[str, int, int]]]

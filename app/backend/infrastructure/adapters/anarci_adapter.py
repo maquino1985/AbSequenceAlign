@@ -11,7 +11,7 @@ from ...core.exceptions import (
     AnarciError,
     ToolNotAvailableError,
 )
-from ...domain.models import NumberingScheme
+from backend.core.constants import NumberingScheme
 
 
 class AnarciAdapter(AbstractExternalToolAdapter):

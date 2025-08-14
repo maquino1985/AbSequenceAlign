@@ -17,85 +17,15 @@ from backend.domain.value_objects import RegionBoundary
 
 
 # =============================================================================
-# ENUMERATIONS
-# =============================================================================
-
-
-class BiologicType(str, Enum):
-    """Types of biologics"""
-
-    ANTIBODY = "antibody"
-    PROTEIN = "protein"
-    DNA = "dna"
-    RNA = "rna"
-
-
-class ChainType(str, Enum):
-    """Types of antibody chains"""
-
-    HEAVY = "HEAVY"
-    LIGHT = "LIGHT"
-    KAPPA = "KAPPA"
-    LAMBDA = "LAMBDA"
-    BETA = "BETA"
-    GAMMA = "GAMMA"
-    DELTA = "DELTA"
-    EPSILON = "EPSILON"
-    ZETA = "ZETA"
-    ALPHA = "ALPHA"
-    THETA = "THETA"
-    IOTA = "IOTA"
-    UNKNOWN = "UNKNOWN"
-
-
-class DomainType(str, Enum):
-    """Types of antibody domains"""
-
-    VARIABLE = "V"
-    CONSTANT = "C"
-    LINKER = "LINKER"
-
-
-class RegionType(str, Enum):
-    """Types of antibody regions"""
-
-    CDR1 = "CDR1"
-    CDR2 = "CDR2"
-    CDR3 = "CDR3"
-    FR1 = "FR1"
-    FR2 = "FR2"
-    FR3 = "FR3"
-    FR4 = "FR4"
-    CONSTANT = "CONSTANT"
-    LINKER = "LINKER"
-
-
-class NumberingScheme(str, Enum):
-    """Antibody numbering schemes"""
-
-    IMGT = "imgt"
-    KABAT = "kabat"
-    CHOTHIA = "chothia"
-    MARTIN = "martin"
-    AHO = "aho"
-    CGG = "cgg"
-
-
-class FeatureType(str, Enum):
-    """Types of antibody features"""
-
-    GENE = "GENE"
-    ALLELE = "ALLELE"
-    ISOTYPE = "ISOTYPE"
-    MUTATION = "MUTATION"
-    POST_TRANSLATIONAL = "POST_TRANSLATIONAL"
-    CDR1 = "CDR1"
-    CDR2 = "CDR2"
-    CDR3 = "CDR3"
-    FR1 = "FR1"
-    FR2 = "FR2"
-    FR3 = "FR3"
-    FR4 = "FR4"
+# Import constants from core module
+from backend.core.constants import (
+    BiologicType,
+    ChainType,
+    DomainType,
+    RegionType,
+    NumberingScheme,
+    FeatureType,
+)
 
 
 # =============================================================================

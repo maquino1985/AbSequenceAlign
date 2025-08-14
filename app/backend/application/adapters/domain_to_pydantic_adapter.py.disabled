@@ -1,0 +1,249 @@
+"""
+Adapter for converting domain entities to Pydantic models.
+
+This adapter handles the conversion from domain entities (business logic layer)
+to Pydantic models (API response layer).
+"""
+
+from typing import Dict, List, Optional, Any
+from uuid import uuid4
+from datetime import datetime
+
+from backend.domain.entities import (
+    BiologicEntity,
+    BiologicChain,
+    BiologicSequence,
+    BiologicDomain,
+    BiologicFeature,
+)
+from backend.models.biologic_models import (
+    BiologicResponse,
+    ChainResponse,
+    SequenceResponse,
+    SequenceDomainResponse,
+    DomainFeatureResponse,
+)
+
+
+class DomainToPydanticAdapter:
+    """Adapter for converting domain entities to Pydantic models"""
+
+    @staticmethod
+    def biologic_entity_to_response(
+        entity: BiologicEntity,
+        biologic_id: Optional[str] = None,
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None,
+    ) -> BiologicResponse:
+        """Convert BiologicEntity to BiologicResponse"""
+        
+        # Generate ID if not provided
+        if biologic_id is None:
+            biologic_id = str(uuid4())
+            
+        # Use current time if not provided
+        if created_at is None:
+            created_at = datetime.utcnow()
+        if updated_at is None:
+            updated_at = datetime.utcnow()
+            
+        return BiologicResponse(
+            id=biologic_id,
+            name=entity.name,
+            description=entity.description,
+            organism=entity.organism,
+            biologic_type=entity.biologic_type.value,
+            metadata_json=entity.metadata,
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+
+    @staticmethod
+    def biologic_chain_to_response(
+        chain: BiologicChain,
+        chain_id: Optional[str] = None,
+        biologic_id: Optional[str] = None,
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None,
+    ) -> ChainResponse:
+        """Convert BiologicChain to ChainResponse"""
+        
+        # Generate ID if not provided
+        if chain_id is None:
+            chain_id = str(uuid4())
+            
+        # Use current time if not provided
+        if created_at is None:
+            created_at = datetime.utcnow()
+        if updated_at is None:
+            updated_at = datetime.utcnow()
+            
+        return ChainResponse(
+            id=chain_id,
+            biologic_id=biologic_id or str(uuid4()),
+            name=chain.name,
+            chain_type=chain.chain_type.value.lower(),  # Convert to lowercase
+            description=None,  # BiologicChain doesn't have description
+            metadata_json=chain.metadata,
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+
+    @staticmethod
+    def biologic_sequence_to_response(
+        sequence: BiologicSequence,
+        sequence_id: Optional[str] = None,
+        chain_id: Optional[str] = None,
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None,
+    ) -> SequenceResponse:
+        """Convert BiologicSequence to SequenceResponse"""
+        
+        # Generate ID if not provided
+        if sequence_id is None:
+            sequence_id = str(uuid4())
+            
+        # Use current time if not provided
+        if created_at is None:
+            created_at = datetime.utcnow()
+        if updated_at is None:
+            updated_at = datetime.utcnow()
+            
+        return SequenceResponse(
+            id=sequence_id,
+            chain_id=chain_id or str(uuid4()),
+            sequence_type=sequence.sequence_type.lower(),  # Convert to lowercase
+            sequence_data=sequence.sequence_data,
+            length=len(sequence.sequence_data),  # Add required length field
+            description=sequence.description,
+            metadata_json=sequence.metadata,
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+
+    @staticmethod
+    def biologic_domain_to_response(
+        domain: BiologicDomain,
+        domain_id: Optional[str] = None,
+        sequence_id: Optional[str] = None,
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None,
+    ) -> SequenceDomainResponse:
+        """Convert BiologicDomain to SequenceDomainResponse"""
+        
+        # Generate ID if not provided
+        if domain_id is None:
+            domain_id = str(uuid4())
+            
+        # Use current time if not provided
+        if created_at is None:
+            created_at = datetime.utcnow()
+        if updated_at is None:
+            updated_at = datetime.utcnow()
+            
+        return SequenceDomainResponse(
+            id=domain_id,
+            sequence_id=sequence_id or str(uuid4()),
+            domain_type=domain.domain_type.value.lower(),  # Convert to lowercase
+            start_position=domain.start_position,
+            end_position=domain.end_position,
+            sequence_data=domain.sequence_data,
+            description=None,  # BiologicDomain doesn't have description
+            metadata_json=domain.metadata,
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+
+    @staticmethod
+    def biologic_feature_to_response(
+        feature: BiologicFeature,
+        feature_id: Optional[str] = None,
+        domain_id: Optional[str] = None,
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None,
+    ) -> DomainFeatureResponse:
+        """Convert BiologicFeature to DomainFeatureResponse"""
+        
+        # Generate ID if not provided
+        if feature_id is None:
+            feature_id = str(uuid4())
+            
+        # Use current time if not provided
+        if created_at is None:
+            created_at = datetime.utcnow()
+        if updated_at is None:
+            updated_at = datetime.utcnow()
+            
+        return DomainFeatureResponse(
+            id=feature_id,
+            domain_id=domain_id or str(uuid4()),
+            feature_type=feature.feature_type.value.lower(),  # Convert to lowercase
+            start_position=feature.start_position,
+            end_position=feature.end_position,
+            sequence_data=feature.sequence_data,
+            description=None,  # BiologicFeature doesn't have description
+            metadata_json=feature.metadata,
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+
+    @staticmethod
+    def biologic_entity_to_full_response(
+        entity: BiologicEntity,
+        biologic_id: Optional[str] = None,
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None,
+    ) -> Dict[str, Any]:
+        """Convert BiologicEntity to full response with all nested objects"""
+        
+        # Convert main entity
+        biologic_response = DomainToPydanticAdapter.biologic_entity_to_response(
+            entity, biologic_id, created_at, updated_at
+        )
+        
+        # Convert chains
+        chains_response = []
+        for chain in entity.chains:
+            chain_response = DomainToPydanticAdapter.biologic_chain_to_response(
+                chain, biologic_id=biologic_response.id
+            )
+            
+            # Convert sequences for this chain
+            sequences_response = []
+            for sequence in chain.sequences:
+                sequence_response = DomainToPydanticAdapter.biologic_sequence_to_response(
+                    sequence, chain_id=chain_response.id
+                )
+                
+                # Convert domains for this sequence
+                domains_response = []
+                for domain in sequence.domains:
+                    domain_response = DomainToPydanticAdapter.biologic_domain_to_response(
+                        domain, sequence_id=sequence_response.id
+                    )
+                    
+                    # Convert features for this domain
+                    features_response = []
+                    for feature in domain.features:
+                        feature_response = DomainToPydanticAdapter.biologic_feature_to_response(
+                            feature, domain_id=domain_response.id
+                        )
+                        features_response.append(feature_response.model_dump())
+                    
+                    domain_dict = domain_response.model_dump()
+                    domain_dict["features"] = features_response
+                    domains_response.append(domain_dict)
+                
+                sequence_dict = sequence_response.model_dump()
+                sequence_dict["domains"] = domains_response
+                sequences_response.append(sequence_dict)
+            
+            chain_dict = chain_response.model_dump()
+            chain_dict["sequences"] = sequences_response
+            chains_response.append(chain_dict)
+        
+        # Build final response
+        result = biologic_response.model_dump()
+        result["chains"] = chains_response
+        
+        return result

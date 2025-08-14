@@ -1,0 +1,6 @@
+{
+  "response": {
+    "error": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"sequences\"],\"msg\":\"Field required\",\"input\":{\"sequence\":\"EVQLVESGGGLVQPGGSLRLSCAASGFTFSYFAMSWVRQAPGKGLEWVATISGGGGNTYYLDRVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCVRQTYGGFGYWGQGTLVTVSS\",\"name\":\"Test_Antibody_Heavy\",\"numbering_scheme\":\"IMGT\"}},{\"type\":\"enum\",\"loc\":[\"body\",\"numbering_scheme\"],\"msg\":\"Input should be 'imgt', 'kabat', 'chothia', 'martin', 'aho' or 'cgg'\",\"input\":\"IMGT\",\"ctx\":{\"expected\":\"'imgt', 'kabat', 'chothia', 'martin', 'aho' or 'cgg'\"}}]}"
+  },
+  "status_code": 422
+}

@@ -1,0 +1,19 @@
+{
+  "response": {
+    "detail": [
+      {
+        "ctx": {
+          "expected": "'imgt', 'kabat', 'chothia', 'martin', 'aho' or 'cgg'"
+        },
+        "input": "INVALID_SCHEME",
+        "loc": [
+          "body",
+          "numbering_scheme"
+        ],
+        "msg": "Input should be 'imgt', 'kabat', 'chothia', 'martin', 'aho' or 'cgg'",
+        "type": "enum"
+      }
+    ]
+  },
+  "status_code": 422
+}

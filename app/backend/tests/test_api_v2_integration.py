@@ -5,8 +5,9 @@ Tests the complete response structure to ensure frontend compatibility.
 
 import pytest
 from fastapi.testclient import TestClient
+from pytest_snapshot.plugin import Snapshot
 
-from backend.domain.models import (
+from backend.core.constants import (
     NumberingScheme,
 )
 from backend.logger import logger
@@ -35,7 +36,7 @@ def test_v2_health_check():
 
 
 
-def test_v2_annotate_multiple_sequences():
+def test_v2_annotate_multiple_sequences(snapshot: Snapshot):
     """Test v2 annotation with multiple sequences"""
     request_data = {
         "sequences": [
@@ -64,9 +65,15 @@ def test_v2_annotate_multiple_sequences():
         assert result["success"] is True
         assert "data" in result
         assert "sequence" in result["data"]
+    
+    # Snapshot test to ensure response structure doesn't change
+    snapshot.assert_match(
+        str(data),
+        "v2_annotate_multiple_sequences_response"
+    )
 
 
-def test_v2_annotate_case_insensitive_numbering():
+def test_v2_annotate_case_insensitive_numbering(snapshot: Snapshot):
     """Test that numbering scheme accepts valid lowercase values"""
     request_data = {
         "sequences": [{"name": "test_case", "scfv": SCFV_SEQ}],
@@ -78,6 +85,12 @@ def test_v2_annotate_case_insensitive_numbering():
 
     data = response.json()
     assert data["data"]["results"][0]["success"] is True
+    
+    # Snapshot test to ensure response structure doesn't change
+    snapshot.assert_match(
+        str(data),
+        "v2_annotate_case_insensitive_numbering_response"
+    )
 
 
 def test_v2_annotate_invalid_numbering():

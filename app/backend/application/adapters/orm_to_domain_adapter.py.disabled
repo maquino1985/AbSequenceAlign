@@ -1,0 +1,154 @@
+"""
+Adapter for converting SQLAlchemy ORM models to domain entities.
+
+This adapter handles the conversion from SQLAlchemy ORM models (database layer)
+to domain entities (business logic layer).
+"""
+
+from typing import Dict, List, Optional, Any
+
+from backend.domain.entities import (
+    BiologicEntity,
+    BiologicChain,
+    BiologicSequence,
+    BiologicDomain,
+    BiologicFeature,
+)
+from backend.domain.models import (
+    BiologicType,
+    ChainType,
+    DomainType,
+    FeatureType,
+)
+from backend.database.models_v2 import (
+    Biologic,
+    BiologicAlias,
+    BiologicChain as BiologicChainORM,
+    ProteinSequence as BiologicSequenceORM,
+    SequenceDomain,
+    DomainFeature,
+)
+
+
+class ORMToDomainAdapter:
+    """Adapter for converting SQLAlchemy ORM models to domain entities"""
+
+    @staticmethod
+    def biologic_orm_to_entity(biologic_orm: Biologic) -> BiologicEntity:
+        """Convert Biologic ORM model to BiologicEntity"""
+        
+        # Convert biologic_type string to enum
+        biologic_type = BiologicType(biologic_orm.biologic_type)
+        
+        entity = BiologicEntity(
+            name=biologic_orm.name,
+            description=biologic_orm.description,
+            organism=biologic_orm.source,  # Map source to organism
+            biologic_type=biologic_type,
+            metadata=biologic_orm.metadata_json or {},
+        )
+        
+        # Convert chains
+        for chain_orm in biologic_orm.chains:
+            chain_entity = ORMToDomainAdapter.chain_orm_to_entity(chain_orm)
+            entity.add_chain(chain_entity)
+        
+        return entity
+
+    @staticmethod
+    def chain_orm_to_entity(chain_orm: BiologicChainORM) -> BiologicChain:
+        """Convert BiologicChain ORM model to BiologicChain"""
+        
+        # Convert chain_type string to enum
+        chain_type = ChainType(chain_orm.chain_type)
+        
+        chain = BiologicChain(
+            name=chain_orm.name,
+            chain_type=chain_type,
+            description=chain_orm.description,
+            metadata=chain_orm.metadata_json or {},
+        )
+        
+        # Convert sequences
+        for sequence_orm in chain_orm.sequences:
+            sequence_entity = ORMToDomainAdapter.sequence_orm_to_entity(sequence_orm)
+            chain.add_sequence(sequence_entity)
+        
+        return chain
+
+    @staticmethod
+    def sequence_orm_to_entity(sequence_orm: BiologicSequenceORM) -> BiologicSequence:
+        """Convert BiologicSequence ORM model to BiologicSequence"""
+        
+        sequence = BiologicSequence(
+            sequence_type=sequence_orm.sequence_type,  # Keep as string
+            sequence_data=sequence_orm.sequence_data,
+            description=sequence_orm.description,
+            metadata=sequence_orm.metadata_json or {},
+        )
+        
+        # Convert domains
+        for domain_orm in sequence_orm.domains:
+            domain_entity = ORMToDomainAdapter.domain_orm_to_entity(domain_orm)
+            sequence.add_domain(domain_entity)
+        
+        return sequence
+
+    @staticmethod
+    def domain_orm_to_entity(domain_orm: SequenceDomain) -> BiologicDomain:
+        """Convert SequenceDomain ORM model to BiologicDomain"""
+        
+        # Convert domain_type string to enum
+        domain_type = DomainType(domain_orm.domain_type)
+        
+        domain = BiologicDomain(
+            domain_type=domain_type,
+            start_position=domain_orm.start_position,
+            end_position=domain_orm.end_position,
+            sequence_data=domain_orm.sequence_data,
+            description=domain_orm.description,
+            metadata=domain_orm.metadata_json or {},
+        )
+        
+        # Convert features
+        for feature_orm in domain_orm.features:
+            feature_entity = ORMToDomainAdapter.feature_orm_to_entity(feature_orm)
+            domain.add_feature(feature_entity)
+        
+        return domain
+
+    @staticmethod
+    def feature_orm_to_entity(feature_orm: DomainFeature) -> BiologicFeature:
+        """Convert DomainFeature ORM model to BiologicFeature"""
+        
+        # Convert feature_type string to enum
+        feature_type = FeatureType(feature_orm.feature_type)
+        
+        return BiologicFeature(
+            feature_type=feature_type,
+            start_position=feature_orm.start_position,
+            end_position=feature_orm.end_position,
+            sequence_data=feature_orm.sequence_data,
+            description=feature_orm.description,
+            metadata=feature_orm.metadata_json or {},
+        )
+
+    @staticmethod
+    def biologic_orm_to_entity_with_aliases(biologic_orm: Biologic) -> BiologicEntity:
+        """Convert Biologic ORM model to BiologicEntity including aliases"""
+        
+        entity = ORMToDomainAdapter.biologic_orm_to_entity(biologic_orm)
+        
+        # Add aliases to metadata
+        if biologic_orm.aliases:
+            aliases_data = {}
+            for alias_orm in biologic_orm.aliases:
+                alias_type = alias_orm.alias_type or "unknown"
+                if alias_type not in aliases_data:
+                    aliases_data[alias_type] = []
+                aliases_data[alias_type].append(alias_orm.alias)
+            
+            # Merge with existing metadata
+            entity.metadata.update({"aliases": aliases_data})
+        
+        return entity

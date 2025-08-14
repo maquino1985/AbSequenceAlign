@@ -2,6 +2,7 @@ from backend.logger import logger
 from backend.main import app
 from backend.utils.json_to_fasta import json_seqs_to_fasta
 from fastapi.testclient import TestClient
+from pytest_snapshot.plugin import Snapshot
 
 client = TestClient(app)
 
@@ -71,7 +72,7 @@ def test_annotate_invalid():
     assert "Invalid amino acids" in response.json()["detail"][0]["msg"]
 
 
-def test_v2_annotate_multiple_chains(multiple_sequences):
+def test_v2_annotate_multiple_chains(multiple_sequences, snapshot: Snapshot):
     """Test annotation with multiple chains per sequence"""
     response = client.post("/api/v2/annotate", json=multiple_sequences)
     assert response.status_code == 200
@@ -101,9 +102,15 @@ def test_v2_annotate_multiple_chains(multiple_sequences):
         == 3
     )
     assert len(result["results"][1]["data"]["sequence"]["chains"]) == 4
+    
+    # Snapshot test to ensure response structure doesn't change
+    snapshot.assert_match(
+        str(result),
+        "v2_annotate_multiple_chains_response"
+    )
 
 
-def test_annotate_with_custom_chains():
+def test_annotate_with_custom_chains(snapshot: Snapshot):
     """Test annotation with custom chain labels"""
     response = client.post(
         "/api/v2/annotate",
@@ -123,6 +130,12 @@ def test_annotate_with_custom_chains():
     assert response.status_code == 200
     result = response.json()["data"]
     assert result["summary"]["successful"] == 1
+    
+    # Snapshot test to ensure response structure doesn't change
+    snapshot.assert_match(
+        str(result),
+        "v2_annotate_custom_chains_response"
+    )
 
 
 # Additional tests for /align, /dataset, /datasets, /alignment can be added as needed.

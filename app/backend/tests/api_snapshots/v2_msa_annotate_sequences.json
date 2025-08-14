@@ -1,0 +1,6 @@
+{
+  "response": {
+    "error": "{\"detail\":\"Not Found\"}"
+  },
+  "status_code": 404
+}

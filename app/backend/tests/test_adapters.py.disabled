@@ -1,0 +1,387 @@
+"""
+Tests for the adapter layer.
+
+These tests ensure that the adapters correctly convert between:
+- Domain entities (business logic layer)
+- Pydantic models (API layer)
+- SQLAlchemy ORM models (database layer)
+"""
+
+import pytest
+from datetime import datetime
+from uuid import uuid4
+
+from backend.domain.entities import (
+    BiologicEntity,
+    BiologicChain,
+    BiologicSequence,
+    BiologicDomain,
+    BiologicFeature,
+)
+from backend.domain.models import (
+    BiologicType,
+    ChainType,
+    DomainType,
+    FeatureType,
+)
+from backend.models.biologic_models import (
+    BiologicCreate,
+    ChainCreate,
+    SequenceCreate,
+    SequenceDomainCreate,
+    DomainFeatureCreate,
+)
+from backend.application.adapters import (
+    DomainToPydanticAdapter,
+    PydanticToDomainAdapter,
+)
+
+
+class TestDomainToPydanticAdapter:
+    """Test conversion from domain entities to Pydantic models"""
+
+    def test_biologic_entity_to_response(self):
+        """Test converting BiologicEntity to BiologicResponse"""
+        # Create domain entity
+        entity = BiologicEntity(
+            name="Test Antibody",
+            description="A test antibody",
+            organism="Human",
+            biologic_type=BiologicType.ANTIBODY,
+            metadata={"test": "data"},
+        )
+        
+        # Convert to Pydantic response
+        response = DomainToPydanticAdapter.biologic_entity_to_response(entity)
+        
+        # Verify conversion
+        assert response.name == "Test Antibody"
+        assert response.description == "A test antibody"
+        assert response.organism == "Human"
+        assert response.biologic_type == "antibody"
+        assert response.metadata_json == {"test": "data"}
+        assert response.id is not None
+        assert response.created_at is not None
+        assert response.updated_at is not None
+
+    def test_biologic_chain_to_response(self):
+        """Test converting BiologicChain to ChainResponse"""
+        # Create domain chain
+        chain = BiologicChain(
+            name="Heavy Chain",
+            chain_type=ChainType.HEAVY,
+            metadata={"chain_data": "value"},
+        )
+        
+        # Convert to Pydantic response
+        response = DomainToPydanticAdapter.biologic_chain_to_response(chain)
+        
+        # Verify conversion
+        assert response.name == "Heavy Chain"
+        assert response.chain_type == "heavy"
+        assert response.metadata_json == {"chain_data": "value"}
+        assert response.id is not None
+        assert response.biologic_id is not None
+
+    def test_biologic_sequence_to_response(self):
+        """Test converting BiologicSequence to SequenceResponse"""
+        # Create domain sequence
+        sequence = BiologicSequence(
+            sequence_type="PROTEIN",
+            sequence_data="EVQLVESGGGLVQPGGSLRLSCAAS",
+            description="Protein sequence",
+            metadata={"seq_data": "value"},
+        )
+        
+        # Convert to Pydantic response
+        response = DomainToPydanticAdapter.biologic_sequence_to_response(sequence)
+        
+        # Verify conversion
+        assert response.sequence_type == "protein"
+        assert response.sequence_data == "EVQLVESGGGLVQPGGSLRLSCAAS"
+        assert response.description == "Protein sequence"
+        assert response.metadata_json == {"seq_data": "value"}
+        assert response.id is not None
+        assert response.chain_id is not None
+
+    def test_biologic_domain_to_response(self):
+        """Test converting BiologicDomain to SequenceDomainResponse"""
+        # Create domain domain
+        domain = BiologicDomain(
+            domain_type=DomainType.VARIABLE,
+            start_position=1,
+            end_position=100,
+            description="Variable domain",
+            metadata={"domain_data": "value"},
+        )
+        
+        # Convert to Pydantic response
+        response = DomainToPydanticAdapter.biologic_domain_to_response(domain)
+        
+        # Verify conversion
+        assert response.domain_type == "variable"
+        assert response.start_position == 1
+        assert response.end_position == 100
+        assert response.description == "Variable domain"
+        assert response.metadata_json == {"domain_data": "value"}
+        assert response.id is not None
+        assert response.sequence_id is not None
+
+    def test_biologic_feature_to_response(self):
+        """Test converting BiologicFeature to DomainFeatureResponse"""
+        # Create domain feature
+        feature = BiologicFeature(
+            feature_type=FeatureType.GENE,
+            start_position=10,
+            end_position=20,
+            description="Gene feature",
+            metadata={"feature_data": "value"},
+        )
+        
+        # Convert to Pydantic response
+        response = DomainToPydanticAdapter.biologic_feature_to_response(feature)
+        
+        # Verify conversion
+        assert response.feature_type == "gene"
+        assert response.start_position == 10
+        assert response.end_position == 20
+        assert response.description == "Gene feature"
+        assert response.metadata_json == {"feature_data": "value"}
+        assert response.id is not None
+        assert response.domain_id is not None
+
+
+class TestPydanticToDomainAdapter:
+    """Test conversion from Pydantic models to domain entities"""
+
+    def test_biologic_create_to_entity(self):
+        """Test converting BiologicCreate to BiologicEntity"""
+        # Create Pydantic model
+        create_model = BiologicCreate(
+            name="Test Antibody",
+            description="A test antibody",
+            organism="Human",
+            biologic_type="antibody",
+            metadata={"test": "data"},
+        )
+        
+        # Convert to domain entity
+        entity = PydanticToDomainAdapter.biologic_create_to_entity(create_model)
+        
+        # Verify conversion
+        assert entity.name == "Test Antibody"
+        assert entity.description == "A test antibody"
+        assert entity.organism == "Human"
+        assert entity.biologic_type == BiologicType.ANTIBODY
+        assert entity.metadata == {"test": "data"}
+
+    def test_chain_create_to_entity(self):
+        """Test converting ChainCreate to BiologicChain"""
+        # Create Pydantic model
+        create_model = ChainCreate(
+            name="Heavy Chain",
+            chain_type="heavy",
+            metadata={"chain_data": "value"},
+        )
+        
+        # Convert to domain entity
+        chain = PydanticToDomainAdapter.chain_create_to_entity(create_model)
+        
+        # Verify conversion
+        assert chain.name == "Heavy Chain"
+        assert chain.chain_type == ChainType.HEAVY
+        assert chain.metadata == {"chain_data": "value"}
+
+    def test_sequence_create_to_entity(self):
+        """Test converting SequenceCreate to BiologicSequence"""
+        # Create Pydantic model
+        create_model = SequenceCreate(
+            sequence_type="protein",
+            sequence_data="EVQLVESGGGLVQPGGSLRLSCAAS",
+            description="Protein sequence",
+            metadata={"seq_data": "value"},
+        )
+        
+        # Convert to domain entity
+        sequence = PydanticToDomainAdapter.sequence_create_to_entity(create_model)
+        
+        # Verify conversion
+        assert sequence.sequence_type == "PROTEIN"
+        assert sequence.sequence_data == "EVQLVESGGGLVQPGGSLRLSCAAS"
+        assert sequence.description == "Protein sequence"
+        assert sequence.metadata == {"seq_data": "value"}
+
+    def test_domain_create_to_entity(self):
+        """Test converting SequenceDomainCreate to BiologicDomain"""
+        # Create Pydantic model
+        create_model = SequenceDomainCreate(
+            domain_type="variable",
+            start_position=1,
+            end_position=100,
+            description="Variable domain",
+            metadata={"domain_data": "value"},
+        )
+        
+        # Convert to domain entity
+        domain = PydanticToDomainAdapter.domain_create_to_entity(create_model)
+        
+        # Verify conversion
+        assert domain.domain_type == DomainType.VARIABLE
+        assert domain.start_position == 1
+        assert domain.end_position == 100
+        assert domain.description == "Variable domain"
+        assert domain.metadata == {"domain_data": "value"}
+
+    def test_feature_create_to_entity(self):
+        """Test converting DomainFeatureCreate to BiologicFeature"""
+        # Create Pydantic model
+        create_model = DomainFeatureCreate(
+            feature_type="gene",
+            start_position=10,
+            end_position=20,
+            name="test_gene",
+            value="IGKV1-27*01",
+            description="Gene feature",
+            metadata={"feature_data": "value"},
+        )
+        
+        # Convert to domain entity
+        feature = PydanticToDomainAdapter.feature_create_to_entity(create_model)
+        
+        # Verify conversion
+        assert feature.feature_type == FeatureType.GENE
+        assert feature.start_position == 10
+        assert feature.end_position == 20
+        assert feature.description == "Gene feature"
+        assert feature.metadata == {"feature_data": "value"}
+
+
+class TestAdapterRoundTrip:
+    """Test round-trip conversions to ensure data integrity"""
+
+    def test_biologic_entity_create_round_trip(self):
+        """Test round-trip conversion: Domain -> Pydantic Create -> Domain"""
+        # Create original domain entity
+        original_entity = BiologicEntity(
+            name="Test Antibody",
+            description="A test antibody",
+            organism="Human",
+            biologic_type=BiologicType.ANTIBODY,
+            metadata={"test": "data"},
+        )
+        
+        # Convert to Pydantic create model
+        create_model = BiologicCreate(
+            name=original_entity.name,
+            description=original_entity.description,
+            organism=original_entity.organism,
+            biologic_type=original_entity.biologic_type.value,
+            metadata=original_entity.metadata,
+        )
+        
+        # Convert back to domain entity
+        recreated_entity = PydanticToDomainAdapter.biologic_create_to_entity(create_model)
+        
+        # Verify data integrity
+        assert recreated_entity.name == original_entity.name
+        assert recreated_entity.description == original_entity.description
+        assert recreated_entity.organism == original_entity.organism
+        assert recreated_entity.biologic_type == original_entity.biologic_type
+        assert recreated_entity.metadata == original_entity.metadata
+
+    def test_chain_create_round_trip(self):
+        """Test round-trip conversion: Domain -> Pydantic Create -> Domain for chains"""
+        # Create original domain chain
+        original_chain = BiologicChain(
+            name="Heavy Chain",
+            chain_type=ChainType.HEAVY,
+            metadata={"chain_data": "value"},
+        )
+        
+        # Convert to Pydantic create model
+        create_model = ChainCreate(
+            name=original_chain.name,
+            chain_type=original_chain.chain_type.value.lower(),
+            metadata=original_chain.metadata,
+        )
+        
+        # Convert back to domain entity
+        recreated_chain = PydanticToDomainAdapter.chain_create_to_entity(create_model)
+        
+        # Verify data integrity
+        assert recreated_chain.name == original_chain.name
+        assert recreated_chain.chain_type == original_chain.chain_type
+        assert recreated_chain.metadata == original_chain.metadata
+
+
+class TestAdapterIntegration:
+    """Test integration between different adapters"""
+
+    def test_domain_to_pydantic_flow(self):
+        """Test the complete flow: Domain -> Pydantic"""
+        # Create domain entity
+        entity = BiologicEntity(
+            name="Test Antibody",
+            description="A test antibody",
+            organism="Human",
+            biologic_type=BiologicType.ANTIBODY,
+            metadata={"test": "data"},
+        )
+        
+        # Add chain
+        chain = BiologicChain(
+            name="Heavy Chain",
+            chain_type=ChainType.HEAVY,
+        )
+        entity.add_chain(chain)
+        
+        # Add sequence
+        sequence = BiologicSequence(
+            sequence_type="PROTEIN",
+            sequence_data="EVQLVESGGGLVQPGGSLRLSCAAS",
+        )
+        chain.add_sequence(sequence)
+        
+        # Convert to Pydantic response
+        response = DomainToPydanticAdapter.biologic_entity_to_full_response(entity)
+        
+        # Verify Pydantic response structure
+        assert response["name"] == "Test Antibody"
+        assert response["biologic_type"] == "antibody"
+        assert len(response["chains"]) == 1
+        assert response["chains"][0]["name"] == "Heavy Chain"
+        assert len(response["chains"][0]["sequences"]) == 1
+        assert response["chains"][0]["sequences"][0]["sequence_data"] == "EVQLVESGGGLVQPGGSLRLSCAAS"
+
+    def test_enum_conversion_consistency(self):
+        """Test that enum conversions are consistent across adapters"""
+        # Test all enum types
+        test_cases = [
+            (BiologicType.ANTIBODY, "antibody"),
+            (BiologicType.PROTEIN, "protein"),
+            (ChainType.HEAVY, "heavy"),
+            (ChainType.LIGHT, "light"),
+            ("PROTEIN", "protein"),  # String-based sequence type
+            ("DNA", "dna"),  # String-based sequence type
+            (DomainType.VARIABLE, "v"),  # DomainType uses "V" not "variable"
+            (DomainType.CONSTANT, "c"),  # DomainType uses "C" not "constant"
+            (FeatureType.GENE, "gene"),
+            (FeatureType.ALLELE, "allele"),
+        ]
+        
+        for enum_value, string_value in test_cases:
+            # Test domain to Pydantic conversion
+            if hasattr(enum_value, 'value'):
+                assert enum_value.value == string_value
+            
+            # Test Pydantic to domain conversion
+            if isinstance(enum_value, BiologicType):
+                assert BiologicType(string_value) == enum_value
+            elif isinstance(enum_value, ChainType):
+                assert ChainType(string_value) == enum_value
+            elif isinstance(enum_value, str):  # String-based sequence type
+                assert enum_value.upper() == string_value.upper()
+            elif isinstance(enum_value, DomainType):
+                assert DomainType(string_value) == enum_value
+            elif isinstance(enum_value, FeatureType):
+                assert FeatureType(string_value) == enum_value

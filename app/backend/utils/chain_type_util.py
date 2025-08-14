@@ -1,4 +1,4 @@
-from backend.domain import ChainType
+from backend.core.constants import ChainType
 
 
 class ChainTypeUtil:
