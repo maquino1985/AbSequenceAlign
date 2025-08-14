@@ -67,14 +67,14 @@ async def annotate_sequences_v2(request: AnnotationRequestV2):
                                 "query_start"
                             )
                             dstop = domain.alignment_details.get("query_end")
-
+                    # dstart += 1
                     v2_regions: List[V2Region] = []
                     # Regions if present
                     if hasattr(domain, "regions") and domain.regions:
                         for rname, r in domain.regions.items():
                             # r may be a dataclass-like object or a plain dict
                             if isinstance(r, dict):
-                                start = int(r.get("start"))
+                                start = int(r.get("start")) + 1
                                 stop = int(r.get("stop"))
                                 seq_val = r.get("sequence")
                             else:

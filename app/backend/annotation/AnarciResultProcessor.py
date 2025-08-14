@@ -204,7 +204,7 @@ class AnarciResultProcessor:
                             alignment_details={
                                 "domain_type": "LINKER",
                                 "sequence": linker_seq,
-                                "start": prev_domain_end,
+                                "start": prev_domain_end + 1,
                                 "end": domain_start,
                             },
                             hit_table=None,
