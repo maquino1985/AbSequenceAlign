@@ -1,6 +1,6 @@
 from typing import Dict, List, Tuple
 
-from backend.annotation.AnarciResultProcessor import AnarciResultProcessor
+from backend.annotation.anarci_result_processor import AnarciResultProcessor
 from backend.models.models_v2 import (
     AnnotationResult as V2AnnotationResult,
     Sequence as V2Sequence,

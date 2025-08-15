@@ -76,16 +76,15 @@ class AntibodyRegionAnnotator:
             start_idx, stop_idx = RegionIndexHelper.find_region_indices(
                 pos_to_idx, start, stop
             )
-            # Fix: Check for None instead of falsy values (0 is valid)
             if start_idx is None or stop_idx is None:
                 log.info(f"Region {region} has invalid start and stop indices")
                 continue
             seq = RegionIndexHelper.extract_region_sequence(
                 numbering, start_idx, stop_idx
             )
-            # Fix: Remove the +2 adjustment - use indices directly
-            regions[region] = AntibodyRegion(region, start_idx, stop_idx, seq)
-        # Convert to dict with formatted positions and sequences
+            regions[region] = AntibodyRegion(
+                region, start_idx, stop_idx, seq
+            )
         domain.regions = regions
         return domain
 

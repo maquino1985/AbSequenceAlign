@@ -7,10 +7,10 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from annotation.AnarciResultProcessor import AnarciResultProcessor
-from annotation.AntibodyRegionAnnotator import AntibodyRegionAnnotator
-from annotation.region_utils import RegionIndexHelper
-from logger import logger
+from backend.annotation.anarci_result_processor import AnarciResultProcessor
+from backend.annotation.antibody_region_annotator import AntibodyRegionAnnotator
+from backend.annotation.region_utils import RegionIndexHelper
+from backend.logger import logger
 
 
 def test_fr1_missing_debug():
