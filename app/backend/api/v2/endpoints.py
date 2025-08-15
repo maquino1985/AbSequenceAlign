@@ -74,12 +74,14 @@ async def annotate_sequences_v2(request: AnnotationRequestV2):
                         for rname, r in domain.regions.items():
                             # r may be a dataclass-like object or a plain dict
                             if isinstance(r, dict):
+                                # Convert 0-based positions to 1-based for frontend
                                 start = int(r.get("start")) + 1
-                                stop = int(r.get("stop"))
+                                stop = int(r.get("stop")) + 1
                                 seq_val = r.get("sequence")
                             else:
-                                start = int(r.start)
-                                stop = int(r.stop)
+                                # Convert 0-based positions to 1-based for frontend
+                                start = int(r.start) + 1
+                                stop = int(r.stop) + 1
                                 seq_val = r.sequence
                             features = [
                                 V2RegionFeature(kind="sequence", value=seq_val)

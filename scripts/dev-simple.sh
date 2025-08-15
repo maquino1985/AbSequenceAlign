@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# AbSequenceAlign Development Environment
-# Starts both frontend and backend servers in development mode
+# AbSequenceAlign Simple Development Environment
+# Starts both frontend and backend servers without health checks
 
 set -e
 
@@ -81,7 +81,7 @@ cleanup() {
 # Set up trap to cleanup on exit
 trap cleanup INT TERM EXIT
 
-print_header "AbSequenceAlign Development Environment"
+print_header "AbSequenceAlign Simple Development Environment"
 
 # Check if we're in the right directory
 if [ ! -f "Makefile" ]; then
@@ -126,40 +126,16 @@ print_status "Starting backend server on port $BACKEND_PORT..."
 (cd app/backend && PYTHONPATH="$(pwd)/.." $CONDA_CMD run -n AbSequenceAlign python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port $BACKEND_PORT) &
 BACKEND_PID=$!
 
-# Wait for backend to be ready
-print_status "Waiting for backend server..."
-MAX_RETRIES=30
-COUNT=0
-while ! curl -s http://localhost:$BACKEND_PORT/health >/dev/null 2>&1; do
-    ((COUNT++))
-    if [ $COUNT -eq $MAX_RETRIES ]; then
-        print_error "Backend server failed to start"
-        exit 1
-    fi
-    sleep 1
-done
-
-print_status "Backend server is ready at http://localhost:$BACKEND_PORT"
+# Give backend a moment to start
+sleep 3
 
 # Start frontend server
 print_status "Starting frontend server on port $VITE_PORT..."
 (cd app/frontend && VITE_PORT=$VITE_PORT npm run dev:port) &
 FRONTEND_PID=$!
 
-# Wait for frontend to be ready
-print_status "Waiting for frontend server..."
-MAX_RETRIES=30
-COUNT=0
-while ! curl -s http://localhost:$VITE_PORT >/dev/null 2>&1; do
-    ((COUNT++))
-    if [ $COUNT -eq $MAX_RETRIES ]; then
-        print_error "Frontend server failed to start"
-        exit 1
-    fi
-    sleep 1
-done
-
-print_status "Frontend server is ready at http://localhost:$VITE_PORT"
+# Give frontend a moment to start
+sleep 3
 
 print_header "Development Environment Ready"
 echo -e "${GREEN}✅ Backend API:${NC} http://localhost:$BACKEND_PORT"
@@ -182,3 +158,5 @@ wait $BACKEND_PID $FRONTEND_PID 2>/dev/null || {
         print_status "Frontend process is still running"
     fi
 }
+
+

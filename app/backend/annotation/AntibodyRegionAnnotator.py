@@ -69,21 +69,22 @@ class AntibodyRegionAnnotator:
         numbering = domain.numbering[0]  # Use only the residue numbering
         pos_to_idx = RegionIndexHelper.build_pos_to_idx(numbering)
         regions: Dict[str, AntibodyRegion] = {}
+        log.info(f"Region map: {region_map}")
         for region, (start, stop) in region_map.items():
             log.info(f"Annotating region {region}")
             log.info("Start/stop: %s - %s", start, stop)
             start_idx, stop_idx = RegionIndexHelper.find_region_indices(
                 pos_to_idx, start, stop
             )
-            if not all([start, stop, start_idx, stop_idx]):
+            # Fix: Check for None instead of falsy values (0 is valid)
+            if start_idx is None or stop_idx is None:
                 log.info(f"Region {region} has invalid start and stop indices")
                 continue
             seq = RegionIndexHelper.extract_region_sequence(
                 numbering, start_idx, stop_idx
             )
-            regions[region] = AntibodyRegion(
-                region, start_idx + 2, stop_idx + 2, seq
-            )
+            # Fix: Remove the +2 adjustment - use indices directly
+            regions[region] = AntibodyRegion(region, start_idx, stop_idx, seq)
         # Convert to dict with formatted positions and sequences
         domain.regions = regions
         return domain
