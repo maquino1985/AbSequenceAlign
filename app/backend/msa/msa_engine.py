@@ -7,6 +7,7 @@ from typing import List, Tuple
 
 from Bio import AlignIO, Align
 from Bio.Align import substitution_matrices
+from Bio.Align.Applications import MuscleCommandline
 
 from .pssm_calculator import PSSMCalculator
 from ..models.models import MSAResult, MSASequence, AlignmentMethod
@@ -98,27 +99,38 @@ class MSAEngine:
 
         return msa_result
 
+    def _create_temp_fasta_file(self, sequences: List[str]) -> str:
+        """Create a temporary FASTA file with the given sequences"""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".fasta", delete=False
+        ) as temp_file:
+            for i, seq in enumerate(sequences):
+                temp_file.write(f">seq_{i}\n{seq}\n")
+            return temp_file.name
+
+    def _cleanup_temp_files(self, *file_paths):
+        """Clean up temporary files, ignoring FileNotFoundError"""
+        for file_path in file_paths:
+            if file_path:
+                try:
+                    os.unlink(file_path)
+                except FileNotFoundError:
+                    pass
+
     def _align_muscle(self, sequences: List[str]) -> List[str]:
         """Align sequences using MUSCLE"""
         if not sequences:
             return []
 
+        temp_in_path = None
+        temp_out_path = None
+
         try:
-            # Create temporary FASTA file
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".fasta", delete=False
-            ) as temp_in:
-                for i, seq in enumerate(sequences):
-                    temp_in.write(f">seq_{i}\n{seq}\n")
-                temp_in_path = temp_in.name
+            # Create temporary files
+            temp_in_path = self._create_temp_fasta_file(sequences)
+            temp_out_path = tempfile.mktemp(suffix=".aln")
 
-            # Create temporary output file
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".aln", delete=False
-            ) as temp_out:
-                temp_out_path = temp_out.name
-
-            # Run MUSCLE with proper command line for version 5.x
+            # Run MUSCLE
             cmd = ["muscle", "-align", temp_in_path, "-output", temp_out_path]
             subprocess.run(cmd, check=True, capture_output=True, text=True)
 
@@ -126,41 +138,31 @@ class MSAEngine:
             alignment = AlignIO.read(temp_out_path, "fasta")
             aligned_sequences = [str(record.seq) for record in alignment]
 
-            # Cleanup
-            os.unlink(temp_in_path)
-            os.unlink(temp_out_path)
-
             return aligned_sequences
 
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"MUSCLE alignment failed: {e}")
         except Exception as e:
             raise RuntimeError(f"Error in MUSCLE alignment: {e}")
+        finally:
+            self._cleanup_temp_files(temp_in_path, temp_out_path)
 
     def _align_mafft(self, sequences: List[str]) -> List[str]:
         """Align sequences using MAFFT"""
+        temp_in_path = None
+
         try:
             # Create temporary FASTA file
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".fasta", delete=False
-            ) as temp_in:
-                for i, seq in enumerate(sequences):
-                    temp_in.write(f">seq_{i}\n{seq}\n")
-                temp_in_path = temp_in.name
+            temp_in_path = self._create_temp_fasta_file(sequences)
 
-            # Create temporary output file
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".aln", delete=False
-            ) as temp_out:
-                temp_out_path = temp_out.name
-
-            # Run MAFFT with proper command line
+            # Run MAFFT (outputs to stdout)
             cmd = ["mafft", "--auto", temp_in_path]
             result = subprocess.run(
                 cmd, check=True, capture_output=True, text=True
             )
+
+            # Parse MAFFT output from stdout
             aligned_sequences = result.stdout.strip().split("\n")
-            # Filter out header lines and join sequences
             sequences = []
             current_seq = ""
             for line in aligned_sequences:
@@ -173,44 +175,26 @@ class MSAEngine:
             if current_seq:
                 sequences.append(current_seq)
 
-            # Cleanup
-            os.unlink(temp_in_path)
-
             return sequences
-
-            # Read alignment
-            alignment = AlignIO.read(temp_out_path, "fasta")
-            aligned_sequences = [str(record.seq) for record in alignment]
-
-            # Cleanup
-            os.unlink(temp_in_path)
-            os.unlink(temp_out_path)
-
-            return aligned_sequences
 
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"MAFFT alignment failed: {e}")
         except Exception as e:
             raise RuntimeError(f"Error in MAFFT alignment: {e}")
+        finally:
+            self._cleanup_temp_files(temp_in_path)
 
     def _align_clustalo(self, sequences: List[str]) -> List[str]:
         """Align sequences using Clustal Omega"""
+        temp_in_path = None
+        temp_out_path = None
+
         try:
-            # Create temporary FASTA file
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".fasta", delete=False
-            ) as temp_in:
-                for i, seq in enumerate(sequences):
-                    temp_in.write(f">seq_{i}\n{seq}\n")
-                temp_in_path = temp_in.name
+            # Create temporary files
+            temp_in_path = self._create_temp_fasta_file(sequences)
+            temp_out_path = tempfile.mktemp(suffix=".aln")
 
-            # Create temporary output file
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".aln", delete=False
-            ) as temp_out:
-                temp_out_path = temp_out.name
-
-            # Run Clustal Omega with proper command line
+            # Run Clustal Omega
             cmd = [
                 "clustalo",
                 "-i",
@@ -218,6 +202,7 @@ class MSAEngine:
                 "-o",
                 temp_out_path,
                 "--outfmt=fasta",
+                "--force",  # Force overwrite of existing output file
             ]
             subprocess.run(cmd, check=True, capture_output=True, text=True)
 
@@ -225,74 +210,143 @@ class MSAEngine:
             alignment = AlignIO.read(temp_out_path, "fasta")
             aligned_sequences = [str(record.seq) for record in alignment]
 
-            # Cleanup
-            os.unlink(temp_in_path)
-            os.unlink(temp_out_path)
-
             return aligned_sequences
 
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Clustal Omega alignment failed: {e}")
         except Exception as e:
             raise RuntimeError(f"Error in Clustal Omega alignment: {e}")
+        finally:
+            self._cleanup_temp_files(temp_in_path, temp_out_path)
 
     def _align_pairwise_global(self, sequences: List[str]) -> List[str]:
-        """Align sequences using BioPython's pairwise global alignment"""
+        """Align sequences using Biopython's built-in MSA capabilities as fallback"""
         if len(sequences) < 2:
             return sequences
 
-        # Use progressive alignment for multiple sequences
-        aligned_sequences = [sequences[0]]
-
-        for i in range(1, len(sequences)):
-            # Align current sequence with the first aligned sequence
-            aligner = Align.PairwiseAligner()
-            aligner.mode = "global"
-            aligner.substitution_matrix = substitution_matrices.load(
-                "BLOSUM62"
-            )
-            aligner.open_gap_score = -10
-            aligner.extend_gap_score = -0.5
-
-            alignments = aligner.align(aligned_sequences[0], sequences[i])
-            if alignments:
-                # Get the best alignment
-                alignment = alignments[0]
-                target, query = alignment.target, alignment.query
-
-                # Update aligned sequences
-                aligned_sequences = [target, query]
-
-        return aligned_sequences
+        # Try external tools first, fall back to Biopython's MSA
+        try:
+            return self._align_muscle(sequences)
+        except (
+            RuntimeError,
+            FileNotFoundError,
+            subprocess.CalledProcessError,
+        ):
+            # Fall back to Biopython's built-in MSA
+            return self._biopython_msa_fallback(sequences, "global")
 
     def _align_pairwise_local(self, sequences: List[str]) -> List[str]:
-        """Align sequences using BioPython's pairwise local alignment"""
+        """Align sequences using Biopython's built-in MSA capabilities as fallback"""
         if len(sequences) < 2:
             return sequences
 
-        # Use progressive alignment for multiple sequences
+        # Try external tools first, fall back to Biopython's MSA
+        try:
+            return self._align_muscle(sequences)
+        except (
+            RuntimeError,
+            FileNotFoundError,
+            subprocess.CalledProcessError,
+        ):
+            # Fall back to Biopython's built-in MSA
+            return self._biopython_msa_fallback(sequences, "local")
+
+    def _biopython_msa_fallback(
+        self, sequences: List[str], mode: str
+    ) -> List[str]:
+        """Use Biopython's built-in MSA capabilities as fallback"""
+        if len(sequences) < 2:
+            return sequences
+
+        # For small datasets, use progressive alignment
+        if len(sequences) <= 10:
+            return self._progressive_alignment_biopython(sequences, mode)
+        else:
+            # For larger datasets, try to use MUSCLE through Biopython's wrapper
+            try:
+                return self._muscle_biopython_wrapper(sequences)
+            except (
+                RuntimeError,
+                FileNotFoundError,
+                subprocess.CalledProcessError,
+            ):
+                # Final fallback to progressive alignment
+                return self._progressive_alignment_biopython(sequences, mode)
+
+    def _progressive_alignment_biopython(
+        self, sequences: List[str], mode: str
+    ) -> List[str]:
+        """Use Biopython's progressive alignment approach"""
+        if len(sequences) < 2:
+            return sequences
+
+        # Initialize with first sequence
         aligned_sequences = [sequences[0]]
 
-        for i in range(1, len(sequences)):
-            # Align current sequence with the first aligned sequence
-            aligner = Align.PairwiseAligner()
-            aligner.mode = "local"
-            aligner.substitution_matrix = substitution_matrices.load(
-                "BLOSUM62"
-            )
-            aligner.open_gap_score = -10
-            aligner.extend_gap_score = -0.5
+        aligner = Align.PairwiseAligner()
+        aligner.mode = mode
+        aligner.substitution_matrix = substitution_matrices.load("BLOSUM62")
+        aligner.open_gap_score = -10
+        aligner.extend_gap_score = -0.5
 
-            alignments = aligner.align(aligned_sequences[0], sequences[i])
+        # Progressive alignment: align each new sequence with the profile of existing sequences
+        for i in range(1, len(sequences)):
+            current_seq = sequences[i]
+
+            # Align current sequence with the first sequence (as a simple profile)
+            target_seq = aligned_sequences[0]
+
+            alignments = aligner.align(target_seq, current_seq)
             if alignments:
-                # Get the best alignment
                 alignment = alignments[0]
                 target, query = alignment.target, alignment.query
 
-                # Update aligned sequences
-                aligned_sequences = [target, query]
+                # Ensure both sequences have the same length
+                max_length = max(len(target), len(query))
+                target_padded = target + "-" * (max_length - len(target))
+                query_padded = query + "-" * (max_length - len(query))
+
+                # Update all existing sequences with padding
+                for j in range(len(aligned_sequences)):
+                    seq = aligned_sequences[j]
+                    aligned_sequences[j] = seq + "-" * (max_length - len(seq))
+
+                # Add the new aligned sequence
+                aligned_sequences.append(query_padded)
+
+                # Update the target sequence
+                aligned_sequences[0] = target_padded
 
         return aligned_sequences
+
+    def _muscle_biopython_wrapper(self, sequences: List[str]) -> List[str]:
+        """Use Biopython's MUSCLE wrapper as an additional fallback"""
+
+        # Create temporary files
+        temp_in_path = self._create_temp_fasta_file(sequences)
+        temp_out_path = temp_in_path.replace(".fasta", "_aligned.fasta")
+
+        try:
+            # Run MUSCLE through Biopython's wrapper
+            muscle_cline = MuscleCommandline(
+                input=temp_in_path, out=temp_out_path, outfmt="fasta"
+            )
+
+            # Execute the command
+            stdout, stderr = muscle_cline()
+
+            # Read the alignment
+            from Bio import AlignIO
+
+            alignment = AlignIO.read(temp_out_path, "fasta")
+            aligned_sequences = [str(record.seq) for record in alignment]
+
+            return aligned_sequences
+
+        except Exception as e:
+            raise RuntimeError(f"MUSCLE alignment failed: {e}")
+        finally:
+            self._cleanup_temp_files(temp_in_path, temp_out_path)
 
     def _create_alignment_matrix(
         self, aligned_sequences: List[str]

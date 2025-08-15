@@ -4,7 +4,9 @@ from typing import List, Optional, Dict, Any
 
 from anarci import run_anarci
 
-from backend.annotation.antibody_region_annotator import AntibodyRegionAnnotator
+from backend.annotation.antibody_region_annotator import (
+    AntibodyRegionAnnotator,
+)
 from .isotype_hmmer import detect_isotype_with_hmmer
 from backend.utils.types import Chain, Domain
 

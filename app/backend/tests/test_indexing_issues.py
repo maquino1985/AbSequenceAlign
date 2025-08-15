@@ -5,7 +5,9 @@ This will help understand the root cause of the +1 and +2 adjustments needed.
 
 import pytest
 from backend.annotation.anarci_result_processor import AnarciResultProcessor
-from backend.annotation.antibody_region_annotator import AntibodyRegionAnnotator
+from backend.annotation.antibody_region_annotator import (
+    AntibodyRegionAnnotator,
+)
 from backend.annotation.region_utils import RegionIndexHelper
 from backend.utils.types import Domain, Chain
 from backend.logger import logger

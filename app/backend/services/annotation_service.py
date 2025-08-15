@@ -24,7 +24,9 @@ class AnnotationService:
         return DomainType.VARIABLE
 
     @staticmethod
-    def _get_domain_positions(domain, domain_type: DomainType) -> tuple[int, int]:
+    def _get_domain_positions(
+        domain, domain_type: DomainType
+    ) -> tuple[int, int]:
         """Extract start and stop positions from domain."""
         if not domain.alignment_details:
             return None, None
@@ -32,11 +34,11 @@ class AnnotationService:
         if domain_type == DomainType.LINKER:
             return (
                 domain.alignment_details.get("start"),
-                domain.alignment_details.get("end")
+                domain.alignment_details.get("end"),
             )
         return (
             domain.alignment_details.get("query_start"),
-            domain.alignment_details.get("query_end")
+            domain.alignment_details.get("query_end"),
         )
 
     @staticmethod
@@ -44,11 +46,11 @@ class AnnotationService:
         """Process a region and return its start, stop, and sequence."""
         if isinstance(region, dict):
             start = int(region.get("start")) + 1  # Convert to 1-based
-            stop = int(region.get("stop")) + 1    # Convert to 1-based
+            stop = int(region.get("stop")) + 1  # Convert to 1-based
             sequence = region.get("sequence")
         else:
-            start = int(region.start) + 1         # Convert to 1-based
-            stop = int(region.stop) + 1           # Convert to 1-based
+            start = int(region.start) + 1  # Convert to 1-based
+            stop = int(region.stop) + 1  # Convert to 1-based
             sequence = region.sequence
         return start, stop, sequence
 
@@ -64,7 +66,9 @@ class AnnotationService:
         return regions
 
     @staticmethod
-    def _create_v2_region(name: str, start: int, stop: int, sequence: str) -> V2Region:
+    def _create_v2_region(
+        name: str, start: int, stop: int, sequence: str
+    ) -> V2Region:
         """Create a V2Region object with features."""
         features = [V2RegionFeature(kind="sequence", value=sequence)]
         return V2Region(
@@ -76,7 +80,9 @@ class AnnotationService:
 
     def _process_domain(self, domain) -> V2Domain:
         """Process a single domain and return V2Domain object."""
-        domain_type = self._map_domain_type(getattr(domain, "domain_type", "V"))
+        domain_type = self._map_domain_type(
+            getattr(domain, "domain_type", "V")
+        )
         start, stop = self._get_domain_positions(domain, domain_type)
         regions = self._process_regions(domain)
 
@@ -110,7 +116,9 @@ class AnnotationService:
         )
 
     @staticmethod
-    def _calculate_statistics(processor: AnarciResultProcessor) -> Tuple[Dict, Dict, Dict]:
+    def _calculate_statistics(
+        processor: AnarciResultProcessor,
+    ) -> Tuple[Dict, Dict, Dict]:
         """Calculate statistics from processor results."""
         chain_types = {}
         isotypes = {}
@@ -139,7 +147,9 @@ class AnnotationService:
 
         return chain_types, isotypes, species_counts
 
-    def _prepare_input_dict(self, request: AnnotationRequestV2) -> Dict[str, Dict]:
+    def _prepare_input_dict(
+        self, request: AnnotationRequestV2
+    ) -> Dict[str, Dict]:
         """Prepare input dictionary from request sequences."""
         input_dict = {}
         for seq in request.sequences:
@@ -148,7 +158,9 @@ class AnnotationService:
                 input_dict[seq.name] = chains
         return input_dict
 
-    def process_annotation_request(self, request: AnnotationRequestV2) -> V2AnnotationResult:
+    def process_annotation_request(
+        self, request: AnnotationRequestV2
+    ) -> V2AnnotationResult:
         """Process an annotation request and return V2AnnotationResult."""
         # Prepare input and create processor
         input_dict = self._prepare_input_dict(request)
@@ -157,10 +169,14 @@ class AnnotationService:
         )
 
         # Process sequences
-        sequences = [self._process_sequence(result) for result in processor.results]
+        sequences = [
+            self._process_sequence(result) for result in processor.results
+        ]
 
         # Calculate statistics
-        chain_types, isotypes, species_counts = self._calculate_statistics(processor)
+        chain_types, isotypes, species_counts = self._calculate_statistics(
+            processor
+        )
 
         # Create and return result
         return V2AnnotationResult(

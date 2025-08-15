@@ -20,7 +20,7 @@ class MSAService:
     ) -> Tuple[List[SequenceInput], List[str]]:
         """Process uploaded sequences and return sequence inputs and validation errors"""
         fasta_content = await self._get_fasta_content(file, sequences)
-        
+
         try:
             records = self.sequence_processor.parse_fasta(fasta_content)
             sequences_list = [str(record.seq) for record in records]
@@ -78,7 +78,9 @@ class MSAService:
         total_sequences = sum(
             len(seq_input.get_all_chains()) for seq_input in request.sequences
         )
-        use_background = total_sequences > 10  # Use background for >10 sequences
+        use_background = (
+            total_sequences > 10
+        )  # Use background for >10 sequences
 
         if use_background:
             return self._create_background_msa_job(request, total_sequences)
@@ -107,9 +109,7 @@ class MSAService:
         for seq_input in request.sequences:
             chains = seq_input.get_all_chains()
             for chain_name, sequence in chains.items():
-                sequences.append(
-                    (f"{seq_input.name}_{chain_name}", sequence)
-                )
+                sequences.append((f"{seq_input.name}_{chain_name}", sequence))
 
         if not sequences:
             raise ValueError("No valid sequences provided")

@@ -34,8 +34,10 @@ async def upload_msa_sequences_v2(
     """Upload sequences for MSA analysis"""
     try:
         msa_service = MSAService()
-        sequence_inputs, errors = await msa_service.process_upload(file, sequences)
-        
+        sequence_inputs, errors = await msa_service.process_upload(
+            file, sequences
+        )
+
         return {
             "success": True,
             "message": f"Successfully uploaded {len(sequence_inputs)} sequences for MSA",
