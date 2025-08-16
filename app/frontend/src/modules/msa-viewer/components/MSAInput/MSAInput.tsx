@@ -44,7 +44,7 @@ DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQP
 };
 
 interface MSAInputProps {
-  onUpload: (sequences: string[]) => void;
+  onUpload: (sequences: string[], sequenceNames?: string[]) => void;
   isLoading: boolean;
 }
 
@@ -119,7 +119,7 @@ export const MSAInput: React.FC<MSAInputProps> = ({ onUpload, isLoading }) => {
     }
 
     setError(null);
-    onUpload(sequences);
+    onUpload(sequences, sequenceNames);
   };
 
   const handleClear = () => {

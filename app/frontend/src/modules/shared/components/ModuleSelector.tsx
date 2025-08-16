@@ -8,13 +8,17 @@ import {
   Chip
 } from '@mui/material';
 import { KeyboardArrowDown } from '@mui/icons-material';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useModuleContext } from '../context';
 
 export const ModuleSelector: React.FC = () => {
-  const { modules, currentModule, setCurrentModule, getCurrentModule } = useModuleContext();
+  const { modules, getCurrentModule } = useModuleContext();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   
-  const currentModuleData = getCurrentModule();
+  // Find current module based on current route
+  const currentModuleData = modules.find(module => module.route === location.pathname) || modules[0];
   const open = Boolean(anchorEl);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -26,7 +30,10 @@ export const ModuleSelector: React.FC = () => {
   };
 
   const handleModuleSelect = (moduleId: string) => {
-    setCurrentModule(moduleId);
+    const selectedModule = modules.find(module => module.id === moduleId);
+    if (selectedModule) {
+      navigate(selectedModule.route);
+    }
     handleClose();
   };
 
@@ -80,7 +87,7 @@ export const ModuleSelector: React.FC = () => {
             <MenuItem
               key={module.id}
               onClick={() => handleModuleSelect(module.id)}
-              selected={module.id === currentModule}
+              selected={module.route === location.pathname}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -97,7 +104,7 @@ export const ModuleSelector: React.FC = () => {
                   {module.description}
                 </Typography>
               </Box>
-              {module.id === currentModule && (
+              {module.route === location.pathname && (
                 <Chip label="Active" size="small" color="primary" />
               )}
             </MenuItem>

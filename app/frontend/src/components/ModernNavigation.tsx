@@ -47,7 +47,7 @@ export const ModernNavigation: React.FC<ModernNavigationProps> = ({
     setMobileOpen(!mobileOpen);
   };
 
-  const currentModule = modules.find(module => module.route === location.pathname)?.id || modules[0]?.id;
+  const currentModuleRoute = location.pathname;
 
   const handleModuleSelect = (moduleId: string) => {
     // This function is no longer needed as navigation is handled by Link
@@ -224,7 +224,7 @@ export const ModernNavigation: React.FC<ModernNavigationProps> = ({
                 <ListItemButton
                   component={Link}
                   to={module.route}
-                  selected={currentModule === module.id}
+                  selected={module.route === currentModuleRoute}
                   onClick={() => {
                     if (isMobile) {
                       setMobileOpen(false);
@@ -233,7 +233,7 @@ export const ModernNavigation: React.FC<ModernNavigationProps> = ({
                   sx={{
                     borderRadius: 2,
                     mb: 1,
-                    background: currentModule === module.id
+                    background: module.route === currentModuleRoute
                       ? darkMode
                         ? 'rgba(255, 255, 255, 0.1)'
                         : 'rgba(0, 0, 0, 0.05)'

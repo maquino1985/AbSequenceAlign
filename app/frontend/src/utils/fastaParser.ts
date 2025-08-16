@@ -7,22 +7,41 @@ export interface FastaSequence {
 }
 
 export const parseFasta = (fastaContent: string): FastaSequence[] => {
+  if (!fastaContent || fastaContent.trim().length === 0) {
+    throw new Error('Empty FASTA content provided');
+  }
+
   const sequences: FastaSequence[] = [];
-  const lines = fastaContent.trim().split('\n');
+  const lines = fastaContent.trim().split(/\r?\n/); // Handle both Unix and Windows line endings
   
   let currentSequence: FastaSequence | null = null;
+  let lineNumber = 0;
   
   for (const line of lines) {
+    lineNumber++;
     const trimmedLine = line.trim();
+    
+    // Skip empty lines
+    if (!trimmedLine) {
+      continue;
+    }
     
     if (trimmedLine.startsWith('>')) {
       // Save previous sequence if exists
       if (currentSequence) {
+        if (!currentSequence.sequence) {
+          throw new Error(`Sequence "${currentSequence.id}" has no sequence data (line ${lineNumber - 1})`);
+        }
         sequences.push(currentSequence);
       }
       
       // Start new sequence
-      const headerParts = trimmedLine.substring(1).split(' ');
+      const headerContent = trimmedLine.substring(1).trim();
+      if (!headerContent) {
+        throw new Error(`Empty header found at line ${lineNumber}`);
+      }
+      
+      const headerParts = headerContent.split(/\s+/);
       const id = headerParts[0] || `seq_${sequences.length + 1}`;
       const description = headerParts.slice(1).join(' ') || undefined;
       
@@ -31,15 +50,33 @@ export const parseFasta = (fastaContent: string): FastaSequence[] => {
         description,
         sequence: ''
       };
-    } else if (trimmedLine && currentSequence) {
+    } else if (currentSequence) {
+      // Validate sequence line contains only valid characters
+      const cleanLine = trimmedLine.replace(/\s/g, '').toUpperCase();
+      const validAminoAcids = /^[ACDEFGHIKLMNPQRSTVWY]*$/;
+      
+      if (!validAminoAcids.test(cleanLine)) {
+        const invalidChars = [...cleanLine].filter(char => !/[ACDEFGHIKLMNPQRSTVWY]/.test(char));
+        throw new Error(`Invalid amino acids found in sequence "${currentSequence.id}" at line ${lineNumber}: ${[...new Set(invalidChars)].join(', ')}`);
+      }
+      
       // Add to current sequence
-      currentSequence.sequence += trimmedLine;
+      currentSequence.sequence += cleanLine;
+    } else {
+      throw new Error(`Sequence data found without header at line ${lineNumber}: "${trimmedLine}"`);
     }
   }
   
   // Add the last sequence
   if (currentSequence) {
+    if (!currentSequence.sequence) {
+      throw new Error(`Sequence "${currentSequence.id}" has no sequence data`);
+    }
     sequences.push(currentSequence);
+  }
+  
+  if (sequences.length === 0) {
+    throw new Error('No valid sequences found in FASTA content');
   }
   
   return sequences;

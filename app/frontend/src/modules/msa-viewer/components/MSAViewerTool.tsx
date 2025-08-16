@@ -120,8 +120,24 @@ export const MSAViewerTool: React.FC = () => {
   useEffect(() => {
     if (!msaState.jobId) return;
 
+    let pollCount = 0;
+    const maxPolls = 150; // Maximum 5 minutes of polling (150 * 2s)
+
     const pollJobStatus = async () => {
       try {
+        pollCount++;
+        
+        // Stop polling after max attempts
+        if (pollCount > maxPolls) {
+          setMsaState(prev => ({
+            ...prev,
+            error: 'Job polling timeout. The job may still be processing. Please try refreshing the page.',
+            jobStatus: null,
+            isLoading: false
+          }));
+          return;
+        }
+
         const response = await api.getJobStatus(msaState.jobId!);
         if (response.success && response.data) {
           const jobStatus = response.data as MSAJobStatusV2;
@@ -161,45 +177,100 @@ export const MSAViewerTool: React.FC = () => {
                   details: {}
                 })) || []
               ) || [],
-              isLoading: false
+              isLoading: false,
+              jobId: null // Clear job ID when completed
             }));
           } else if (jobStatus.status === 'failed') {
             setMsaState(prev => ({
               ...prev,
-              error: jobStatus.message,
-              isLoading: false
+              error: jobStatus.message || 'Job failed',
+              isLoading: false,
+              jobId: null,
+              jobStatus: null
             }));
           }
+        } else {
+          // API call failed
+          setMsaState(prev => ({
+            ...prev,
+            jobStatus: {
+              ...prev.jobStatus,
+              message: 'Unable to check job status. Retrying...'
+            } as any
+          }));
         }
       } catch (error) {
         console.error('Error polling job status:', error);
+        setMsaState(prev => ({
+          ...prev,
+          jobStatus: {
+            ...prev.jobStatus,
+            message: 'Connection error while checking job status. Retrying...'
+          } as any
+        }));
       }
     };
 
+    // Initial poll
+    pollJobStatus();
+    
+    // Set up polling interval
     const interval = setInterval(pollJobStatus, 2000); // Poll every 2 seconds
+    
     return () => clearInterval(interval);
   }, [msaState.jobId]);
 
-  const handleSequencesUpload = async (sequences: string[]) => {
-    setMsaState(prev => ({ ...prev, sequences, isLoading: true, error: null }));
+  const handleSequencesUpload = async (sequences: string[], sequenceNames?: string[]) => {
+    setMsaState(prev => ({ 
+      ...prev, 
+      isLoading: true, 
+      error: null,
+      msaResult: null,
+      annotationResult: null,
+      alignmentMatrix: [],
+      sequenceNames: [],
+      consensus: '',
+      pssmData: null,
+      regions: []
+    }));
     
     try {
-      // Create FormData for upload
-      const formData = new FormData();
-      const fastaContent = sequences.map((seq, i) => `>Sequence_${i + 1}\n${seq}`).join('\n');
-      formData.append('sequences', fastaContent);
-      
-      const response = await api.uploadMSASequences(formData);
-      
-      if (response.success && response.data) {
-        setMsaState(prev => ({ 
-          ...prev, 
-          isLoading: false,
-          msaId: 'uploaded-sequences'
-        }));
-      } else {
-        throw new Error(response.message || 'Upload failed');
+      // Validate sequences before processing
+      if (!sequences || sequences.length === 0) {
+        throw new Error('No sequences provided');
       }
+      
+      if (sequences.length < 2) {
+        throw new Error('At least 2 sequences are required for multiple sequence alignment');
+      }
+      
+      // Basic validation for each sequence
+      const validatedSequences: string[] = [];
+      for (let i = 0; i < sequences.length; i++) {
+        const seq = sequences[i];
+        if (!seq || seq.trim().length === 0) {
+          throw new Error(`Sequence ${i + 1} is empty`);
+        }
+        
+        // Remove any whitespace and convert to uppercase
+        const cleanSeq = seq.replace(/\s/g, '').toUpperCase();
+        
+        // Check for obvious non-amino acid characters (like FASTA headers mixed in)
+        if (cleanSeq.includes('>') || cleanSeq.includes('_') || /\d/.test(cleanSeq)) {
+          throw new Error(`Sequence ${i + 1} appears to contain FASTA headers or invalid characters. Please check your input format.`);
+        }
+        
+        validatedSequences.push(cleanSeq);
+      }
+      
+      // Store validated sequences and names
+      setMsaState(prev => ({ 
+        ...prev, 
+        sequences: validatedSequences,
+        sequenceNames: sequenceNames || [],
+        isLoading: false
+      }));
+      
     } catch (error) {
       setMsaState(prev => ({ 
         ...prev, 
@@ -215,9 +286,35 @@ export const MSAViewerTool: React.FC = () => {
     setMsaState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
-      // Prepare sequences for MSA creation
-      const sequenceInputs = msaState.sequences.map((seq, i) => ({
-        name: `Sequence_${i + 1}`,
+      // Validate and clean sequences
+      const validatedSequences: string[] = [];
+      const sequenceNames = msaState.sequenceNames.length ? msaState.sequenceNames : msaState.sequences.map((_, i) => `Sequence_${i + 1}`);
+      
+      for (let i = 0; i < msaState.sequences.length; i++) {
+        const seq = msaState.sequences[i];
+        const name = sequenceNames[i] || `Sequence_${i + 1}`;
+        
+        // Clean sequence - remove whitespace and convert to uppercase
+        const cleanSeq = seq.replace(/\s/g, '').toUpperCase();
+        
+        // Validate amino acids
+        const validAminoAcids = /^[ACDEFGHIKLMNPQRSTVWY]+$/;
+        if (!validAminoAcids.test(cleanSeq)) {
+          const invalidChars = [...cleanSeq].filter(char => !/[ACDEFGHIKLMNPQRSTVWY]/.test(char));
+          throw new Error(`Invalid amino acids in ${name}: ${[...new Set(invalidChars)].join(', ')}`);
+        }
+        
+        // Check minimum length
+        if (cleanSeq.length < 15) {
+          throw new Error(`Sequence ${name} is too short (${cleanSeq.length} AA). Minimum 15 AA required.`);
+        }
+        
+        validatedSequences.push(cleanSeq);
+      }
+      
+      // Prepare sequences for MSA creation using actual FASTA names
+      const sequenceInputs = validatedSequences.map((seq, i) => ({
+        name: sequenceNames[i] || `Sequence_${i + 1}`,
         heavy_chain: seq
       }));
       
@@ -231,12 +328,19 @@ export const MSAViewerTool: React.FC = () => {
       
       if (response.success && response.data) {
         const data = response.data;
-          if (data.use_background) {
+        if (data.use_background) {
           // Background job created
           setMsaState(prev => ({ 
             ...prev, 
             jobId: data.job_id || null,
-            isLoading: false
+            isLoading: false,
+            jobStatus: {
+              job_id: data.job_id || '',
+              status: 'pending',
+              message: 'Job submitted for background processing. Please wait...',
+              progress: 0,
+              created_at: new Date().toISOString()
+            }
           }));
         } else {
           // Immediate result
@@ -287,9 +391,41 @@ export const MSAViewerTool: React.FC = () => {
 
   if (msaState.error) {
     return (
-      <Alert severity="error" sx={{ mb: 2 }} data-testid="error-message">
-        Error: {msaState.error}
-      </Alert>
+      <Box data-testid="msa-viewer-tool">
+        <Typography variant="h4" component="h1" gutterBottom>
+          Multiple Sequence Alignment
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+          Upload sequences and create multiple sequence alignments with region annotations.
+        </Typography>
+        
+        <Alert severity="error" sx={{ mb: 2 }} data-testid="error-message">
+          <Typography variant="h6" gutterBottom>Error</Typography>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            {msaState.error}
+          </Typography>
+          <Button 
+            variant="outlined" 
+            size="small" 
+            onClick={() => setMsaState(prev => ({ 
+              ...prev, 
+              error: null,
+              sequences: [],
+              sequenceNames: [],
+              msaResult: null,
+              annotationResult: null,
+              alignmentMatrix: [],
+              consensus: '',
+              pssmData: null,
+              regions: [],
+              jobId: null,
+              jobStatus: null
+            }))}
+          >
+            Reset and Try Again
+          </Button>
+        </Alert>
+      </Box>
     );
   }
 
@@ -302,23 +438,75 @@ export const MSAViewerTool: React.FC = () => {
         Upload sequences and create multiple sequence alignments with region annotations.
       </Typography>
 
-      {/* Job Status */}
-      {msaState.jobStatus && (
+      {/* Job Status and Loading */}
+      {(msaState.isLoading || msaState.jobStatus) && (
         <Box sx={{ mb: 3 }}>
-          <Alert 
-            severity={msaState.jobStatus.status === 'completed' ? 'success' : 'info'}
-            data-testid="job-status"
-          >
-            <Typography variant="body2">
-              Job Status: {msaState.jobStatus.status}
-              {msaState.jobStatus.progress && ` (${Math.round(msaState.jobStatus.progress * 100)}%)`}
-            </Typography>
-            {msaState.jobStatus.message && (
-              <Typography variant="caption" display="block">
-                {msaState.jobStatus.message}
-              </Typography>
-            )}
-          </Alert>
+          {msaState.isLoading && !msaState.jobId && (
+            <Alert severity="info" data-testid="job-status">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <CircularProgress size={20} />
+                <Typography variant="body2">
+                  Processing request...
+                </Typography>
+              </Box>
+            </Alert>
+          )}
+          
+          {msaState.jobStatus && (
+            <Alert 
+              severity={
+                msaState.jobStatus.status === 'completed' ? 'success' :
+                msaState.jobStatus.status === 'failed' ? 'error' :
+                msaState.jobStatus.status === 'running' ? 'info' : 'info'
+              }
+              data-testid="job-status"
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                {msaState.jobStatus.status === 'pending' || msaState.jobStatus.status === 'running' ? (
+                  <CircularProgress size={20} />
+                ) : null}
+                <Box sx={{ flexGrow: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {msaState.jobStatus.status === 'pending' && 'Job Queued'}
+                    {msaState.jobStatus.status === 'running' && 'Processing Alignment'}
+                    {msaState.jobStatus.status === 'completed' && 'Alignment Complete'}
+                    {msaState.jobStatus.status === 'failed' && 'Job Failed'}
+                    {msaState.jobStatus.progress !== undefined && msaState.jobStatus.progress > 0 && 
+                      ` (${Math.round(msaState.jobStatus.progress * 100)}%)`
+                    }
+                  </Typography>
+                  {msaState.jobStatus.message && (
+                    <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                      {msaState.jobStatus.message}
+                    </Typography>
+                  )}
+                  {msaState.jobStatus.status === 'pending' && (
+                    <Typography variant="caption" display="block" sx={{ mt: 0.5, color: 'text.secondary' }}>
+                      Large alignments are processed in the background. This may take a few minutes.
+                    </Typography>
+                  )}
+                </Box>
+                {(msaState.jobStatus.status === 'pending' || msaState.jobStatus.status === 'running') && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="secondary"
+                    onClick={() => {
+                      setMsaState(prev => ({
+                        ...prev,
+                        jobId: null,
+                        jobStatus: null,
+                        isLoading: false
+                      }));
+                    }}
+                    sx={{ ml: 'auto' }}
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </Box>
+            </Alert>
+          )}
         </Box>
       )}
 
