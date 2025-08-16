@@ -9,6 +9,7 @@ COPY cypress/ ./cypress/
 COPY cypress.config.cjs ./
 COPY package.json ./
 COPY scripts/ ./scripts/
+COPY tsconfig.e2e.json ./tsconfig.json
 
 # Set environment variables
 ENV CI=true

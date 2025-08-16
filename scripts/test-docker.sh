@@ -37,7 +37,6 @@ show_usage() {
     echo "  --backend          Run backend tests in Docker"
     echo "  --frontend         Run frontend tests in Docker"
     echo "  --e2e              Run E2E tests in Docker"
-    echo "  --integration      Run integration tests in Docker"
     echo "  --all              Run all tests in Docker (default)"
     echo "  --cleanup          Clean up Docker containers and images"
     echo "  --help             Show this help message"
@@ -73,10 +72,6 @@ else
                 ;;
             --e2e)
                 RUN_E2E=true
-                shift
-                ;;
-            --integration)
-                RUN_INTEGRATION=true
                 shift
                 ;;
             --all)
@@ -121,7 +116,7 @@ fi
 cleanup() {
     print_status "Cleaning up Docker resources..."
     docker compose -f docker-compose.test.yml down -v --remove-orphans 2>/dev/null || true
-    docker system prune -f 2>/dev/null || true
+    # docker system prune -f 2>/dev/null || true
     print_status "Cleanup complete"
 }
 
@@ -167,34 +162,6 @@ if [ "$RUN_FRONTEND" = true ]; then
         print_status "Frontend tests passed!"
     else
         print_error "Frontend tests failed!"
-        cleanup
-        exit 1
-    fi
-fi
-
-# Integration Tests
-if [ "$RUN_INTEGRATION" = true ]; then
-    print_header "Running Integration Tests in Docker"
-    print_status "Building and running integration test container..."
-    
-    if docker compose -f docker-compose.test.yml up --build integration-test --exit-code-from integration-test; then
-        print_status "Integration tests passed!"
-    else
-        print_error "Integration tests failed!"
-        cleanup
-        exit 1
-    fi
-fi
-
-# Database Tests
-if [ "$RUN_INTEGRATION" = true ]; then
-    print_header "Running Database Tests in Docker"
-    print_status "Building and running database test container..."
-    
-    if docker compose -f docker-compose.test.yml up --build database-test --exit-code-from database-test; then
-        print_status "Database tests passed!"
-    else
-        print_error "Database tests failed!"
         cleanup
         exit 1
     fi

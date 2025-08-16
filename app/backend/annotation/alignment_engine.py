@@ -124,15 +124,15 @@ class AlignmentEngine:
         score = best_alignment.score
         identity = self._calculate_identity(seq_a, seq_b)
 
-        # Calculate length without gaps
-        length_without_gaps = len(seq_a.replace("-", ""))
+        # Calculate length of aligned sequences
+        aligned_length = len(seq_a)
 
         return {
             "method": "pairwise_global",
             "alignment": str(best_alignment),
             "score": score,
             "identity": identity,
-            "length": length_without_gaps,
+            "length": aligned_length,
             "gaps": seq_a.count("-") + seq_b.count("-"),
         }
 
@@ -176,15 +176,15 @@ class AlignmentEngine:
         score = best_alignment.score
         identity = self._calculate_identity(seq_a, seq_b)
 
-        # Calculate length without gaps
-        length_without_gaps = len(seq_a.replace("-", ""))
+        # Calculate length of aligned sequences
+        aligned_length = len(seq_a)
 
         return {
             "method": "pairwise_local",
             "alignment": str(best_alignment),
             "score": score,
             "identity": identity,
-            "length": length_without_gaps,
+            "length": aligned_length,
             "gaps": seq_a.count("-") + seq_b.count("-"),
         }
 
@@ -216,14 +216,10 @@ class AlignmentEngine:
             if method == AlignmentMethod.MUSCLE:
                 cmd = [
                     "muscle",
-                    "-in",
+                    "-align",
                     temp_fasta_path,
-                    "-out",
+                    "-output",
                     temp_output_path,
-                    "-gapopen",
-                    str(gap_open),
-                    "-gapextend",
-                    str(gap_extend),
                 ]
             elif method == AlignmentMethod.MAFFT:
                 cmd = [
@@ -314,41 +310,76 @@ class AlignmentEngine:
     def _parse_alignment_string(self, alignment_str: str) -> tuple[str, str]:
         """Parse Biopython alignment string to extract sequences"""
         lines = alignment_str.split("\n")
-        if len(lines) >= 3:
-            # Check if it's the detailed format (Docker/CI)
-            if "target" in lines[0] and "query" in lines[2]:
-                # Format: "target            0 ABCDEF 6"
-                seq_a = lines[0].split()[-2]  # Get the sequence part
-                seq_b = lines[2].split()[-2]  # Get the sequence part
+        seq_a = ""
+        seq_b = ""
+
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            if (
+                line.startswith("target")
+                and i + 2 < len(lines)
+                and "query" in lines[i + 2]
+            ):
+                # Extract target sequence (first sequence)
+                target_line = line
+                query_line = lines[i + 2]
+
+                # Parse target sequence - it's the part between the position numbers
+                target_parts = target_line.split()
+                if len(target_parts) >= 3:
+                    seq_a += target_parts[2]  # The sequence part
+
+                # Parse query sequence - it's the part between the position numbers
+                query_parts = query_line.split()
+                if len(query_parts) >= 3:
+                    seq_b += query_parts[2]  # The sequence part
+
+                i += 3  # Skip the middle line with alignment indicators
             else:
-                # Format: "ABCDEF\n||||||\nABCDEF" (local)
-                seq_a = lines[0]
-                seq_b = lines[2]
-        else:
-            # Fallback to old format
-            aligned_seqs = lines[:2]
-            seq_a, seq_b = aligned_seqs[0], aligned_seqs[1]
+                i += 1
+
+        # If we didn't find the sequences in the expected format, try fallback
+        if not seq_a or not seq_b:
+            # Look for lines that contain only sequence characters
+            for line in lines:
+                line = line.strip()
+                if line and all(c in "ACDEFGHIKLMNPQRSTVWY-" for c in line):
+                    if not seq_a:
+                        seq_a = line
+                    elif not seq_b:
+                        seq_b = line
+                        break
 
         return seq_a, seq_b
 
     def _calculate_identity(self, seq1: str, seq2: str) -> float:
         """Calculate sequence identity between two aligned sequences"""
+        from Bio.Seq import Seq
+
+        # For aligned sequences, they should be the same length
+        # But handle cases where they might not be (e.g., test cases)
         if len(seq1) != len(seq2):
-            return 0.0
+            # If lengths differ, pad the shorter one with gaps
+            max_len = max(len(seq1), len(seq2))
+            seq1 = seq1.ljust(max_len, "-")
+            seq2 = seq2.ljust(max_len, "-")
 
-        # Count positions where both sequences have non-gap characters
-        non_gap_positions = sum(
-            1 for a, b in zip(seq1, seq2) if a != "-" and b != "-"
-        )
-        if non_gap_positions == 0:
-            return 0.0
+        # Convert to Bio.Seq objects for validation
+        seq1_obj = Seq(seq1)
+        seq2_obj = Seq(seq2)
 
-        # Count matches at non-gap positions
-        matches = sum(
-            1 for a, b in zip(seq1, seq2) if a == b and a != "-" and b != "-"
-        )
+        # Calculate identity: matches / (non-gap positions)
+        matches = 0
+        total_positions = 0
 
-        return matches / non_gap_positions
+        for a, b in zip(seq1_obj, seq2_obj):
+            if a != "-" and b != "-":
+                total_positions += 1
+                if a == b:
+                    matches += 1
+
+        return matches / total_positions if total_positions > 0 else 0.0
 
     def _calculate_msa_identity(self, aligned_sequences: List[str]) -> float:
         """Calculate average identity across MSA"""

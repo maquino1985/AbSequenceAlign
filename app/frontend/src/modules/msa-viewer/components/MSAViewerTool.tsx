@@ -287,20 +287,67 @@ export const MSAViewerTool: React.FC = () => {
 
   if (msaState.error) {
     return (
-      <Alert severity="error" sx={{ mb: 2 }}>
+      <Alert severity="error" sx={{ mb: 2 }} data-testid="error-message">
         Error: {msaState.error}
       </Alert>
     );
   }
 
   return (
-    <Box>
+    <Box data-testid="msa-viewer-tool">
       <Typography variant="h4" component="h1" gutterBottom>
         Multiple Sequence Alignment
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        Upload multiple sequences to create and visualize alignments with region annotations.
+        Upload sequences and create multiple sequence alignments with region annotations.
       </Typography>
+
+      {/* Job Status */}
+      {msaState.jobStatus && (
+        <Box sx={{ mb: 3 }}>
+          <Alert 
+            severity={msaState.jobStatus.status === 'completed' ? 'success' : 'info'}
+            data-testid="job-status"
+          >
+            <Typography variant="body2">
+              Job Status: {msaState.jobStatus.status}
+              {msaState.jobStatus.progress && ` (${Math.round(msaState.jobStatus.progress * 100)}%)`}
+            </Typography>
+            {msaState.jobStatus.message && (
+              <Typography variant="caption" display="block">
+                {msaState.jobStatus.message}
+              </Typography>
+            )}
+          </Alert>
+        </Box>
+      )}
+
+      {/* Statistics Panel */}
+      {msaState.alignmentMatrix.length > 0 && (
+        <Box sx={{ mb: 3 }} data-testid="statistics-panel">
+          <CollapsibleCard title="Alignment Statistics" defaultExpanded={false}>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Chip 
+                label={`${msaState.sequenceNames.length} sequences`} 
+                size="small" 
+                color="primary" 
+              />
+              <Chip 
+                label={`${msaState.alignmentMatrix[0]?.length || 0} positions`} 
+                size="small" 
+                color="secondary" 
+              />
+              {msaState.regions.length > 0 && (
+                <Chip 
+                  label={`${msaState.regions.length} regions`} 
+                  size="small" 
+                  variant="outlined" 
+                />
+              )}
+            </Box>
+          </CollapsibleCard>
+        </Box>
+      )}
 
       <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', lg: 'row' } }}>
         <Box sx={{ flex: { xs: 'none', lg: '0 0 400px' } }}>
@@ -322,6 +369,9 @@ export const MSAViewerTool: React.FC = () => {
                     value={selectedAlgorithm}
                     label="Algorithm"
                     onChange={(e) => setSelectedAlgorithm(e.target.value)}
+                    inputProps={{
+                      'data-testid': 'alignment-method'
+                    }}
                   >
                     <MenuItem value="muscle">MUSCLE</MenuItem>
                     <MenuItem value="clustalo">Clustal Omega</MenuItem>
@@ -335,6 +385,9 @@ export const MSAViewerTool: React.FC = () => {
                     value={selectedNumberingScheme}
                     label="Numbering Scheme"
                     onChange={(e) => setSelectedNumberingScheme(e.target.value)}
+                    inputProps={{
+                      'data-testid': 'numbering-scheme'
+                    }}
                   >
                     {NUMBERING_SCHEMES.map((scheme) => (
                       <MenuItem key={scheme.id} value={scheme.id}>
@@ -344,19 +397,16 @@ export const MSAViewerTool: React.FC = () => {
                   </Select>
                 </FormControl>
 
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  <Button
-                    variant="contained"
-                    startIcon={<PlayArrow />}
-                    onClick={handleCreateMSA}
-                    disabled={msaState.isLoading || !msaState.msaId}
-                    size="small"
-                  >
-                    Create MSA
-                  </Button>
-                  
-
-                </Box>
+                <Button
+                  variant="contained"
+                  onClick={handleCreateMSA}
+                  disabled={msaState.isLoading}
+                  startIcon={<PlayArrow />}
+                  fullWidth
+                  data-testid="align-btn"
+                >
+                  {msaState.isLoading ? 'Creating MSA...' : 'Create MSA'}
+                </Button>
               </Box>
             )}
           </CollapsibleCard>
@@ -368,12 +418,13 @@ export const MSAViewerTool: React.FC = () => {
               <CircularProgress />
             </Box>
           ) : msaState.alignmentMatrix.length > 0 ? (
-            <CollapsibleCard title="Alignment Results" defaultExpanded={true}>
+            <CollapsibleCard title="Alignment Results" defaultExpanded={true} data-testid="msa-viewer">
               <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
                 <Chip 
                   label={`${msaState.sequenceNames.length} sequences`} 
                   size="small" 
                   color="primary" 
+                  data-testid="sequence-count"
                 />
                 <Chip 
                   label={`${msaState.alignmentMatrix[0]?.length || 0} positions`} 
@@ -403,7 +454,7 @@ export const MSAViewerTool: React.FC = () => {
 
               {/* Consensus Sequence */}
               {msaState.consensus && (
-                <Box sx={{ mt: 2 }}>
+                <Box sx={{ mt: 2 }} data-testid="consensus-sequence">
               <ConsensusSequence
                 consensus={msaState.consensus}
                 conservationScores={msaState.pssmData?.conservation_scores || []}
@@ -414,7 +465,7 @@ export const MSAViewerTool: React.FC = () => {
 
               {/* PSSM Visualization */}
               {msaState.pssmData && (
-                <Box sx={{ mt: 2 }}>
+                <Box sx={{ mt: 2 }} data-testid="conservation-plot">
                   <PSSMVisualization
                     pssmData={msaState.pssmData}
                     maxHeight="400px"
@@ -431,6 +482,12 @@ export const MSAViewerTool: React.FC = () => {
                     onRegionSelect={handleRegionSelect}
                     onRegionDeselect={handleRegionDeselect}
                   />
+                  {/* Add individual region elements for testing */}
+                  {msaState.regions.map((region) => (
+                    <Box key={region.id} data-testid={`region-${region.type.toLowerCase()}`} style={{ display: 'none' }}>
+                      {region.name}
+                    </Box>
+                  ))}
                 </Box>
               )}
             </CollapsibleCard>

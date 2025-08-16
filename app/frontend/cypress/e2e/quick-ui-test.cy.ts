@@ -1,6 +1,8 @@
 describe('Quick UI Tests', () => {
   beforeEach(() => {
-    cy.visit('/', { timeout: 10000 });
+    cy.visit('/antibody-annotation', { timeout: 10000 });
+    // Wait for the app to load
+    cy.get('[data-testid="antibody-annotation-tool"]', { timeout: 10000 }).should('be.visible');
   });
 
   it('should load the UI components', () => {
