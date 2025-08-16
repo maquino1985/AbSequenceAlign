@@ -103,7 +103,27 @@ export BACKEND_PORT=$BACKEND_PORT
 if ! $CONDA_CMD env list | grep -q "AbSequenceAlign"; then
     print_warning "Conda environment 'AbSequenceAlign' not found."
     print_status "Setting up development environment..."
-    (cd app/backend && source ~/.zshrc 2>/dev/null || true && $CONDA_CMD env create -f environment.yml || $CONDA_CMD env update -f environment.yml)
+    (
+        cd app/backend
+        # Source the appropriate shell configuration file if it exists
+        if [ -n "$SHELL" ]; then
+            case "$SHELL" in
+                */zsh)
+                    [ -f "$HOME/.zshrc" ] && source "$HOME/.zshrc"
+                    ;;
+                */bash)
+                    [ -f "$HOME/.bashrc" ] && source "$HOME/.bashrc"
+                    ;;
+                */fish)
+                    [ -f "$HOME/.config/fish/config.fish" ] && source "$HOME/.config/fish/config.fish"
+                    ;;
+                *)
+                    # Unknown shell, do not source anything
+                    ;;
+            esac
+        fi
+        $CONDA_CMD env create -f environment.yml || $CONDA_CMD env update -f environment.yml
+    )
     (cd app/frontend && npm install)
 fi
 
