@@ -18,7 +18,7 @@ def test_fasta_to_annotation_flow():
     # Simulate FASTA input like what comes from the frontend
     fasta_content = """>Heavy_Chain_Patient_A
 EVQLVESGGGLVQPGGSLRLSCAASGFTFSSYAMSWVRQAPGKGLEWVSAISGSGGSTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCAK
->Light_Chain_Patient_A  
+>Light_Chain_Patient_A
 DIQMTQSPSSLSASVGDRVTITCRASQGIRNYLAWYQQKPGKAPKLLIYAASTLQSGVPSRFSGSGSGTDFTLTISSLQPEDFATYYCQRYNRAPYTFGQGTKVEIK"""
 
     print(f"\n1. Original FASTA content:")

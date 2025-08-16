@@ -1,6 +1,30 @@
 version: '3.8'
 
 services:
+  # PostgreSQL Database for E2E Testing
+  postgres-e2e:
+    image: postgres:15-alpine
+    container_name: absequencealign-postgres-e2e
+    environment:
+      POSTGRES_DB: absequencealign_e2e
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_e2e_data:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c shared_preload_libraries='uuid-ossp'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d absequencealign_e2e"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - e2e-network
+
   # Backend Server for E2E Tests (same as production)
   backend:
     build:
@@ -11,13 +35,24 @@ services:
       - PYTHONPATH=/app
       - ENVIRONMENT=test
       - DATA_DIR=/app/data
+      - DB_HOST=postgres-e2e
+      - DB_PORT=5432
+      - DB_NAME=absequencealign_e2e
+      - DB_USER=postgres
+      - DB_PASSWORD=password
     volumes:
       - ./app/backend:/app/backend:ro
       - ./data:/app/data:ro
     ports:
       - "8000:8000"
+    depends_on:
+      postgres-e2e:
+        condition: service_healthy
     command: >
       sh -c "
+        echo 'Running database migrations...' &&
+        conda run -n AbSequenceAlign alembic upgrade head &&
+        echo 'Starting backend server...' &&
         conda run -n AbSequenceAlign python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
       "
     networks:
@@ -72,5 +107,6 @@ networks:
     driver: bridge
 
 volumes:
+  postgres_e2e_data:
   cypress-videos:
   cypress-screenshots:

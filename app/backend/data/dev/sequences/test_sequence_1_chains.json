@@ -1,0 +1,21 @@
+{
+  "id": "test_sequence_1_chains",
+  "name": "test_sequence",
+  "chains": [
+    {
+      "name": "test_chain",
+      "chain_type": "H",
+      "sequence": "QVQLVQSGAEVKKPGASVKVSCKASGYTFT",
+      "domains": [
+        {
+          "domain_type": "V",
+          "sequence": "QVQLVQSGAEVKKPGASVKVSCKASGYTFT",
+          "numbering_scheme": "imgt",
+          "regions": {}
+        }
+      ]
+    }
+  ],
+  "metadata": {},
+  "created_at": "2025-08-10T18:08:58.427663"
+}
