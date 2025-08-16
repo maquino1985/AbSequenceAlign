@@ -4,7 +4,7 @@ Entities have identity and lifecycle, and contain business logic.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Set, Union, TYPE_CHECKING
+from typing import Dict, List, Optional, Any, Set, Union
 from abc import ABC, abstractmethod
 
 from backend.domain.value_objects_v2 import (

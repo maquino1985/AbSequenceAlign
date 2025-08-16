@@ -52,6 +52,7 @@ export const ModernNavigation: React.FC<ModernNavigationProps> = ({
   // handleModuleSelect function removed as navigation is now handled by Link components
 
 
+
   return (
     <>
       <AppBar

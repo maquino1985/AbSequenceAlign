@@ -26,7 +26,7 @@ class AnnotationService:
     @staticmethod
     def _get_domain_positions(
         domain, domain_type: DomainType
-    ) -> tuple[int, int]:
+    ) -> Tuple[int, int]:
         """Extract start and stop positions from domain."""
         if not domain.alignment_details:
             return None, None

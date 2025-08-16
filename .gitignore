@@ -249,7 +249,6 @@ $RECYCLE.BIN/
 .nfs*
 
 # Project specific
-*.log
 logs/
 temp/
 tmp/
@@ -257,6 +256,10 @@ tmp/
 
 # Docker
 .dockerignore
+
+# Build dependency hash files
+.dependency-hash
+**/.dependency-hash
 
 # Documentation
 *.md
