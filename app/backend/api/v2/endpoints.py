@@ -16,11 +16,7 @@ async def health_check_v2():
 
 
 @router.post("/annotate", response_model=V2AnnotationResult)
-async def annotate_sequences_v2(
-    request: AnnotationRequestV2,
-    persist_to_database: bool = True,
-    db_session: AsyncSession = Depends(get_db_session),
-):
+async def annotate_sequences_v2(request: AnnotationRequestV2):
     try:
         annotation_service = AnnotationService()
         return annotation_service.process_annotation_request(request)
