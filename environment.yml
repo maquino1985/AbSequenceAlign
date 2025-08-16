@@ -11,6 +11,7 @@ dependencies:
   - hmmer
   - anarci
   - clustalo
+  - blast
   # Python packages
   - biopython
   - scipy
