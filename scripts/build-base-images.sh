@@ -103,9 +103,19 @@ needs_rebuild() {
     if [ -f "$hash_file" ]; then
         local stored_hash=$(cat "$hash_file")
         if [ "$current_hash" = "$stored_hash" ]; then
-            # For multi-architecture builds, we can't easily check if the image exists
-            # So we'll rely on the hash file for now
-            return 1  # No rebuild needed
+            # For multi-architecture builds, check if the image exists in the registry
+            # or if we're in a CI environment where we should always build
+            if [ "$CI" = "true" ] || [ "$GITHUB_ACTIONS" = "true" ]; then
+                # In CI, always rebuild to ensure images are available
+                return 0  # Rebuild needed
+            else
+                # For local development, check if image exists locally
+                if docker image inspect "$image_name:$BACKEND_TAG" >/dev/null 2>&1; then
+                    return 1  # No rebuild needed
+                else
+                    return 0  # Rebuild needed
+                fi
+            fi
         fi
     fi
     

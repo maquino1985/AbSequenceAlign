@@ -3,15 +3,17 @@ ANARCI adapter for antibody sequence numbering and annotation.
 Implements the ExternalToolAdapter interface to provide a clean abstraction.
 """
 
-from typing import Dict, Any, List, Tuple, Optional
 import logging
+from typing import Dict, Any, List, Tuple, Optional
 
-from ...core.base_classes import AbstractExternalToolAdapter
-from ...core.exceptions import (
+from anarci import run_anarci
+
+from backend.core.base_classes import AbstractExternalToolAdapter
+from backend.core.exceptions import (
     AnarciError,
     ToolNotAvailableError,
 )
-from ...domain.models import NumberingScheme
+from backend.domain.models import NumberingScheme
 
 
 class AnarciAdapter(AbstractExternalToolAdapter):
@@ -64,10 +66,10 @@ class AnarciAdapter(AbstractExternalToolAdapter):
             )
 
     def number_sequence(
-        self,
-        sequence: str,
-        scheme: NumberingScheme = NumberingScheme.IMGT,
-        allowed_species: Optional[List[str]] = None,
+            self,
+            sequence: str,
+            scheme: NumberingScheme = NumberingScheme.IMGT,
+            allowed_species: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """Number a single sequence using ANARCI"""
         if not allowed_species:
@@ -83,10 +85,10 @@ class AnarciAdapter(AbstractExternalToolAdapter):
         return result
 
     def number_sequences(
-        self,
-        sequences: List[Tuple[str, str]],
-        scheme: NumberingScheme = NumberingScheme.IMGT,
-        allowed_species: Optional[List[str]] = None,
+            self,
+            sequences: List[Tuple[str, str]],
+            scheme: NumberingScheme = NumberingScheme.IMGT,
+            allowed_species: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """Number multiple sequences using ANARCI"""
         if not allowed_species:
@@ -137,18 +139,16 @@ class AnarciAdapter(AbstractExternalToolAdapter):
         return sequences
 
     def _run_anarci(
-        self,
-        sequences: List[Tuple[str, str]],
-        scheme: str = "imgt",
-        allowed_species: List[str] = None,
+            self,
+            sequences: List[Tuple[str, str]],
+            scheme: str = "imgt",
+            allowed_species: List[str] = None,
     ) -> Dict[str, Any]:
         """Run ANARCI on the sequences"""
         if not allowed_species:
             allowed_species = ["human", "mouse", "rat"]
 
         try:
-            from anarci import run_anarci
-
             # Run ANARCI
             (
                 sequences_out,
@@ -246,7 +246,7 @@ class AnarciAdapter(AbstractExternalToolAdapter):
         return germline_info
 
     def _process_numbering(
-        self, numbered_domain: List
+            self, numbered_domain: List
     ) -> List[Dict[str, Any]]:
         """Process ANARCI numbering output"""
         processed = []

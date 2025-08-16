@@ -257,6 +257,10 @@ tmp/
 # Docker
 .dockerignore
 
+# Build dependency hash files
+.dependency-hash
+**/.dependency-hash
+
 # Documentation
 *.md
 docs/ 
