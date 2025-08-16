@@ -30,11 +30,11 @@ jobs:
           python-version: 3.11
           auto-activate-base: false
 
-      - name: Install pip dependencies
+      - name: Install additional pip dependencies
         shell: bash -l {0}
         run: |
           conda activate AbSequenceAlign
-          pip install sqlalchemy==2.0.23 asyncpg==0.29.0 psycopg2-binary==2.9.9 alembic==1.13.1 greenlet==3.0.1
+          pip install asyncpg==0.29.0 psycopg2-binary==2.9.9
           pip install git+https://github.com/oxpig/ANARCI.git
 
       # Note: Docker base images are not needed for backend tests
@@ -234,11 +234,11 @@ jobs:
           python-version: 3.11
           auto-activate-base: false
 
-      - name: Install pip dependencies
+      - name: Install additional pip dependencies
         shell: bash -l {0}
         run: |
           conda activate AbSequenceAlign
-          pip install sqlalchemy==2.0.23 asyncpg==0.29.0 psycopg2-binary==2.9.9 alembic==1.13.1 greenlet==3.0.1
+          pip install asyncpg==0.29.0 psycopg2-binary==2.9.9
           pip install git+https://github.com/oxpig/ANARCI.git
 
       - name: Start backend server
