@@ -44,7 +44,6 @@ dependencies:
   # Pip packages (not available in conda)
   - pip
   - pip:
-      - git+https://github.com/oxpig/ANARCI.git
       - asyncpg==0.29.0
       - psycopg2-binary==2.9.9
       - click>=8.0.0

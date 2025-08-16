@@ -2,7 +2,7 @@
 
 # Build Base Images Script
 # This script builds base images for frontend and backend with dependency change detection
-# Supports multi-architecture builds (ARM64 and AMD64) using Docker Buildx
+# Single-architecture builds for AMD64 (production target)
 
 set -e
 
@@ -19,9 +19,8 @@ FRONTEND_BASE_IMAGE="absequencealign-frontend-base"
 BACKEND_TAG="latest"
 FRONTEND_TAG="latest"
 
-# Multi-architecture configuration
-PLATFORMS="linux/amd64,linux/arm64"
-BUILDX_BUILDER="absequencealign-multiarch"
+# Single architecture configuration for production (AMD64)
+PLATFORM="linux/amd64"
 
 # Get the project root directory
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -40,32 +39,6 @@ print_warning() {
 
 print_error() {
     echo -e "${RED}[ERROR] $1${NC}"
-}
-
-# Function to setup buildx builder
-setup_buildx() {
-    print_status "Setting up Docker Buildx for multi-architecture builds..."
-    
-    # Check if buildx is available
-    if ! docker buildx version >/dev/null 2>&1; then
-        print_error "Docker Buildx is not available. Please install Docker Buildx."
-        exit 1
-    fi
-    
-    # Create a new builder instance if it doesn't exist
-    if ! docker buildx inspect "$BUILDX_BUILDER" >/dev/null 2>&1; then
-        print_status "Creating new buildx builder: $BUILDX_BUILDER"
-        docker buildx create --name "$BUILDX_BUILDER" --use
-    else
-        print_status "Using existing buildx builder: $BUILDX_BUILDER"
-        docker buildx use "$BUILDX_BUILDER"
-    fi
-    
-    # Bootstrap the builder
-    print_status "Bootstrapping buildx builder..."
-    docker buildx inspect --bootstrap
-    
-    print_status "Buildx setup complete!"
 }
 
 # Function to calculate hash of dependency files
@@ -103,18 +76,11 @@ needs_rebuild() {
     if [ -f "$hash_file" ]; then
         local stored_hash=$(cat "$hash_file")
         if [ "$current_hash" = "$stored_hash" ]; then
-            # For multi-architecture builds, check if the image exists in the registry
-            # or if we're in a CI environment where we should always build
-            if [ "$CI" = "true" ] || [ "$GITHUB_ACTIONS" = "true" ]; then
-                # In CI, always rebuild to ensure images are available
-                return 0  # Rebuild needed
+            # Check if image exists locally
+            if docker image inspect "$image_name:$BACKEND_TAG" >/dev/null 2>&1; then
+                return 1  # No rebuild needed
             else
-                # For local development, check if image exists locally
-                if docker image inspect "$image_name:$BACKEND_TAG" >/dev/null 2>&1; then
-                    return 1  # No rebuild needed
-                else
-                    return 0  # Rebuild needed
-                fi
+                return 0  # Rebuild needed
             fi
         fi
     fi
@@ -122,94 +88,64 @@ needs_rebuild() {
     return 0  # Rebuild needed
 }
 
-# Function to build backend base image with buildx
+# Function to build backend base image
 build_backend_base() {
-    print_header "Building Backend Base Image (Multi-Architecture)"
+    print_header "Building Backend Base Image (AMD64)"
     
     if needs_rebuild "app/backend" "$BACKEND_BASE_IMAGE" || [ "$FORCE_REBUILD" = true ]; then
         print_status "Dependencies changed or image missing. Building backend base image..."
-        print_status "Target platforms: $PLATFORMS"
+        print_status "Target platform: $PLATFORM"
         
-        # Build multi-architecture image
-        docker buildx build \
-            --platform "$PLATFORMS" \
+        # Build single-architecture image
+        docker build \
+            --platform "$PLATFORM" \
             --file "$PROJECT_ROOT/app/backend/Dockerfile.base" \
             --tag "$BACKEND_BASE_IMAGE:$BACKEND_TAG" \
-            --progress=plain \
             "$PROJECT_ROOT"
         
         # Store the new hash
         calculate_dependency_hash "app/backend" > "$PROJECT_ROOT/app/backend/.dependency-hash"
         
-        print_status "Backend base image built successfully for multiple architectures!"
+        print_status "Backend base image built successfully for AMD64!"
     else
         print_status "Backend base image is up to date."
     fi
 }
 
-# Function to build frontend base image with buildx
+# Function to build frontend base image
 build_frontend_base() {
-    print_header "Building Frontend Base Image (Multi-Architecture)"
+    print_header "Building Frontend Base Image (AMD64)"
     
     if needs_rebuild "app/frontend" "$FRONTEND_BASE_IMAGE" || [ "$FORCE_REBUILD" = true ]; then
         print_status "Dependencies changed or image missing. Building frontend base image..."
-        print_status "Target platforms: $PLATFORMS"
+        print_status "Target platform: $PLATFORM"
         
-        # Build multi-architecture image
-        docker buildx build \
-            --platform "$PLATFORMS" \
+        # Build single-architecture image
+        docker build \
+            --platform "$PLATFORM" \
             --file "$PROJECT_ROOT/app/frontend/Dockerfile.base" \
             --tag "$FRONTEND_BASE_IMAGE:$FRONTEND_TAG" \
-            --progress=plain \
             "$PROJECT_ROOT/app/frontend"
         
         # Store the new hash
         calculate_dependency_hash "app/frontend" > "$PROJECT_ROOT/app/frontend/.dependency-hash"
         
-        print_status "Frontend base image built successfully for multiple architectures!"
+        print_status "Frontend base image built successfully for AMD64!"
     else
         print_status "Frontend base image is up to date."
     fi
 }
 
-# Function to show image architecture information
+# Function to show image information
 show_image_info() {
-    print_header "Image Architecture Information"
+    print_header "Image Information"
     
     echo "Backend Base Image:"
-    docker buildx imagetools inspect "$BACKEND_BASE_IMAGE:$BACKEND_TAG" 2>/dev/null || echo "  Not available"
+    docker images "$BACKEND_BASE_IMAGE:$BACKEND_TAG" 2>/dev/null || echo "  Not available"
     
     echo ""
     echo "Frontend Base Image:"
-    docker buildx imagetools inspect "$FRONTEND_BASE_IMAGE:$FRONTEND_TAG" 2>/dev/null || echo "  Not available"
-}
-
-# Function to create local single-architecture images for development
-create_local_images() {
-    print_header "Creating Local Single-Architecture Images for Development"
-    
-    local platform="linux/$(uname -m | sed 's/x86_64/amd64/')"
-    print_status "Creating local images for platform: $platform"
-    
-    # Create local backend image
-    docker buildx build \
-        --platform "$platform" \
-        --file "$PROJECT_ROOT/app/backend/Dockerfile.base" \
-        --tag "$BACKEND_BASE_IMAGE:$BACKEND_TAG" \
-        --load \
-        --progress=plain \
-        "$PROJECT_ROOT"
-    
-    # Create local frontend image
-    docker buildx build \
-        --platform "$platform" \
-        --file "$PROJECT_ROOT/app/frontend/Dockerfile.base" \
-        --tag "$FRONTEND_BASE_IMAGE:$FRONTEND_TAG" \
-        --load \
-        --progress=plain \
-        "$PROJECT_ROOT/app/frontend"
-    
-    print_status "Local single-architecture images created successfully!"
+    docker images "$FRONTEND_BASE_IMAGE:$FRONTEND_TAG" 2>/dev/null || echo "  Not available"
 }
 
 # Function to clean up old base images
@@ -235,19 +171,15 @@ show_usage() {
     echo "  --frontend-only   Build only frontend base image"
     echo "  --force           Force rebuild even if dependencies haven't changed"
     echo "  --cleanup         Clean up old base images"
-    echo "  --platforms       Specify target platforms (default: linux/amd64,linux/arm64)"
-    echo "  --local           Create local single-architecture images for development"
-    echo "  --info            Show image architecture information"
+    echo "  --info            Show image information"
     echo "  --help            Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0                    # Build both base images for multiple architectures"
+    echo "  $0                    # Build both base images for AMD64"
     echo "  $0 --backend-only     # Build only backend base image"
     echo "  $0 --force            # Force rebuild both images"
-    echo "  $0 --platforms linux/amd64  # Build only for AMD64"
-    echo "  $0 --local            # Create local single-architecture images"
     echo "  $0 --cleanup          # Clean up old images"
-    echo "  $0 --info             # Show image architecture information"
+    echo "  $0 --info             # Show image information"
 }
 
 # Parse command line arguments
@@ -256,7 +188,6 @@ BUILD_FRONTEND=true
 FORCE_REBUILD=false
 CLEANUP_ONLY=false
 SHOW_INFO=false
-CREATE_LOCAL=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -276,14 +207,6 @@ while [[ $# -gt 0 ]]; do
             CLEANUP_ONLY=true
             shift
             ;;
-        --platforms)
-            PLATFORMS="$2"
-            shift 2
-            ;;
-        --local)
-            CREATE_LOCAL=true
-            shift
-            ;;
         --info)
             SHOW_INFO=true
             shift
@@ -301,7 +224,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Main execution
-print_header "AbSequenceAlign Multi-Architecture Base Image Builder"
+print_header "AbSequenceAlign Single-Architecture Base Image Builder"
 
 # Check if we're in the right directory
 if [ ! -f "docker-compose.yml" ]; then
@@ -321,11 +244,6 @@ if [ "$SHOW_INFO" = true ]; then
     exit 0
 fi
 
-# Setup buildx for multi-architecture builds
-if [ "$CREATE_LOCAL" = false ]; then
-    setup_buildx
-fi
-
 if [ "$CLEANUP_ONLY" = true ]; then
     cleanup_old_images
     exit 0
@@ -338,16 +256,12 @@ if [ "$FORCE_REBUILD" = true ]; then
 fi
 
 # Build base images
-if [ "$CREATE_LOCAL" = true ]; then
-    create_local_images
-else
-    if [ "$BUILD_BACKEND" = true ]; then
-        build_backend_base
-    fi
+if [ "$BUILD_BACKEND" = true ]; then
+    build_backend_base
+fi
 
-    if [ "$BUILD_FRONTEND" = true ]; then
-        build_frontend_base
-    fi
+if [ "$BUILD_FRONTEND" = true ]; then
+    build_frontend_base
 fi
 
 # Cleanup old images
@@ -356,6 +270,6 @@ cleanup_old_images
 # Show final image information
 show_image_info
 
-print_header "Multi-Architecture Base Image Build Complete"
-print_status "All base images are ready for use on multiple architectures!"
-print_status "Supported platforms: $PLATFORMS"
+print_header "Single-Architecture Base Image Build Complete"
+print_status "All base images are ready for use on AMD64!"
+print_status "Target platform: $PLATFORM"
