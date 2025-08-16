@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Container, Box, Typography } from '@mui/material';
+import { Container, Box } from '@mui/material';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ModuleProvider } from './modules/shared/context';
 import { MODULES } from './modules/moduleRegistry';

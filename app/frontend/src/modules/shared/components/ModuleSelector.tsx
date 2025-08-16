@@ -12,7 +12,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useModuleContext } from '../context';
 
 export const ModuleSelector: React.FC = () => {
-  const { modules, getCurrentModule } = useModuleContext();
+  const { modules } = useModuleContext();
   const navigate = useNavigate();
   const location = useLocation();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);

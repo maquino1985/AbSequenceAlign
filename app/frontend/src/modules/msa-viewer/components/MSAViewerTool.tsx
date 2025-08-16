@@ -193,20 +193,20 @@ export const MSAViewerTool: React.FC = () => {
           // API call failed
           setMsaState(prev => ({
             ...prev,
-            jobStatus: {
+            jobStatus: prev.jobStatus ? {
               ...prev.jobStatus,
               message: 'Unable to check job status. Retrying...'
-            } as any
+            } : null
           }));
         }
       } catch (error) {
         console.error('Error polling job status:', error);
         setMsaState(prev => ({
           ...prev,
-          jobStatus: {
+          jobStatus: prev.jobStatus ? {
             ...prev.jobStatus,
             message: 'Connection error while checking job status. Retrying...'
-          } as any
+          } : null
         }));
       }
     };
