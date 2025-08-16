@@ -10,6 +10,7 @@ dependencies:
   - mafft
   - hmmer
   - anarci
+  - clustalo
   # Python packages
   - biopython
   - scipy

@@ -49,10 +49,7 @@ export const ModernNavigation: React.FC<ModernNavigationProps> = ({
 
   const currentModule = modules.find(module => module.route === location.pathname)?.id || modules[0]?.id;
 
-  const handleModuleSelect = (moduleId: string) => {
-    // This function is no longer needed as navigation is handled by Link
-    // Keeping it for now in case it's called elsewhere or for future use.
-  };
+
 
 
   return (
