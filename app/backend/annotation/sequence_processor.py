@@ -4,7 +4,7 @@ from typing import List, Dict, Tuple, Optional, Any
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 
-from ..logger import logger
+from backend.logger import logger
 
 
 class SequenceProcessor:
@@ -29,7 +29,9 @@ class SequenceProcessor:
         try:
             fasta_io = StringIO(fasta_content)
             records = list(SeqIO.parse(fasta_io, "fasta"))
-
+            logger.info(
+                f"Parsed {len(records)} sequences from FASTA, {records}"
+            )
             if not records:
                 raise ValueError("No sequences found in FASTA content")
 

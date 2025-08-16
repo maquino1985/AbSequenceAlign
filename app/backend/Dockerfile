@@ -9,6 +9,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     CONDA_AUTO_UPDATE_CONDA=false \
     PATH=/opt/conda/bin:$PATH
 
+ENV CONDA_ENV=AbSequenceAlign
 # Set working directory
 WORKDIR /app
 
@@ -19,7 +20,7 @@ COPY app/backend ./backend
 COPY data/ ./data/
 
 # Install additional Python dependencies if needed
-RUN conda run -n AbSequenceAlign pip install --no-cache-dir uvicorn[standard] gunicorn
+RUN conda run -n ${CONDA_ENV} pip install --no-cache-dir "uvicorn[standard]" gunicorn
 
 # Create a writable directory for pytest cache
 RUN mkdir -p /tmp/pytest_cache && chmod 777 /tmp/pytest_cache

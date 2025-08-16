@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict, Literal, Any
 
+from backend.logger import logger as log
 from backend.annotation.region_utils import RegionIndexHelper
 from backend.numbering.cgg import CGG_REGIONS
 from backend.numbering.chothia import CHOTHIA_REGIONS
@@ -72,11 +73,15 @@ class AntibodyRegionAnnotator:
             start_idx, stop_idx = RegionIndexHelper.find_region_indices(
                 pos_to_idx, start, stop
             )
+            if start_idx is None or stop_idx is None:
+                log.warning(
+                    f"Region {region} has invalid start and stop indices"
+                )
+                continue
             seq = RegionIndexHelper.extract_region_sequence(
                 numbering, start_idx, stop_idx
             )
-            regions[region] = AntibodyRegion(region, start, stop, seq)
-        # Convert to dict with formatted positions and sequences
+            regions[region] = AntibodyRegion(region, start_idx, stop_idx, seq)
         domain.regions = regions
         return domain
 
