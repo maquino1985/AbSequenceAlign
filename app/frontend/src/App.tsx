@@ -1,8 +1,9 @@
 
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Container, Box, Typography } from '@mui/material';
+import { Container, Box } from '@mui/material';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ModuleProvider } from './modules/shared/context';
 import { MODULES } from './modules/moduleRegistry';
 import { useModuleContext } from './modules/shared/context';
@@ -104,28 +105,24 @@ const createAppTheme = (mode: 'light' | 'dark') => createTheme({
 });
 
 const AppContent: React.FC = () => {
-  const { getCurrentModule } = useModuleContext();
-  const currentModule = getCurrentModule();
-  
-  if (!currentModule) {
-    return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Welcome to AbSequenceAlign
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Please select a module from the navigation bar to begin.
-        </Typography>
-      </Container>
-    );
-  }
-
-  const ModuleComponent = currentModule.component;
+  const { modules } = useModuleContext();
   
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <ModuleComponent />
-    </Container>
+    <Routes>
+      <Route path="/" element={<Navigate to="/antibody-annotation" replace />} />
+      {modules.map((module) => (
+        <Route
+          key={module.id}
+          path={module.route}
+          element={
+            <Container maxWidth="xl" sx={{ py: 4 }}>
+              <module.component />
+            </Container>
+          }
+        />
+      ))}
+      <Route path="*" element={<Navigate to="/antibody-annotation" replace />} />
+    </Routes>
   );
 };
 
@@ -139,15 +136,17 @@ function App() {
   };
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <ModuleProvider modules={MODULES} defaultModule="antibody-annotation">
-        <Box sx={{ flexGrow: 1, minHeight: '100vh' }}>
-          <ModernNavigation darkMode={darkMode} onThemeToggle={handleThemeToggle} />
-          <AppContent />
-        </Box>
-      </ModuleProvider>
-    </ThemeProvider>
+    <Router>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <ModuleProvider modules={MODULES} defaultModule="antibody-annotation">
+          <Box sx={{ flexGrow: 1, minHeight: '100vh' }}>
+            <ModernNavigation darkMode={darkMode} onThemeToggle={handleThemeToggle} />
+            <AppContent />
+          </Box>
+        </ModuleProvider>
+      </ThemeProvider>
+    </Router>
   );
 }
 

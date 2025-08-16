@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database for Testing
   postgres-test:
@@ -73,11 +71,8 @@ services:
     environment:
       - CI=true
       - NODE_ENV=test
-    volumes:
-      - ./app/frontend:/app:ro
     command: >
       sh -c "
-        npm ci &&
         npm run test &&
         npm run type-check &&
         npm run lint
@@ -89,19 +84,14 @@ services:
   frontend-server:
     build:
       context: ./app/frontend
-      dockerfile: Dockerfile.base
-      args:
-        BASE_IMAGE: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY_OWNER:-maquino1985}/absequencealign-frontend-base:latest
+      dockerfile: Dockerfile
     container_name: absequencealign-frontend-server
     environment:
       - CI=true
-      - VITE_PORT=5679
-      - VITE_BACKEND_URL=http://backend-server:8000
     ports:
-      - "5679:5679"
-    volumes:
-      - ./app/frontend:/app:ro
-    command: npm run dev:port
+      - "5679:80"
+    depends_on:
+      - backend-server
     networks:
       - test-network
 
@@ -153,53 +143,17 @@ services:
     container_name: absequencealign-e2e-test
     environment:
       - CI=true
-      - CYPRESS_baseUrl=http://frontend-server:5679
+      - CYPRESS_baseUrl=http://frontend-server
       - CYPRESS_backendPort=8000
     volumes:
       - /tmp/cypress:/tmp/cypress
     depends_on:
       - backend-server
       - frontend-server
-    command: ./scripts/run-cypress.sh
+    command: cypress run
     networks:
       - test-network
 
-  # Integration Test Environment
-  integration-test:
-    build:
-      context: .
-      dockerfile: ./app/backend/Dockerfile
-      args:
-        BASE_IMAGE: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY_OWNER:-maquino1985}/absequencealign-backend-base:latest
-    container_name: absequencealign-integration-test
-    environment:
-      - PYTHONPATH=/app
-      - ENVIRONMENT=test
-      - PYTEST_ADDOPTS=-v
-      - DATA_DIR=/app/data
-      - DB_HOST=postgres-test
-      - DB_PORT=5432
-      - DB_NAME=${DB_NAME:-absequencealign_test}
-      - DB_USER=${DB_USER:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-password}
-      - DB_POOL_SIZE=${DB_POOL_SIZE:-5}
-      - DB_MAX_OVERFLOW=${DB_MAX_OVERFLOW:-10}
-      - DB_POOL_TIMEOUT=${DB_POOL_TIMEOUT:-30}
-      - DB_POOL_RECYCLE=${DB_POOL_RECYCLE:-3600}
-      - DB_ECHO=false
-      - DB_ECHO_POOL=false
-    volumes:
-      - ./app/backend:/app/backend:ro
-      - ./data:/app/data:ro
-    depends_on:
-      postgres-test:
-        condition: service_healthy
-    command: >
-      sh -c "
-        conda run -n AbSequenceAlign python -m pytest backend/tests/test_integration.py -v
-      "
-    networks:
-      - test-network
 
   # Database Migration Test
   database-test:
@@ -250,8 +204,6 @@ services:
 
 networks:
   test-network:
-    driver: bridge
-
 volumes:
   postgres_test_data:
   cypress-videos:

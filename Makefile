@@ -24,13 +24,13 @@ help: ## Show this help message
 # Development commands
 install: ## Install all dependencies
 	@echo "$(GREEN)Installing backend dependencies...$(NC)"
-	cd $(BACKEND_DIR) && conda env create -f environment.yml || conda env update -f environment.yml
+	cd $(BACKEND_DIR) && source ~/.zshrc 2>/dev/null || true && conda env create -f environment.yml || conda env update -f environment.yml
 	@echo "$(GREEN)Installing frontend dependencies...$(NC)"
 	cd $(FRONTEND_DIR) && npm install
 
 dev-backend: ## Start backend in development mode
 	@echo "$(GREEN)Starting backend in development mode...$(NC)"
-	cd $(BACKEND_DIR) && PYTHONPATH=$(shell pwd)/app conda run -n AbSequenceAlign python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+	cd $(BACKEND_DIR) && source ~/.zshrc 2>/dev/null || true && PYTHONPATH=$(shell pwd)/app conda run -n AbSequenceAlign python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 
 dev-frontend: ## Start frontend in development mode
 	@echo "$(GREEN)Starting frontend in development mode...$(NC)"

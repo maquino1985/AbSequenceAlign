@@ -44,7 +44,7 @@ DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQP
 };
 
 interface MSAInputProps {
-  onUpload: (sequences: string[]) => void;
+  onUpload: (sequences: string[], sequenceNames?: string[]) => void;
   isLoading: boolean;
 }
 
@@ -53,6 +53,7 @@ export const MSAInput: React.FC<MSAInputProps> = ({ onUpload, isLoading }) => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sequences, setSequences] = useState<string[]>([]);
+  const [sequenceNames, setSequenceNames] = useState<string[]>([]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -74,10 +75,12 @@ export const MSAInput: React.FC<MSAInputProps> = ({ onUpload, isLoading }) => {
       try {
         const parsedSequences = parseFasta(content);
         setSequences(parsedSequences.map(seq => seq.sequence));
+        setSequenceNames(parsedSequences.map(seq => seq.id));
         setError(null);
       } catch {
         setError('Invalid FASTA format');
         setSequences([]);
+        setSequenceNames([]);
       }
     };
     reader.readAsText(file);
@@ -92,12 +95,15 @@ export const MSAInput: React.FC<MSAInputProps> = ({ onUpload, isLoading }) => {
       try {
         const parsedSequences = parseFasta(text);
         setSequences(parsedSequences.map(seq => seq.sequence));
+        setSequenceNames(parsedSequences.map(seq => seq.id));
       } catch {
         setError('Invalid FASTA format');
         setSequences([]);
+        setSequenceNames([]);
       }
     } else {
       setSequences([]);
+      setSequenceNames([]);
     }
   };
 
@@ -113,13 +119,14 @@ export const MSAInput: React.FC<MSAInputProps> = ({ onUpload, isLoading }) => {
     }
 
     setError(null);
-    onUpload(sequences);
+    onUpload(sequences, sequenceNames);
   };
 
   const handleClear = () => {
     setInputText('');
     setUploadedFile(null);
     setSequences([]);
+    setSequenceNames([]);
     setError(null);
   };
 
@@ -129,10 +136,12 @@ export const MSAInput: React.FC<MSAInputProps> = ({ onUpload, isLoading }) => {
     try {
       const parsedSequences = parseFasta(exampleContent);
       setSequences(parsedSequences.map(seq => seq.sequence));
+      setSequenceNames(parsedSequences.map(seq => seq.id));
       setError(null);
     } catch {
       setError('Invalid FASTA format');
       setSequences([]);
+      setSequenceNames([]);
     }
   };
 
@@ -148,6 +157,7 @@ export const MSAInput: React.FC<MSAInputProps> = ({ onUpload, isLoading }) => {
           startIcon={<CloudUpload />}
           disabled={isLoading}
           fullWidth
+          data-testid="file-input"
         >
           Choose FASTA File
           <input
@@ -185,11 +195,12 @@ export const MSAInput: React.FC<MSAInputProps> = ({ onUpload, isLoading }) => {
           disabled={isLoading}
           error={!!error}
           helperText={error}
+          data-testid="sequence-input"
         />
       </Box>
 
       {sequences.length > 0 && (
-        <Paper sx={{ p: 2, mb: 2, bgcolor: 'background.default' }}>
+        <Paper sx={{ p: 2, mb: 2, bgcolor: 'background.default' }} data-testid="sequence-list">
           <Typography variant="subtitle2" gutterBottom>
             Sequences Ready ({sequences.length})
           </Typography>
@@ -197,7 +208,7 @@ export const MSAInput: React.FC<MSAInputProps> = ({ onUpload, isLoading }) => {
             {sequences.slice(0, 3).map((seq, index) => (
               <Chip
                 key={index}
-                label={`Seq_${index + 1} (${seq.length})`}
+                label={sequenceNames[index] ? `${sequenceNames[index]} (${seq.length})` : `Seq_${index + 1} (${seq.length})`}
                 size="small"
                 variant="outlined"
               />
@@ -249,6 +260,7 @@ export const MSAInput: React.FC<MSAInputProps> = ({ onUpload, isLoading }) => {
           onClick={handleUpload}
           disabled={isLoading || sequences.length === 0}
           fullWidth
+          data-testid="upload-btn"
         >
           {isLoading ? 'Uploading...' : 'Upload Sequences'}
         </Button>

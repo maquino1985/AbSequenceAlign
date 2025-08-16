@@ -1,10 +1,12 @@
 # Backend Base Dockerfile
 # This image contains all dependencies and is used as a base for other backend images
-FROM continuumio/miniconda3:latest
+# Supports multi-architecture builds (ARM64 and AMD64)
+FROM --platform=$BUILDPLATFORM continuumio/miniconda3:latest
 
 # Set environment variables
 ENV CONDA_ENV=AbSequenceAlign
 ENV PYTHONPATH=/app
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -12,6 +14,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     git \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy dependency files
@@ -22,7 +25,7 @@ RUN conda env create -f environment.yml && \
     conda clean -afy
 
 # Install ANARCI
-RUN conda run -n ${CONDA_ENV} pip install anarci
+# RUN conda run -n ${CONDA_ENV} pip install anarci
 
 # Set working directory
 WORKDIR /app

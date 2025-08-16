@@ -3,15 +3,17 @@ ANARCI adapter for antibody sequence numbering and annotation.
 Implements the ExternalToolAdapter interface to provide a clean abstraction.
 """
 
-from typing import Dict, Any, List, Tuple, Optional
 import logging
+from typing import Dict, Any, List, Tuple, Optional
 
-from ...core.base_classes import AbstractExternalToolAdapter
-from ...core.exceptions import (
+from anarci import run_anarci
+
+from backend.core.base_classes import AbstractExternalToolAdapter
+from backend.core.exceptions import (
     AnarciError,
     ToolNotAvailableError,
 )
-from ...domain.models import NumberingScheme
+from backend.domain.models import NumberingScheme
 
 
 class AnarciAdapter(AbstractExternalToolAdapter):
@@ -147,8 +149,6 @@ class AnarciAdapter(AbstractExternalToolAdapter):
             allowed_species = ["human", "mouse", "rat"]
 
         try:
-            from anarci import run_anarci
-
             # Run ANARCI
             (
                 sequences_out,

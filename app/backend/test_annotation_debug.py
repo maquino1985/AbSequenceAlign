@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import sys
-import os
 
 sys.path.append("/Users/aquinmx3/repos/AbSequenceAlign/app")
 

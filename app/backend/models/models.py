@@ -22,7 +22,7 @@ class AlignmentMethod(str, Enum):
     PAIRWISE_LOCAL = "pairwise_local"
     MUSCLE = "muscle"
     MAFFT = "mafft"
-    CLUSTALO = "clustalo"
+    CLUSTALO = "clustal"
     CUSTOM_ANTIBODY = "custom_antibody"
 
 

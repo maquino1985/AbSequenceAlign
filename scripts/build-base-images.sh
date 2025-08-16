@@ -2,6 +2,7 @@
 
 # Build Base Images Script
 # This script builds base images for frontend and backend with dependency change detection
+# Single-architecture builds for AMD64 (production target)
 
 set -e
 
@@ -17,6 +18,9 @@ BACKEND_BASE_IMAGE="absequencealign-backend-base"
 FRONTEND_BASE_IMAGE="absequencealign-frontend-base"
 BACKEND_TAG="latest"
 FRONTEND_TAG="latest"
+
+# Single architecture configuration for production (AMD64)
+PLATFORM="linux/amd64"
 
 # Get the project root directory
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -72,9 +76,11 @@ needs_rebuild() {
     if [ -f "$hash_file" ]; then
         local stored_hash=$(cat "$hash_file")
         if [ "$current_hash" = "$stored_hash" ]; then
-            # Check if image exists
+            # Check if image exists locally
             if docker image inspect "$image_name:$BACKEND_TAG" >/dev/null 2>&1; then
                 return 1  # No rebuild needed
+            else
+                return 0  # Rebuild needed
             fi
         fi
     fi
@@ -84,18 +90,23 @@ needs_rebuild() {
 
 # Function to build backend base image
 build_backend_base() {
-    print_header "Building Backend Base Image"
+    print_header "Building Backend Base Image (AMD64)"
     
-    if needs_rebuild "app/backend" "$BACKEND_BASE_IMAGE"; then
+    if needs_rebuild "app/backend" "$BACKEND_BASE_IMAGE" || [ "$FORCE_REBUILD" = true ]; then
         print_status "Dependencies changed or image missing. Building backend base image..."
+        print_status "Target platform: $PLATFORM"
         
-        docker build -f "$PROJECT_ROOT/app/backend/Dockerfile.base" -t "$BACKEND_BASE_IMAGE:$BACKEND_TAG" "$PROJECT_ROOT"
+        # Build single-architecture image
+        docker build \
+            --platform "$PLATFORM" \
+            --file "$PROJECT_ROOT/app/backend/Dockerfile.base" \
+            --tag "$BACKEND_BASE_IMAGE:$BACKEND_TAG" \
+            "$PROJECT_ROOT"
         
         # Store the new hash
         calculate_dependency_hash "app/backend" > "$PROJECT_ROOT/app/backend/.dependency-hash"
         
-        print_status "Backend base image built successfully!"
-        cd ../..
+        print_status "Backend base image built successfully for AMD64!"
     else
         print_status "Backend base image is up to date."
     fi
@@ -103,20 +114,38 @@ build_backend_base() {
 
 # Function to build frontend base image
 build_frontend_base() {
-    print_header "Building Frontend Base Image"
+    print_header "Building Frontend Base Image (AMD64)"
     
-    if needs_rebuild "app/frontend" "$FRONTEND_BASE_IMAGE"; then
+    if needs_rebuild "app/frontend" "$FRONTEND_BASE_IMAGE" || [ "$FORCE_REBUILD" = true ]; then
         print_status "Dependencies changed or image missing. Building frontend base image..."
+        print_status "Target platform: $PLATFORM"
         
-        docker build -f "$PROJECT_ROOT/app/frontend/Dockerfile.base" -t "$FRONTEND_BASE_IMAGE:$FRONTEND_TAG" "$PROJECT_ROOT/app/frontend"
+        # Build single-architecture image
+        docker build \
+            --platform "$PLATFORM" \
+            --file "$PROJECT_ROOT/app/frontend/Dockerfile.base" \
+            --tag "$FRONTEND_BASE_IMAGE:$FRONTEND_TAG" \
+            "$PROJECT_ROOT/app/frontend"
         
         # Store the new hash
         calculate_dependency_hash "app/frontend" > "$PROJECT_ROOT/app/frontend/.dependency-hash"
         
-        print_status "Frontend base image built successfully!"
+        print_status "Frontend base image built successfully for AMD64!"
     else
         print_status "Frontend base image is up to date."
     fi
+}
+
+# Function to show image information
+show_image_info() {
+    print_header "Image Information"
+    
+    echo "Backend Base Image:"
+    docker images "$BACKEND_BASE_IMAGE:$BACKEND_TAG" 2>/dev/null || echo "  Not available"
+    
+    echo ""
+    echo "Frontend Base Image:"
+    docker images "$FRONTEND_BASE_IMAGE:$FRONTEND_TAG" 2>/dev/null || echo "  Not available"
 }
 
 # Function to clean up old base images
@@ -142,13 +171,15 @@ show_usage() {
     echo "  --frontend-only   Build only frontend base image"
     echo "  --force           Force rebuild even if dependencies haven't changed"
     echo "  --cleanup         Clean up old base images"
+    echo "  --info            Show image information"
     echo "  --help            Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0                    # Build both base images"
+    echo "  $0                    # Build both base images for AMD64"
     echo "  $0 --backend-only     # Build only backend base image"
     echo "  $0 --force            # Force rebuild both images"
     echo "  $0 --cleanup          # Clean up old images"
+    echo "  $0 --info             # Show image information"
 }
 
 # Parse command line arguments
@@ -156,6 +187,7 @@ BUILD_BACKEND=true
 BUILD_FRONTEND=true
 FORCE_REBUILD=false
 CLEANUP_ONLY=false
+SHOW_INFO=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -175,6 +207,10 @@ while [[ $# -gt 0 ]]; do
             CLEANUP_ONLY=true
             shift
             ;;
+        --info)
+            SHOW_INFO=true
+            shift
+            ;;
         --help)
             show_usage
             exit 0
@@ -188,7 +224,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Main execution
-print_header "AbSequenceAlign Base Image Builder"
+print_header "AbSequenceAlign Single-Architecture Base Image Builder"
 
 # Check if we're in the right directory
 if [ ! -f "docker-compose.yml" ]; then
@@ -200,6 +236,12 @@ fi
 if ! docker info > /dev/null 2>&1; then
     print_error "Docker is not running. Please start Docker and try again."
     exit 1
+fi
+
+# Show image info if requested
+if [ "$SHOW_INFO" = true ]; then
+    show_image_info
+    exit 0
 fi
 
 if [ "$CLEANUP_ONLY" = true ]; then
@@ -225,5 +267,9 @@ fi
 # Cleanup old images
 cleanup_old_images
 
-print_header "Base Image Build Complete"
-print_status "All base images are ready for use!"
+# Show final image information
+show_image_info
+
+print_header "Single-Architecture Base Image Build Complete"
+print_status "All base images are ready for use on AMD64!"
+print_status "Target platform: $PLATFORM"

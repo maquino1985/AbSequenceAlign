@@ -1,6 +1,7 @@
 # Frontend Base Dockerfile
 # This image contains all dependencies and is used as a base for other frontend images
-FROM node:18-alpine
+# Supports multi-architecture builds (ARM64 and AMD64)
+FROM --platform=$BUILDPLATFORM node:22.18-alpine
 
 # Set working directory
 WORKDIR /app
@@ -13,7 +14,8 @@ RUN apk add --no-cache \
     freetype-dev \
     harfbuzz \
     ca-certificates \
-    ttf-freefont
+    ttf-freefont \
+    && rm -rf /var/cache/apk/*
 
 # Copy package files
 COPY package*.json ./

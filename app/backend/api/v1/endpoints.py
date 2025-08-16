@@ -150,7 +150,7 @@ async def align_sequences(request: AlignmentRequest):
             success=True,
             message=f"Successfully aligned {len(sequences)} sequences using {request.method.value}",
             data={
-                "alignment_result": result.dict(),
+                "alignment_result": result.model_dump(),
                 "statistics": alignment_result,
             },
         )

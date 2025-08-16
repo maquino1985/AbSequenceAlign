@@ -23,6 +23,7 @@ import {
   Brightness4,
   Brightness7,
 } from '@mui/icons-material';
+import { Link, useLocation } from 'react-router-dom';
 import { useModuleContext } from '../modules/shared/context';
 import { ModuleSelector } from '../modules/shared/components/ModuleSelector';
 import { IgGMolecule } from './IgGMolecule';
@@ -37,7 +38,8 @@ export const ModernNavigation: React.FC<ModernNavigationProps> = ({
   onThemeToggle,
 }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { modules, currentModule, setCurrentModule } = useModuleContext();
+  const { modules } = useModuleContext();
+  const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -45,12 +47,9 @@ export const ModernNavigation: React.FC<ModernNavigationProps> = ({
     setMobileOpen(!mobileOpen);
   };
 
-  const handleModuleSelect = (moduleId: string) => {
-    setCurrentModule(moduleId);
-    if (isMobile) {
-      setMobileOpen(false);
-    }
-  };
+  const currentModuleRoute = location.pathname;
+
+  // handleModuleSelect function removed as navigation is now handled by Link components
 
 
 
@@ -221,12 +220,18 @@ export const ModernNavigation: React.FC<ModernNavigationProps> = ({
             {modules.map((module) => (
               <ListItem key={module.id} disablePadding>
                 <ListItemButton
-                  onClick={() => handleModuleSelect(module.id)}
-                  selected={currentModule === module.id}
+                  component={Link}
+                  to={module.route}
+                  selected={module.route === currentModuleRoute}
+                  onClick={() => {
+                    if (isMobile) {
+                      setMobileOpen(false);
+                    }
+                  }}
                   sx={{
                     borderRadius: 2,
                     mb: 1,
-                    background: currentModule === module.id
+                    background: module.route === currentModuleRoute
                       ? darkMode
                         ? 'rgba(255, 255, 255, 0.1)'
                         : 'rgba(0, 0, 0, 0.05)'
