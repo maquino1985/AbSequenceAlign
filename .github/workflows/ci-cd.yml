@@ -8,6 +8,12 @@ on:
   release:
     types: [ published ]
 
+# Repository-level permissions
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
 env:
   REGISTRY: ghcr.io
   BACKEND_IMAGE_NAME: absequencealign-backend
@@ -171,6 +177,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
