@@ -22,7 +22,7 @@ RUN conda env create -f environment.yml && \
     conda clean -afy
 
 # Install ANARCI
-RUN conda run -n ${CONDA_ENV} pip install anarci
+# RUN conda run -n ${CONDA_ENV} pip install anarci
 
 # Set working directory
 WORKDIR /app

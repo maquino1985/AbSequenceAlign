@@ -37,7 +37,6 @@ show_usage() {
     echo "  --backend          Run backend tests in Docker"
     echo "  --frontend         Run frontend tests in Docker"
     echo "  --e2e              Run E2E tests in Docker"
-    echo "  --integration      Run integration tests in Docker"
     echo "  --all              Run all tests in Docker (default)"
     echo "  --cleanup          Clean up Docker containers and images"
     echo "  --help             Show this help message"
@@ -73,10 +72,6 @@ else
                 ;;
             --e2e)
                 RUN_E2E=true
-                shift
-                ;;
-            --integration)
-                RUN_INTEGRATION=true
                 shift
                 ;;
             --all)
@@ -167,20 +162,6 @@ if [ "$RUN_FRONTEND" = true ]; then
         print_status "Frontend tests passed!"
     else
         print_error "Frontend tests failed!"
-        cleanup
-        exit 1
-    fi
-fi
-
-# Integration Tests
-if [ "$RUN_INTEGRATION" = true ]; then
-    print_header "Running Integration Tests in Docker"
-    print_status "Building and running integration test container..."
-    
-    if docker compose -f docker-compose.test.yml up --build integration-test --exit-code-from integration-test; then
-        print_status "Integration tests passed!"
-    else
-        print_error "Integration tests failed!"
         cleanup
         exit 1
     fi

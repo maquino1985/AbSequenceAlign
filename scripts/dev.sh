@@ -131,7 +131,7 @@ print_status "Waiting for backend server..."
 MAX_RETRIES=30
 COUNT=0
 while ! curl -s http://localhost:$BACKEND_PORT/health >/dev/null 2>&1; do
-    ((COUNT++))
+    COUNT=$((COUNT + 1))
     if [ $COUNT -eq $MAX_RETRIES ]; then
         print_error "Backend server failed to start"
         exit 1
@@ -151,7 +151,7 @@ print_status "Waiting for frontend server..."
 MAX_RETRIES=30
 COUNT=0
 while ! curl -s http://localhost:$VITE_PORT >/dev/null 2>&1; do
-    ((COUNT++))
+    COUNT=$((COUNT + 1))
     if [ $COUNT -eq $MAX_RETRIES ]; then
         print_error "Frontend server failed to start"
         exit 1
