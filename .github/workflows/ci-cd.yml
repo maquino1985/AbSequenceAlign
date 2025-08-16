@@ -128,8 +128,8 @@ jobs:
 
       - name: Build and tag base images
         run: |
-          # Build base images
-          ./scripts/build-base-images.sh
+          # Build base images with multi-architecture support
+          ./scripts/build-base-images.sh --platforms linux/amd64,linux/arm64
           
           # Tag base images for testing (but don't push)
           docker tag absequencealign-backend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
@@ -187,8 +187,8 @@ jobs:
 
       - name: Build and push base images
         run: |
-          # Build base images
-          ./scripts/build-base-images.sh
+          # Build base images with multi-architecture support
+          ./scripts/build-base-images.sh --platforms linux/amd64,linux/arm64
           
           # Tag and push base images to GitHub Container Registry
           docker tag absequencealign-backend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest

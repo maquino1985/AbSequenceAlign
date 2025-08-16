@@ -3,7 +3,7 @@ Repository for managing biologic entities and related sequences in the database.
 """
 
 import uuid
-from typing import List, Optional, Union
+from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -19,10 +19,8 @@ from backend.domain.value_objects_v2 import (
     DNASequence,
     RNASequence,
     AminoAcidSequence,
-    Sequence,
     SequenceType,
     ConfidenceScore,
-    AnnotationMetadata,
     RegionBoundary,
     BiologicAlias,
 )
