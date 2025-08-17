@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { BlastSearchForm } from '../BlastSearchForm';
+import BlastSearchForm from '../BlastSearchForm';
 
 // Create a theme for Material-UI components
 const theme = createTheme();

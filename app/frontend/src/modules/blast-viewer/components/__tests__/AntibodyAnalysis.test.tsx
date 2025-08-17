@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { AntibodyAnalysis } from '../AntibodyAnalysis';
+import AntibodyAnalysis from '../AntibodyAnalysis';
 
 // Create a theme for Material-UI components
 const theme = createTheme();

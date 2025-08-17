@@ -8,12 +8,15 @@ import {
   Tab,
   Alert,
   CircularProgress,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import { Search, Biotech } from '@mui/icons-material';
 import api from '../../../services/api';
 import BlastSearchForm from './BlastSearchForm';
 import BlastResults from './BlastResults';
 import AntibodyAnalysis from './AntibodyAnalysis';
+import SimpleEnhancedBlastResults from './SimpleEnhancedBlastResults';
 import type { BlastSearchResponse, IgBlastSearchResponse } from '../../../types/apiV2';
 
 interface TabPanelProps {
@@ -45,6 +48,8 @@ export const BlastViewerTool: React.FC = () => {
   const [databases, setDatabases] = useState<Record<string, unknown> | null>(null);
   const [organisms, setOrganisms] = useState<string[]>([]);
   const [results, setResults] = useState<BlastSearchResponse['data'] | IgBlastSearchResponse['data'] | null>(null);
+  const [useEnhancedView, setUseEnhancedView] = useState(true);
+  const [currentSearchType, setCurrentSearchType] = useState<'standard' | 'antibody'>('standard');
 
   useEffect(() => {
     loadInitialData();
@@ -74,6 +79,7 @@ export const BlastViewerTool: React.FC = () => {
     setTabValue(newValue);
     setResults(null);
     setError(null);
+    setCurrentSearchType(newValue === 0 ? 'standard' : 'antibody');
   };
 
   const handleSearch = async (searchData: Record<string, unknown>) => {
@@ -131,35 +137,56 @@ export const BlastViewerTool: React.FC = () => {
       )}
 
       <Paper sx={{ width: '100%' }}>
-        <Tabs
-          value={tabValue}
-          onChange={handleTabChange}
-          aria-label="BLAST search tabs"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
-        >
-          <Tab 
-            label="Standard BLAST" 
-            icon={<Search />} 
-            iconPosition="start"
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Tabs
+            value={tabValue}
+            onChange={handleTabChange}
+            aria-label="BLAST search tabs"
+          >
+            <Tab 
+              label="Standard BLAST" 
+              icon={<Search />} 
+              iconPosition="start"
+            />
+            <Tab 
+              label="Antibody Analysis" 
+              icon={<Biotech />} 
+              iconPosition="start"
+            />
+          </Tabs>
+          
+          <FormControlLabel
+            control={
+              <Switch
+                checked={useEnhancedView}
+                onChange={(e) => setUseEnhancedView(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Enhanced View"
           />
-          <Tab 
-            label="Antibody Analysis" 
-            icon={<Biotech />} 
-            iconPosition="start"
-          />
-        </Tabs>
+        </Box>
 
         <TabPanel value={tabValue} index={0}>
-                      <BlastSearchForm
-              databases={databases || null}
-              onSearch={handleSearch}
-              loading={loading}
-            />
+          <BlastSearchForm
+            databases={databases || null}
+            onSearch={handleSearch}
+            loading={loading}
+          />
           {results && (
-            <BlastResults 
-              results={results} 
-              searchType="standard"
-            />
+            <>
+              {useEnhancedView ? (
+                <SimpleEnhancedBlastResults 
+                  results={results} 
+                  searchType="standard"
+                />
+              ) : (
+                <BlastResults 
+                  results={results} 
+                  searchType="standard"
+                />
+              )}
+            </>
           )}
         </TabPanel>
 
@@ -170,10 +197,19 @@ export const BlastViewerTool: React.FC = () => {
             loading={loading}
           />
           {results && (
-            <BlastResults 
-              results={results} 
-              searchType="antibody"
-            />
+            <>
+              {useEnhancedView ? (
+                <SimpleEnhancedBlastResults 
+                  results={results} 
+                  searchType="antibody"
+                />
+              ) : (
+                <BlastResults 
+                  results={results} 
+                  searchType="antibody"
+                />
+              )}
+            </>
           )}
         </TabPanel>
       </Paper>

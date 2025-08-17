@@ -130,6 +130,11 @@ export interface BlastSearchResponse {
   message: string;
   data: {
     results: BlastResult;
+    query_info?: {
+      query_id: string;
+      query_length?: number;
+    };
+    total_hits: number;
   };
 }
 
@@ -139,6 +144,22 @@ export interface IgBlastHit extends BlastHit {
   d_gene?: string;
   j_gene?: string;
   c_gene?: string;
+  cdr3_start?: number;
+  cdr3_end?: number;
+  cdr3_sequence?: string;
+  // Enhanced fields from advanced AIRR parsing
+  productive?: string;
+  locus?: string;
+  complete_vdj?: boolean;
+  stop_codon?: boolean;
+  vj_in_frame?: boolean;
+  fwr1_sequence?: string;
+  cdr1_sequence?: string;
+  fwr2_sequence?: string;
+  cdr2_sequence?: string;
+  fwr3_sequence?: string;
+  junction_aa?: string;
+  junction_length?: number;
 }
 
 export interface IgBlastResult extends BlastResult {
@@ -150,7 +171,37 @@ export interface IgBlastSearchResponse {
   message: string;
   data: {
     results: IgBlastResult;
-    summary: {
+    query_info?: {
+      query_id: string;
+      query_length?: number;
+    };
+    analysis_summary?: {
+      best_v_gene?: string;
+      best_d_gene?: string;
+      best_j_gene?: string;
+      best_c_gene?: string;
+      cdr3_sequence?: string;
+      cdr3_start?: number;
+      cdr3_end?: number;
+      junction_length?: number;
+      productive_sequences?: number;
+      unique_v_genes?: string[];
+      unique_d_genes?: string[];
+      unique_j_genes?: string[];
+      locus?: string;
+      fwr1_sequence?: string;
+      cdr1_sequence?: string;
+      fwr2_sequence?: string;
+      cdr2_sequence?: string;
+      fwr3_sequence?: string;
+      junction_aa?: string;
+      total_hits: number;
+    };
+    total_hits: number;
+    // Enhanced AIRR result for advanced analysis
+    airr_result?: AIRRAnalysisResult;
+    // Legacy fields for backward compatibility
+    summary?: {
       total_hits: number;
       best_identity: number;
       gene_assignments: {
@@ -165,12 +216,12 @@ export interface IgBlastSearchResponse {
         end: number;
       } | null;
     };
-    cdr3_info: {
+    cdr3_info?: {
       sequence: string;
       start: number;
       end: number;
     } | null;
-    gene_assignments: {
+    gene_assignments?: {
       v_gene?: string;
       d_gene?: string;
       j_gene?: string;
@@ -276,5 +327,118 @@ export interface MSAJobStatusV2 {
   created_at: string;
   completed_at?: string;
 }
+
+// Enhanced BLAST and IgBLAST Types - extending existing interfaces
+
+// AIRR Rearrangement Types (comprehensive)
+export interface AIRRAlignment {
+  start?: number;
+  end?: number;
+  sequence_alignment?: string;
+  sequence_alignment_aa?: string;
+  germline_alignment?: string;
+  germline_alignment_aa?: string;
+  score?: number;
+  identity?: number;
+  cigar?: string;
+  support?: number;
+}
+
+export interface CDRRegion {
+  sequence?: string;
+  sequence_aa?: string;
+  start?: number;
+  end?: number;
+}
+
+export interface FrameworkRegion {
+  sequence?: string;
+  sequence_aa?: string;
+  start?: number;
+  end?: number;
+}
+
+export interface JunctionRegion {
+  junction?: string;
+  junction_aa?: string;
+  junction_length?: number;
+  junction_aa_length?: number;
+  cdr3?: string;
+  cdr3_aa?: string;
+  cdr3_start?: number;
+  cdr3_end?: number;
+  np1?: string;
+  np1_length?: number;
+  np2?: string;
+  np2_length?: number;
+}
+
+export interface AIRRRearrangement {
+  sequence_id: string;
+  sequence: string;
+  sequence_aa?: string;
+  locus?: string;
+  productive?: string;
+  stop_codon?: boolean;
+  vj_in_frame?: boolean;
+  v_frameshift?: string;
+  rev_comp?: boolean;
+  complete_vdj?: boolean;
+  d_frame?: number;
+  
+  // Gene assignments
+  v_call?: string;
+  d_call?: string;
+  j_call?: string;
+  c_call?: string;
+  
+  // Sequence coordinates
+  v_sequence_start?: number;
+  v_sequence_end?: number;
+  v_germline_start?: number;
+  v_germline_end?: number;
+  d_sequence_start?: number;
+  d_sequence_end?: number;
+  d_germline_start?: number;
+  d_germline_end?: number;
+  j_sequence_start?: number;
+  j_sequence_end?: number;
+  j_germline_start?: number;
+  j_germline_end?: number;
+  
+  // Alignment details
+  v_alignment?: AIRRAlignment;
+  d_alignment?: AIRRAlignment;
+  j_alignment?: AIRRAlignment;
+  
+  // Framework and CDR regions
+  fwr1?: FrameworkRegion;
+  cdr1?: CDRRegion;
+  fwr2?: FrameworkRegion;
+  cdr2?: CDRRegion;
+  fwr3?: FrameworkRegion;
+  fwr4?: FrameworkRegion;
+  
+  // Junction/CDR3 region
+  junction_region?: JunctionRegion;
+  
+  // Full sequence alignments
+  sequence_alignment?: string;
+  germline_alignment?: string;
+  sequence_alignment_aa?: string;
+  germline_alignment_aa?: string;
+}
+
+export interface AIRRAnalysisResult {
+  rearrangements: AIRRRearrangement[];
+  total_sequences: number;
+  productive_sequences: number;
+  unique_v_genes: string[];
+  unique_d_genes: string[];
+  unique_j_genes: string[];
+  analysis_metadata: Record<string, any>;
+}
+
+
 
 
