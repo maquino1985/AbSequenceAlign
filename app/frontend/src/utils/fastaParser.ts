@@ -53,7 +53,7 @@ export const parseFasta = (fastaContent: string): FastaSequence[] => {
     } else if (currentSequence) {
       // Validate sequence line contains only valid characters
       const cleanLine = trimmedLine.replace(/\s/g, '').toUpperCase();
-      const validAminoAcids = /^[ACDEFGHIKLMNPQRSTVWY]*$/;
+      const validAminoAcids = /^[ACDEFGHIKLMNPQRSTVWY]+$/;
       
       if (!validAminoAcids.test(cleanLine)) {
         const invalidChars = [...cleanLine].filter(char => !/[ACDEFGHIKLMNPQRSTVWY]/.test(char));
