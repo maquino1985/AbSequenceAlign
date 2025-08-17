@@ -66,10 +66,11 @@ class IgBlastAdapter(BaseExternalToolAdapter):
             organisms = []
             for item in IGBLAST_INTERNAL_DATA_DIR.iterdir():
                 if item.is_dir():
-                    # Check if this directory contains V gene database files with the naming pattern {organism}_V.nhr
                     organism_name = item.name
+                    # Check for both naming patterns: {organism}_V.nhr and {organism}_gl_V.nhr
                     v_gene_file = item / f"{organism_name}_V.nhr"
-                    if v_gene_file.exists():
+                    v_gene_file_gl = item / f"{organism_name}_gl_V.nhr"
+                    if v_gene_file.exists() or v_gene_file_gl.exists():
                         organisms.append(organism_name)
 
             if not organisms:
@@ -264,8 +265,14 @@ class IgBlastAdapter(BaseExternalToolAdapter):
             # Use default tabular format for protein searches (AIRR not supported)
             if blast_type == "igblastn":
                 command.extend(["-outfmt", "19"])  # AIRR format
+                self._logger.info(
+                    "Using AIRR format (outfmt 19) for IgBLAST nucleotide search"
+                )
             else:
                 command.extend(["-outfmt", "7"])  # Default tabular format
+                self._logger.info(
+                    "Using tabular format (outfmt 7) for IgBLAST protein search - AIRR not supported"
+                )
 
         # Add additional parameters
         for key, value in kwargs.items():
@@ -313,9 +320,20 @@ class IgBlastAdapter(BaseExternalToolAdapter):
     ) -> Dict[str, Any]:
         """Parse IgBLAST AIRR format output (outfmt 19) using advanced parser"""
 
+        self._logger.info(f"Parsing AIRR output for {blast_type}")
+        self._logger.debug(f"AIRR output length: {len(output)} characters")
+
+        if not output.strip():
+            self._logger.warning("Empty AIRR output received")
+            return self._parse_airr_output_fallback(output, blast_type)
+
         try:
             # Use the advanced AIRR parser
             airr_result = self._airr_parser.parse_airr_output(output)
+
+            self._logger.info(
+                f"Successfully parsed AIRR output: {len(airr_result.rearrangements)} rearrangements"
+            )
 
             # Convert to backward-compatible format for existing API
             hits = []
@@ -335,7 +353,7 @@ class IgBlastAdapter(BaseExternalToolAdapter):
                 airr_result
             )
 
-            return {
+            result = {
                 "blast_type": blast_type,
                 "query_info": query_info,
                 "hits": hits,
@@ -349,10 +367,16 @@ class IgBlastAdapter(BaseExternalToolAdapter):
                 ),
             }
 
+            self._logger.info(
+                f"Successfully processed AIRR data: {len(hits)} hits, AIRR result: {result['airr_result'] is not None}"
+            )
+            return result
+
         except Exception as e:
             self._logger.error(
                 f"Error parsing AIRR output with advanced parser: {e}"
             )
+            self._logger.error(f"AIRR output preview: {output[:500]}...")
             # Fallback to basic parsing
             return self._parse_airr_output_fallback(output, blast_type)
 
@@ -365,13 +389,32 @@ class IgBlastAdapter(BaseExternalToolAdapter):
         cdr3_end = None
 
         if rearrangement.junction_region:
+            # Try to extract CDR3 from various sources
             cdr3_sequence = (
                 rearrangement.junction_region.cdr3
+                or rearrangement.junction_region.cdr3_aa
                 or rearrangement.junction_region.junction
-                or rearrangement.junction_region.np2
+                or rearrangement.junction_region.junction_aa
             )
             cdr3_start = rearrangement.junction_region.cdr3_start
             cdr3_end = rearrangement.junction_region.cdr3_end
+
+            # If CDR3 sequence is not directly available, try to construct it from N regions
+            if not cdr3_sequence and rearrangement.junction_region.np1:
+                np1 = rearrangement.junction_region.np1 or ""
+                np2 = rearrangement.junction_region.np2 or ""
+                if np1 or np2:
+                    cdr3_sequence = f"{np1}{np2}"
+
+            # If CDR3 positions are not available, estimate from V and J gene positions
+            if (
+                cdr3_start is None
+                and rearrangement.v_sequence_end
+                and rearrangement.j_sequence_start
+            ):
+                cdr3_start = rearrangement.v_sequence_end + 1
+            if cdr3_end is None and rearrangement.j_sequence_start:
+                cdr3_end = rearrangement.j_sequence_start - 1
 
         # Calculate alignment length from V gene alignment
         alignment_length = 0

@@ -94,25 +94,29 @@ def get_igblast_v_db_path(organism: str) -> Path:
     """Get V gene database path for organism"""
     if organism == "human":
         return IGBLAST_HUMAN_V_DB
-    return IGBLAST_INTERNAL_DATA_DIR / organism / f"{organism}_V"
+    # For mouse and other organisms, use the gl_ prefix pattern
+    return IGBLAST_INTERNAL_DATA_DIR / organism / f"{organism}_gl_V"
 
 
 def get_igblast_d_db_path(organism: str) -> Path:
     """Get D gene database path for organism"""
     if organism == "human":
         return IGBLAST_HUMAN_D_DB
-    return IGBLAST_INTERNAL_DATA_DIR / organism / f"{organism}_D"
+    # For mouse and other organisms, use the gl_ prefix pattern
+    return IGBLAST_INTERNAL_DATA_DIR / organism / f"{organism}_gl_D"
 
 
 def get_igblast_j_db_path(organism: str) -> Path:
     """Get J gene database path for organism"""
     if organism == "human":
         return IGBLAST_HUMAN_J_DB
-    return IGBLAST_INTERNAL_DATA_DIR / organism / f"{organism}_J"
+    # For mouse and other organisms, use the gl_ prefix pattern
+    return IGBLAST_INTERNAL_DATA_DIR / organism / f"{organism}_gl_J"
 
 
 def get_igblast_c_db_path(organism: str) -> Path:
     """Get C gene database path for organism"""
     if organism == "human":
         return IGBLAST_HUMAN_C_DB
+    # For mouse and other organisms, use the gl_ prefix pattern
     return IGBLAST_INTERNAL_DATA_DIR / f"ncbi_{organism}_c_genes"

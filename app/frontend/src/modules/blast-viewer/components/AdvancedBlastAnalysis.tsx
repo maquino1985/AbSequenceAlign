@@ -35,6 +35,7 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import type { BlastHit, BlastSearchResponse } from '../../../types/apiV2';
+import SequenceAlignmentDisplay from './SequenceAlignmentDisplay';
 
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(2),
@@ -335,52 +336,152 @@ const AdvancedBlastAnalysis: React.FC<AdvancedBlastAnalysisProps> = ({
   };
 
   const renderSequenceComparison = () => {
-    // This would typically show the actual sequence alignment
-    // For now, we'll show a placeholder with the coordinates
+    // Generate a simulated alignment based on BLAST statistics
+    const generateSimulatedAlignment = () => {
+      const queryLength = hit.query_end - hit.query_start + 1;
+      const subjectLength = hit.subject_end - hit.subject_start + 1;
+      const alignmentLength = hit.alignment_length;
+      const mismatches = hit.mismatches;
+      const matches = alignmentLength - mismatches;
+      
+      // Create simulated sequences
+      let querySeq = '';
+      let subjectSeq = '';
+      
+      // Add aligned region
+      for (let i = 0; i < alignmentLength; i++) {
+        if (i < matches) {
+          // Matching positions
+          querySeq += 'A';
+          subjectSeq += 'A';
+        } else {
+          // Mismatching positions
+          querySeq += 'A';
+          subjectSeq += 'T';
+        }
+      }
+      
+      // Add gaps if needed
+      if (queryLength > alignmentLength) {
+        querySeq += '-'.repeat(queryLength - alignmentLength);
+      }
+      if (subjectLength > alignmentLength) {
+        subjectSeq += '-'.repeat(subjectLength - alignmentLength);
+      }
+      
+      return { querySeq, subjectSeq };
+    };
+
+    const alignment = generateSimulatedAlignment();
+
     return (
       <Box>
         <Typography variant="h6" gutterBottom color="primary">
-          Sequence Comparison
+          Sequence Alignment Visualization
         </Typography>
         
-        <Alert severity="info" sx={{ mb: 2 }}>
-          <Typography variant="body2">
-            Detailed sequence alignment view would be displayed here, showing the query and subject sequences 
-            with their alignment positions and any mismatches or gaps.
-          </Typography>
-        </Alert>
+        <Stack spacing={3}>
+          {/* Simulated Alignment Display */}
+          <SequenceAlignmentDisplay
+            querySequence={alignment.querySeq}
+            subjectSequence={alignment.subjectSeq}
+            queryStart={hit.query_start}
+            subjectStart={hit.subject_start}
+            isAminoAcid={false}
+            title={`Simulated Alignment (${hit.identity.toFixed(1)}% identity)`}
+          />
 
-        <Card elevation={1}>
-          <CardHeader title="Alignment Summary" />
-          <CardContent>
-            <Stack spacing={1}>
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2" color="textSecondary">Query Range:</Typography>
-                <Typography variant="body2" fontFamily="monospace">
-                  {hit.query_start} - {hit.query_end}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2" color="textSecondary">Subject Range:</Typography>
-                <Typography variant="body2" fontFamily="monospace">
-                  {hit.subject_start} - {hit.subject_end}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2" color="textSecondary">Alignment Length:</Typography>
-                <Typography variant="body2" fontFamily="monospace">
-                  {hit.alignment_length} bp
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2" color="textSecondary">Matching Positions:</Typography>
-                <Typography variant="body2" fontFamily="monospace">
-                  {hit.alignment_length - hit.mismatches}
-                </Typography>
-              </Box>
-            </Stack>
-          </CardContent>
-        </Card>
+          <Card elevation={1}>
+            <CardHeader title="Detailed Alignment Statistics" />
+            <CardContent>
+              <Stack spacing={2}>
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2" color="textSecondary">Query Sequence:</Typography>
+                  <Typography variant="body2" fontFamily="monospace" fontWeight="bold">
+                    {hit.query_id}
+                  </Typography>
+                </Box>
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2" color="textSecondary">Subject Sequence:</Typography>
+                  <Typography variant="body2" fontFamily="monospace" fontWeight="bold">
+                    {hit.subject_id}
+                  </Typography>
+                </Box>
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2" color="textSecondary">Query Range:</Typography>
+                  <Typography variant="body2" fontFamily="monospace">
+                    {hit.query_start} - {hit.query_end} ({hit.query_end - hit.query_start + 1} bp)
+                  </Typography>
+                </Box>
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2" color="textSecondary">Subject Range:</Typography>
+                  <Typography variant="body2" fontFamily="monospace">
+                    {hit.subject_start} - {hit.subject_end} ({hit.subject_end - hit.subject_start + 1} bp)
+                  </Typography>
+                </Box>
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2" color="textSecondary">Alignment Length:</Typography>
+                  <Typography variant="body2" fontFamily="monospace">
+                    {hit.alignment_length} bp
+                  </Typography>
+                </Box>
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2" color="textSecondary">Matching Positions:</Typography>
+                  <Typography variant="body2" fontFamily="monospace">
+                    {hit.alignment_length - hit.mismatches} bp
+                  </Typography>
+                </Box>
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2" color="textSecondary">Mismatches:</Typography>
+                  <Typography variant="body2" fontFamily="monospace">
+                    {hit.mismatches} bp
+                  </Typography>
+                </Box>
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2" color="textSecondary">Gap Opens:</Typography>
+                  <Typography variant="body2" fontFamily="monospace">
+                    {hit.gap_opens}
+                  </Typography>
+                </Box>
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2" color="textSecondary">Alignment Coverage:</Typography>
+                  <Typography variant="body2" fontFamily="monospace">
+                    {((hit.alignment_length / Math.max(hit.query_end - hit.query_start + 1, hit.subject_end - hit.subject_start + 1)) * 100).toFixed(1)}%
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+
+          <Card elevation={1}>
+            <CardHeader title="Alignment Quality Metrics" />
+            <CardContent>
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                    Identity Score: {hit.identity.toFixed(1)}%
+                  </Typography>
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={hit.identity} 
+                    color={hit.identity > 90 ? 'success' : hit.identity > 70 ? 'warning' : 'error'}
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                    Coverage: {((hit.alignment_length / Math.max(hit.query_end - hit.query_start + 1, hit.subject_end - hit.subject_start + 1)) * 100).toFixed(1)}%
+                  </Typography>
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={(hit.alignment_length / Math.max(hit.query_end - hit.query_start + 1, hit.subject_end - hit.subject_start + 1)) * 100} 
+                    sx={{ height: 6, borderRadius: 3 }}
+                  />
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Stack>
       </Box>
     );
   };

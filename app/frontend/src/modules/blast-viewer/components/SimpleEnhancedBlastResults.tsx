@@ -177,7 +177,7 @@ const SimpleEnhancedBlastResults: React.FC<SimpleEnhancedBlastResultsProps> = ({
   };
 
   const renderSummaryPanel = () => {
-    const { hits, summary, hasAirrData, productivityRate } = processedData;
+    const { hits, summary, hasAirrData, productivityRate, airrResult } = processedData;
     
     return (
       <StyledCard>
@@ -209,14 +209,27 @@ const SimpleEnhancedBlastResults: React.FC<SimpleEnhancedBlastResultsProps> = ({
             </MetricCard>
             
             {hasAirrData && (
-              <MetricCard elevation={0} sx={{ minWidth: 120 }}>
-                <Typography variant="h4" color="success.main" fontWeight="bold">
-                  {productivityRate.toFixed(1)}%
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  Productive
-                </Typography>
-              </MetricCard>
+              <>
+                <MetricCard elevation={0} sx={{ minWidth: 120 }}>
+                  <Typography variant="h4" color="success.main" fontWeight="bold">
+                    {productivityRate.toFixed(1)}%
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    Productive Rate
+                  </Typography>
+                </MetricCard>
+                <MetricCard elevation={0} sx={{ minWidth: 120 }}>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    {getProductivityStatus(airrResult?.rearrangements?.[0]?.productive).icon}
+                    <Typography variant="h6" fontWeight="bold">
+                      {getProductivityStatus(airrResult?.rearrangements?.[0]?.productive).label}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" color="textSecondary">
+                    Status
+                  </Typography>
+                </MetricCard>
+              </>
             )}
           </Box>
 
@@ -498,11 +511,22 @@ const SimpleEnhancedBlastResults: React.FC<SimpleEnhancedBlastResultsProps> = ({
               {searchType === 'antibody' ? (
                 // For IgBLAST results, show AIRR analysis if available
                 (() => {
+                  // results is already the 'data' part of the API response
                   const igBlastData = results as IgBlastSearchResponse['data'];
                   const airrResult = igBlastData.airr_result;
-                  const rearrangement = airrResult?.rearrangements[selectedHitForAnalysis];
                   
-                  if (rearrangement) {
+                  if (airrResult && airrResult.rearrangements && airrResult.rearrangements.length > 0) {
+                    // For IgBLAST, there's typically one rearrangement per query sequence
+                    // Use the first rearrangement (index 0) since we're analyzing one sequence at a time
+                    const rearrangement = airrResult.rearrangements[0];
+                    
+                    console.log('AIRR Data Available:', {
+                      airrResult,
+                      rearrangements: airrResult.rearrangements,
+                      selectedRearrangement: rearrangement,
+                      hitIndex: selectedHitForAnalysis
+                    });
+                    
                     return (
                       <AdvancedAIRRAnalysis 
                         rearrangement={rearrangement}
@@ -512,6 +536,9 @@ const SimpleEnhancedBlastResults: React.FC<SimpleEnhancedBlastResultsProps> = ({
                   } else {
                     // Fallback to basic hit data
                     const hit = hits[selectedHitForAnalysis] as IgBlastHit;
+                    
+
+                    
                     return (
                       <Box>
                         <Alert severity="info" sx={{ mb: 2 }}>

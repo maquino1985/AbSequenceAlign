@@ -325,8 +325,6 @@ class BlastService:
 
     def _get_internal_databases(self) -> Dict[str, str]:
         """Get list of internal databases."""
-        # This would be implemented to read from a configuration or database
-        return {
-            "internal_protein": "Internal protein sequences",
-            "internal_nucleotide": "Internal nucleotide sequences",
-        }
+        # For now, return empty since we don't have functional internal databases
+        # This should be implemented to read from a configuration or database
+        return {}

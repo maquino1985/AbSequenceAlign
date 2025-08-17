@@ -199,6 +199,9 @@ async def analyze_antibody_sequence(request: IgBlastSearchRequest):
         cdr3_info = igblast_service.extract_cdr3(results)
         gene_assignments = igblast_service.get_gene_assignments(results)
 
+        # Extract AIRR result from the IgBLAST results
+        airr_result = results.get("airr_result")
+
         return BlastSearchResponse(
             success=True,
             message=f"Antibody analysis completed successfully",
@@ -207,6 +210,7 @@ async def analyze_antibody_sequence(request: IgBlastSearchRequest):
                 "summary": summary,
                 "cdr3_info": cdr3_info,
                 "gene_assignments": gene_assignments,
+                "airr_result": airr_result,
             },
         )
     except ValueError as e:

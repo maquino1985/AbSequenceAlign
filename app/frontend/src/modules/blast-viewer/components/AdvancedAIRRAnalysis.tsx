@@ -35,6 +35,7 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import type { AIRRRearrangement, IgBlastSearchResponse } from '../../../types/apiV2';
+import SequenceAlignmentDisplay from './SequenceAlignmentDisplay';
 
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(2),
@@ -131,25 +132,34 @@ const AdvancedAIRRAnalysis: React.FC<AdvancedAIRRAnalysisProps> = ({
         <Typography variant="h6" gutterBottom color="primary">
           Query vs Germline Alignment
         </Typography>
-        <SequenceDisplay>
-          <Box mb={2}>
-            <Typography variant="subtitle2" color="primary" gutterBottom>
-              Query Sequence:
-            </Typography>
-            <Typography variant="body2" fontFamily="monospace">
-              {rearrangement.sequence_alignment}
-            </Typography>
+        
+        {/* Nucleotide Alignment */}
+        {rearrangement.sequence_alignment && rearrangement.germline_alignment && (
+          <Box mb={3}>
+            <SequenceAlignmentDisplay
+              querySequence={rearrangement.sequence_alignment}
+              subjectSequence={rearrangement.germline_alignment}
+              queryStart={rearrangement.v_sequence_start || 1}
+              subjectStart={rearrangement.v_germline_start || 1}
+              isAminoAcid={false}
+              title="Nucleotide Alignment"
+            />
           </Box>
-          <Divider sx={{ my: 2 }} />
+        )}
+        
+        {/* Amino Acid Alignment */}
+        {rearrangement.sequence_alignment_aa && rearrangement.germline_alignment_aa && (
           <Box>
-            <Typography variant="subtitle2" color="primary" gutterBottom>
-              Germline Sequence:
-            </Typography>
-            <Typography variant="body2" fontFamily="monospace">
-              {rearrangement.germline_alignment}
-            </Typography>
+            <SequenceAlignmentDisplay
+              querySequence={rearrangement.sequence_alignment_aa}
+              subjectSequence={rearrangement.germline_alignment_aa}
+              queryStart={rearrangement.v_sequence_start || 1}
+              subjectStart={rearrangement.v_germline_start || 1}
+              isAminoAcid={true}
+              title="Amino Acid Alignment"
+            />
           </Box>
-        </SequenceDisplay>
+        )}
       </Box>
     );
   };
