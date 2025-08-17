@@ -12,6 +12,7 @@ dependencies:
   - anarci
   - clustalo
   - blast
+  - igblast
   # Python packages
   - biopython
   - scipy
