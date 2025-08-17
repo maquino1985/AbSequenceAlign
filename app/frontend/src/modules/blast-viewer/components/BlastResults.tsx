@@ -101,7 +101,7 @@ const BlastResults: React.FC<BlastResultsProps> = ({ results, searchType }) => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {hits.map((hit: any, index: number) => (
+                {hits.map((hit: Record<string, unknown>, index: number) => (
                   <TableRow key={index}>
                     <TableCell>{hit.subject_id}</TableCell>
                     <TableCell>{hit.identity?.toFixed(1)}</TableCell>
@@ -264,7 +264,7 @@ const BlastResults: React.FC<BlastResultsProps> = ({ results, searchType }) => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {hits.map((hit: any, index: number) => (
+                    {hits.map((hit: Record<string, unknown>, index: number) => (
                       <TableRow key={index}>
                         <TableCell>{hit.subject_id}</TableCell>
                         <TableCell>{hit.identity?.toFixed(1)}</TableCell>

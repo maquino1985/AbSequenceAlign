@@ -104,22 +104,22 @@ export const api = {
   },
 
   // BLAST Methods
-  getBlastDatabases: async (): Promise<APIResponse<{ databases: any }>> => {
+  getBlastDatabases: async (): Promise<APIResponse<{ databases: Record<string, unknown> }>> => {
     const response = await apiClient.get('/blast/databases');
     return response.data;
   },
 
-  searchPublicDatabases: async (request: any): Promise<APIResponse<any>> => {
+  searchPublicDatabases: async (request: Record<string, unknown>): Promise<APIResponse<Record<string, unknown>>> => {
     const response = await apiClient.post('/blast/search/public', request);
     return response.data;
   },
 
-  searchInternalDatabase: async (request: any): Promise<APIResponse<any>> => {
+  searchInternalDatabase: async (request: Record<string, unknown>): Promise<APIResponse<Record<string, unknown>>> => {
     const response = await apiClient.post('/blast/search/internal', request);
     return response.data;
   },
 
-  analyzeAntibodySequence: async (request: any): Promise<APIResponse<any>> => {
+  analyzeAntibodySequence: async (request: Record<string, unknown>): Promise<APIResponse<Record<string, unknown>>> => {
     const response = await apiClient.post('/blast/search/antibody', request);
     return response.data;
   },
@@ -129,7 +129,7 @@ export const api = {
     return response.data;
   },
 
-  uploadSequencesForBlast: async (data: FormData): Promise<APIResponse<any>> => {
+  uploadSequencesForBlast: async (data: FormData): Promise<APIResponse<Record<string, unknown>>> => {
     const response = await apiClient.post('/blast/upload', data, {
       headers: {
         'Content-Type': 'multipart/form-data',
