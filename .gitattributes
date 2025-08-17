@@ -13,7 +13,6 @@ data/blast/*.pni filter=lfs diff=lfs merge=lfs -text
 data/blast/*.pog filter=lfs diff=lfs merge=lfs -text
 data/blast/*.psd filter=lfs diff=lfs merge=lfs -text
 data/blast/*.psi filter=lfs diff=lfs merge=lfs -text
-data/blast/*.pog filter=lfs diff=lfs merge=lfs -text
 # IgBLAST database files
 data/igblast/*.tar.gz filter=lfs diff=lfs merge=lfs -text
 data/igblast/internal_data/** filter=lfs diff=lfs merge=lfs -text
@@ -80,3 +79,25 @@ data/blast/16S_ribosomal_RNA.not filter=lfs diff=lfs merge=lfs -text
 data/igblast/igblast_internal_data.tar.gz filter=lfs diff=lfs merge=lfs -text
 data/igblast/internal_data filter=lfs diff=lfs merge=lfs -text
 data/igblast/optional_file filter=lfs diff=lfs merge=lfs -text
+data/blast/*.nab filter=lfs diff=lfs merge=lfs -text
+data/blast/*.nac filter=lfs diff=lfs merge=lfs -text
+data/blast/*.nal filter=lfs diff=lfs merge=lfs -text
+data/blast/*.ndb filter=lfs diff=lfs merge=lfs -text
+data/blast/*.nnd filter=lfs diff=lfs merge=lfs -text
+data/blast/*.nni filter=lfs diff=lfs merge=lfs -text
+data/blast/*.nog filter=lfs diff=lfs merge=lfs -text
+data/blast/*.nos filter=lfs diff=lfs merge=lfs -text
+data/blast/*.not filter=lfs diff=lfs merge=lfs -text
+data/blast/*.ntf filter=lfs diff=lfs merge=lfs -text
+data/blast/*.nto filter=lfs diff=lfs merge=lfs -text
+data/blast/*.pdb filter=lfs diff=lfs merge=lfs -text
+data/blast/*.pjs filter=lfs diff=lfs merge=lfs -text
+data/blast/*.pos filter=lfs diff=lfs merge=lfs -text
+data/blast/*.pot filter=lfs diff=lfs merge=lfs -text
+data/blast/*.ppd filter=lfs diff=lfs merge=lfs -text
+data/blast/*.ppi filter=lfs diff=lfs merge=lfs -text
+data/blast/*.pto filter=lfs diff=lfs merge=lfs -text
+data/blast/*.ptf filter=lfs diff=lfs merge=lfs -text
+data/blast/*.btd filter=lfs diff=lfs merge=lfs -text
+data/blast/*.bti filter=lfs diff=lfs merge=lfs -text
+data/blast/*.sqlite3 filter=lfs diff=lfs merge=lfs -text

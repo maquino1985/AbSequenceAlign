@@ -23,6 +23,7 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  Link,
 } from '@mui/material';
 import {
   ExpandMore,
@@ -319,7 +320,28 @@ const SimpleEnhancedBlastResults: React.FC<SimpleEnhancedBlastResultsProps> = ({
           title={
             <Box display="flex" alignItems="center" gap={1}>
               <Typography variant="h6">
-                {hit.subject_id || hit.query_id}
+                {hit.subject_url ? (
+                  <Link
+                    href={hit.subject_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{ 
+                      color: 'primary.main', 
+                      textDecoration: 'underline',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      '&:hover': { 
+                        color: 'primary.dark',
+                        textDecoration: 'underline',
+                        textDecorationThickness: '2px'
+                      }
+                    }}
+                  >
+                    {hit.subject_id || hit.query_id}
+                  </Link>
+                ) : (
+                  hit.subject_id || hit.query_id
+                )}
               </Typography>
               {hit.productive && (
                 <Chip
@@ -550,7 +572,28 @@ const SimpleEnhancedBlastResults: React.FC<SimpleEnhancedBlastResultsProps> = ({
                         <Card>
                           <CardContent>
                             <Typography variant="h6" gutterBottom>
-                              Hit #{selectedHitForAnalysis + 1}: {hit.subject_id}
+                              Hit #{selectedHitForAnalysis + 1}: {hit.subject_url ? (
+                                <Link
+                                  href={hit.subject_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  sx={{ 
+                                    color: 'primary.main', 
+                                    textDecoration: 'underline',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    '&:hover': { 
+                                      color: 'primary.dark',
+                                      textDecoration: 'underline',
+                                      textDecorationThickness: '2px'
+                                    }
+                                  }}
+                                >
+                                  {hit.subject_id}
+                                </Link>
+                              ) : (
+                                hit.subject_id
+                              )}
                             </Typography>
                             <Typography variant="body2">
                               Identity: {hit.identity.toFixed(1)}% | 

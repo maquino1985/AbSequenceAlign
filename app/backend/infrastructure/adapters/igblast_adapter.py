@@ -295,6 +295,53 @@ class IgBlastAdapter(BaseExternalToolAdapter):
 
         return command
 
+    def _get_igblast_subject_url(self, subject_id: str) -> str:
+        """
+        Generate a URL to the source database entry for IgBLAST gene assignments.
+
+        Args:
+            subject_id: The gene name from IgBLAST results (e.g., "IGHV3-9*01")
+
+        Returns:
+            URL to the source database entry
+        """
+        if not subject_id:
+            return ""
+
+        # Handle IMGT gene names (most common for IgBLAST)
+        if subject_id.startswith(
+            (
+                "IGHV",
+                "IGHD",
+                "IGHJ",
+                "IGHC",
+                "IGKV",
+                "IGKJ",
+                "IGKC",
+                "IGLV",
+                "IGLJ",
+                "IGLC",
+            )
+        ):
+            # Extract the gene family and number
+            # e.g., "IGHV3-9*01" -> "IGHV3-9"
+            gene_family = subject_id.split("*")[0]
+            return f"https://www.imgt.org/IMGTrepertoire/Proteins/protein.php?species=Homo%20sapiens&group=IGH&receptor_type=IGH&type=V&prototype={gene_family}"
+
+        # Handle other gene naming conventions
+        elif subject_id.startswith(
+            ("TRBV", "TRBD", "TRBJ", "TRBC", "TRAV", "TRAJ", "TRAC")
+        ):
+            # T-cell receptor genes
+            gene_family = subject_id.split("*")[0]
+            return f"https://www.imgt.org/IMGTrepertoire/Proteins/protein.php?species=Homo%20sapiens&group=TR&receptor_type=TR&type=V&prototype={gene_family}"
+
+        # Default fallback - search IMGT database
+        else:
+            return f"https://www.imgt.org/IMGTrepertoire/Proteins/protein.php?species=Homo%20sapiens&group=IGH&receptor_type=IGH&type=V&prototype={subject_id}"
+
+        return ""
+
     def _parse_output(self, output: str, **kwargs) -> Dict[str, Any]:
         """Parse IgBLAST output"""
         blast_type = kwargs.get("blast_type", "igblastn")
@@ -438,6 +485,9 @@ class IgBlastAdapter(BaseExternalToolAdapter):
         return {
             "query_id": rearrangement.sequence_id,
             "subject_id": rearrangement.v_call or "",
+            "subject_url": self._get_igblast_subject_url(
+                rearrangement.v_call or ""
+            ),
             "identity": (
                 rearrangement.v_alignment.identity
                 if rearrangement.v_alignment

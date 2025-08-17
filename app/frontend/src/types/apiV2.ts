@@ -111,6 +111,12 @@ export interface BlastHit {
   subject_end: number;
   evalue: number;
   bit_score: number;
+  // Sequence alignment fields
+  query_alignment?: string;
+  subject_alignment?: string;
+  blast_type?: string;
+  // Source URL for the subject
+  subject_url?: string;
 }
 
 export interface BlastQueryInfo {

@@ -15,6 +15,7 @@ import {
   AccordionDetails,
   Card,
   CardContent,
+  Link,
 } from '@mui/material';
 import { ExpandMore, Biotech, Search } from '@mui/icons-material';
 import type { BlastSearchResponse, IgBlastSearchResponse } from '../../../types/apiV2';
@@ -99,7 +100,30 @@ const BlastResults: React.FC<BlastResultsProps> = ({ results, searchType }) => {
               <TableBody>
                 {hits.map((hit, index: number) => (
                   <TableRow key={index}>
-                    <TableCell>{hit.subject_id}</TableCell>
+                    <TableCell>
+                      {hit.subject_url ? (
+                        <Link
+                          href={hit.subject_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          sx={{ 
+                            color: 'primary.main', 
+                            textDecoration: 'underline',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            '&:hover': { 
+                              color: 'primary.dark',
+                              textDecoration: 'underline',
+                              textDecorationThickness: '2px'
+                            }
+                          }}
+                        >
+                          {hit.subject_id}
+                        </Link>
+                      ) : (
+                        hit.subject_id
+                      )}
+                    </TableCell>
                     <TableCell>{hit.identity?.toFixed(1)}</TableCell>
                     <TableCell>{hit.alignment_length}</TableCell>
                     <TableCell>{formatEvalue(hit.evalue)}</TableCell>
@@ -255,7 +279,30 @@ const BlastResults: React.FC<BlastResultsProps> = ({ results, searchType }) => {
                   <TableBody>
                     {hits.map((hit, index: number) => (
                       <TableRow key={index}>
-                        <TableCell>{hit.subject_id}</TableCell>
+                        <TableCell>
+                          {hit.subject_url ? (
+                            <Link
+                              href={hit.subject_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              sx={{ 
+                                color: 'primary.main', 
+                                textDecoration: 'underline',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                '&:hover': { 
+                                  color: 'primary.dark',
+                                  textDecoration: 'underline',
+                                  textDecorationThickness: '2px'
+                                }
+                              }}
+                            >
+                              {hit.subject_id}
+                            </Link>
+                          ) : (
+                            hit.subject_id
+                          )}
+                        </TableCell>
                         <TableCell>{hit.identity.toFixed(1)}</TableCell>
                         <TableCell>{hit.v_gene || 'N/A'}</TableCell>
                         <TableCell>{hit.d_gene || 'N/A'}</TableCell>

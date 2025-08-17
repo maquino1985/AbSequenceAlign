@@ -102,23 +102,14 @@ class BlastAdapter(BaseExternalToolAdapter):
 
         # Build base command
         if self.executable_path == "docker":
-            # Use absolute paths for Docker volume mounting
+            # Use the existing BLAST container
             abs_query_file = os.path.abspath(query_file)
             work_dir = os.path.dirname(abs_query_file)
 
             command = [
                 "docker",
-                "run",
-                "--rm",
-                "--platform",
-                "linux/amd64",
-                "-v",
-                f"{work_dir}:/work",
-                "-v",
-                f"{BLAST_DB_DIR.resolve()}:/blast/blastdb:ro",
-                "-w",
-                "/work",
-                "ncbi/blast:latest",
+                "exec",
+                "absequencealign-blast",
                 blast_type,
             ]
         else:
@@ -126,11 +117,53 @@ class BlastAdapter(BaseExternalToolAdapter):
 
         # Add required parameters
         if self.executable_path == "docker":
-            command.extend(["-query", os.path.basename(abs_query_file)])
-            command.extend(["-db", database])
+            # Create a temporary file in the container
+            temp_file = f"/tmp/query_{os.getpid()}.fasta"
+
+            # Build the BLAST command with proper database path
+            db_path = self._get_database_path(database)
+            blast_cmd = f"{blast_type} -query {temp_file} -db {db_path}"
+
+            # Add optional parameters
+            if "evalue" in kwargs:
+                blast_cmd += f" -evalue {kwargs['evalue']}"
+            if "max_target_seqs" in kwargs:
+                blast_cmd += f" -max_target_seqs {kwargs['max_target_seqs']}"
+            if "outfmt" in kwargs:
+                blast_cmd += f" -outfmt '{kwargs['outfmt']}'"
+            else:
+                blast_cmd += " -outfmt '6 sseqid qseq sseq qcovs pident evalue bitscore'"
+
+            # Add additional parameters
+            for key, value in kwargs.items():
+                if key not in [
+                    "blast_type",
+                    "query_sequence",
+                    "database",
+                    "evalue",
+                    "max_target_seqs",
+                    "outfmt",
+                ]:
+                    if isinstance(value, bool):
+                        if value:
+                            blast_cmd += f" -{key}"
+                    else:
+                        blast_cmd += f" -{key} {value}"
+
+            # Create the query file in the container and run BLAST
+            command = [
+                "docker",
+                "exec",
+                "absequencealign-blast",
+                "bash",
+                "-c",
+                f"echo -e '>query\\n{query_sequence}' > {temp_file} && {blast_cmd} && rm {temp_file}",
+            ]
+            return command
         else:
             command.extend(["-query", query_file])
-            command.extend(["-db", database])
+            db_path = self._get_database_path(database)
+            command.extend(["-db", db_path])
 
         # Add optional parameters
         if "evalue" in kwargs:
@@ -142,8 +175,10 @@ class BlastAdapter(BaseExternalToolAdapter):
         if "outfmt" in kwargs:
             command.extend(["-outfmt", str(kwargs["outfmt"])])
         else:
-            # Default to tabular format
-            command.extend(["-outfmt", "6"])
+            # Default to tabular format with all fields plus sequence alignments
+            command.extend(
+                ["-outfmt", "6 sseqid qseq sseq qcovs pident evalue bitscore"]
+            )
 
         # Add additional parameters
         for key, value in kwargs.items():
@@ -163,18 +198,36 @@ class BlastAdapter(BaseExternalToolAdapter):
 
         return command
 
+    def _get_database_path(self, database: str) -> str:
+        """
+        Get the proper database path for the given database name.
+
+        Args:
+            database: The database name
+
+        Returns:
+            The full path to the database
+        """
+        if self.executable_path == "docker":
+            # In Docker container, databases are mounted at /blast/blastdb
+            return f"/blast/blastdb/{database}"
+        else:
+            # For local execution, use the BLAST_DB_DIR
+            return str(BLAST_DB_DIR / database)
+
     def _parse_output(self, output: str, **kwargs) -> Dict[str, Any]:
         """Parse BLAST output"""
         blast_type = kwargs.get("blast_type", "blastp")
         outfmt = kwargs.get("outfmt", "6")
+        database = kwargs.get("database", "")
 
         if outfmt == "6":
-            return self._parse_tabular_output(output, blast_type)
+            return self._parse_tabular_output(output, blast_type, database)
         else:
             return self._parse_standard_output(output, blast_type)
 
     def _parse_tabular_output(
-        self, output: str, blast_type: str
+        self, output: str, blast_type: str, database: str = ""
     ) -> Dict[str, Any]:
         """Parse tabular BLAST output (outfmt 6)"""
         lines = output.strip().split("\n")
@@ -200,7 +253,60 @@ class BlastAdapter(BaseExternalToolAdapter):
                 continue
 
             fields = line.split("\t")
-            if len(fields) >= 12:  # Standard tabular format has 12+ fields
+
+            # Handle different output formats
+            if len(fields) == 2:
+                # outfmt 6 qseq sseq - just query and subject alignments
+                hit = {
+                    "query_id": "query",
+                    "subject_id": f"hit_{len(hits) + 1}",
+                    "identity": 0.0,  # Not available in this format
+                    "alignment_length": len(fields[0]),
+                    "mismatches": 0,  # Not available in this format
+                    "gap_opens": 0,  # Not available in this format
+                    "query_start": 1,
+                    "query_end": len(fields[0]),
+                    "subject_start": 1,
+                    "subject_end": len(fields[1]),
+                    "evalue": 0.0,  # Not available in this format
+                    "bit_score": 0.0,  # Not available in this format
+                    "query_alignment": fields[0],
+                    "subject_alignment": fields[1],
+                }
+
+                # Add source URL for the subject
+                hit["subject_url"] = self._get_subject_url(
+                    hit["subject_id"], database
+                )
+
+                hits.append(hit)
+            elif len(fields) == 7:
+                # outfmt 6 sseqid qseq sseq qcovs pident evalue bitscore
+                hit = {
+                    "query_id": "query",
+                    "subject_id": fields[0],  # sseqid field
+                    "identity": float(fields[4]),  # pident field
+                    "alignment_length": len(fields[1]),
+                    "mismatches": 0,  # Not available in this format
+                    "gap_opens": 0,  # Not available in this format
+                    "query_start": 1,
+                    "query_end": len(fields[1]),
+                    "subject_start": 1,
+                    "subject_end": len(fields[2]),
+                    "evalue": float(fields[5]),  # evalue field
+                    "bit_score": float(fields[6]),  # bitscore field
+                    "query_alignment": fields[1],  # qseq field
+                    "subject_alignment": fields[2],  # sseq field
+                }
+
+                # Add source URL for the subject
+                hit["subject_url"] = self._get_subject_url(
+                    hit["subject_id"], database
+                )
+
+                hits.append(hit)
+            elif len(fields) >= 12:
+                # Standard tabular format has 12+ fields
                 hit = {
                     "query_id": fields[0],
                     "subject_id": fields[1],
@@ -216,9 +322,18 @@ class BlastAdapter(BaseExternalToolAdapter):
                     "bit_score": float(fields[11]),
                 }
 
+                # Add sequence alignments if present (fields 13-14)
+                if len(fields) >= 14:
+                    hit["query_alignment"] = fields[12]
+                    hit["subject_alignment"] = fields[13]
                 # Add additional fields if present
-                if len(fields) > 12:
+                elif len(fields) > 12:
                     hit["subject_def"] = fields[12]
+
+                # Add source URL for the subject
+                hit["subject_url"] = self._get_subject_url(
+                    hit["subject_id"], database
+                )
 
                 hits.append(hit)
 
@@ -280,6 +395,72 @@ class BlastAdapter(BaseExternalToolAdapter):
         ) as f:
             f.write(f">query\n{clean_sequence}\n")
             return f.name
+
+    def _get_subject_url(self, subject_id: str, database: str) -> str:
+        """
+        Generate a URL to the source database entry for the given subject ID.
+
+        Args:
+            subject_id: The subject ID from BLAST results
+            database: The database name used for the search
+
+        Returns:
+            URL to the source database entry
+        """
+        # Handle Swiss-Prot entries
+        if subject_id.startswith("sp|"):
+            # Extract the accession number (e.g., "Q9X1T8.1" from "sp|Q9X1T8.1|")
+            parts = subject_id.split("|")
+            if len(parts) >= 2:
+                accession = parts[1]
+                return f"https://www.uniprot.org/uniprot/{accession}"
+
+        # Handle PDB entries
+        elif subject_id.startswith("pdb|"):
+            # Extract the PDB ID (e.g., "1ABC" from "pdb|1ABC|")
+            parts = subject_id.split("|")
+            if len(parts) >= 2:
+                pdb_id = parts[1]
+                return f"https://www.rcsb.org/structure/{pdb_id}"
+
+        # Handle RefSeq entries
+        elif subject_id.startswith("ref|"):
+            # Extract the RefSeq ID
+            parts = subject_id.split("|")
+            if len(parts) >= 2:
+                refseq_id = parts[1]
+                return f"https://www.ncbi.nlm.nih.gov/nuccore/{refseq_id}"
+
+        # Handle GenBank entries
+        elif subject_id.startswith("gb|"):
+            # Extract the GenBank ID
+            parts = subject_id.split("|")
+            if len(parts) >= 2:
+                genbank_id = parts[1]
+                return f"https://www.ncbi.nlm.nih.gov/nuccore/{genbank_id}"
+
+        # Handle EMBL entries
+        elif subject_id.startswith("emb|"):
+            # Extract the EMBL ID
+            parts = subject_id.split("|")
+            if len(parts) >= 2:
+                embl_id = parts[1]
+                return f"https://www.ebi.ac.uk/ena/browser/view/{embl_id}"
+
+        # Handle generic database entries
+        else:
+            # For other databases, try to construct a generic URL
+            if database.lower() in ["swissprot", "uniprot"]:
+                return f"https://www.uniprot.org/uniprot/{subject_id}"
+            elif database.lower() in ["pdbaa", "pdb"]:
+                return f"https://www.rcsb.org/structure/{subject_id}"
+            elif database.lower() in ["nr", "nt"]:
+                return f"https://www.ncbi.nlm.nih.gov/nuccore/{subject_id}"
+            elif database.lower() in ["16s_ribosomal_rna"]:
+                return f"https://www.ncbi.nlm.nih.gov/nuccore/{subject_id}"
+
+        # Default fallback
+        return ""
 
     def _create_blast_database(
         self, fasta_file: str, database_name: str

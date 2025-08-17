@@ -21,6 +21,7 @@ import {
   IconButton,
   Alert,
   LinearProgress,
+  Link,
 } from '@mui/material';
 import {
   Science,
@@ -202,7 +203,28 @@ const AdvancedBlastAnalysis: React.FC<AdvancedBlastAnalysisProps> = ({
               <TableRow>
                 <TableCell>
                   <Typography variant="body2" fontWeight="bold" color="secondary">
-                    Subject ({hit.subject_id})
+                    Subject ({hit.subject_url ? (
+                      <Link
+                        href={hit.subject_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ 
+                          color: 'primary.main', 
+                          textDecoration: 'underline',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          '&:hover': { 
+                            color: 'primary.dark',
+                            textDecoration: 'underline',
+                            textDecorationThickness: '2px'
+                          }
+                        }}
+                      >
+                        {hit.subject_id}
+                      </Link>
+                    ) : (
+                      hit.subject_id
+                    )})
                   </Typography>
                 </TableCell>
                 <TableCell>{hit.subject_start}</TableCell>
@@ -336,43 +358,62 @@ const AdvancedBlastAnalysis: React.FC<AdvancedBlastAnalysisProps> = ({
   };
 
   const renderSequenceComparison = () => {
-    // Generate a simulated alignment based on BLAST statistics
-    const generateSimulatedAlignment = () => {
-      const queryLength = hit.query_end - hit.query_start + 1;
-      const subjectLength = hit.subject_end - hit.subject_start + 1;
-      const alignmentLength = hit.alignment_length;
-      const mismatches = hit.mismatches;
-      const matches = alignmentLength - mismatches;
-      
-      // Create simulated sequences
-      let querySeq = '';
-      let subjectSeq = '';
-      
-      // Add aligned region
-      for (let i = 0; i < alignmentLength; i++) {
-        if (i < matches) {
-          // Matching positions
-          querySeq += 'A';
-          subjectSeq += 'A';
-        } else {
-          // Mismatching positions
-          querySeq += 'A';
-          subjectSeq += 'T';
+    // Check if we have actual alignment data
+    const hasActualAlignment = hit.query_alignment && hit.subject_alignment;
+    
+    // Generate alignment data
+    const getAlignmentData = () => {
+      if (hasActualAlignment) {
+        // Use actual alignment data from BLAST
+        return {
+          querySeq: hit.query_alignment!,
+          subjectSeq: hit.subject_alignment!,
+          isAminoAcid: hit.blast_type === 'blastp' || hit.blast_type === 'blastx',
+          title: `BLAST Alignment (${hit.identity.toFixed(1)}% identity)`
+        };
+      } else {
+        // Generate simulated alignment based on BLAST statistics
+        const queryLength = hit.query_end - hit.query_start + 1;
+        const subjectLength = hit.subject_end - hit.subject_start + 1;
+        const alignmentLength = hit.alignment_length;
+        const mismatches = hit.mismatches;
+        const matches = alignmentLength - mismatches;
+        
+        // Create simulated sequences
+        let querySeq = '';
+        let subjectSeq = '';
+        
+        // Add aligned region
+        for (let i = 0; i < alignmentLength; i++) {
+          if (i < matches) {
+            // Matching positions
+            querySeq += 'A';
+            subjectSeq += 'A';
+          } else {
+            // Mismatching positions
+            querySeq += 'A';
+            subjectSeq += 'T';
+          }
         }
+        
+        // Add gaps if needed
+        if (queryLength > alignmentLength) {
+          querySeq += '-'.repeat(queryLength - alignmentLength);
+        }
+        if (subjectLength > alignmentLength) {
+          subjectSeq += '-'.repeat(subjectLength - alignmentLength);
+        }
+        
+        return {
+          querySeq,
+          subjectSeq,
+          isAminoAcid: false,
+          title: `Simulated Alignment (${hit.identity.toFixed(1)}% identity)`
+        };
       }
-      
-      // Add gaps if needed
-      if (queryLength > alignmentLength) {
-        querySeq += '-'.repeat(queryLength - alignmentLength);
-      }
-      if (subjectLength > alignmentLength) {
-        subjectSeq += '-'.repeat(subjectLength - alignmentLength);
-      }
-      
-      return { querySeq, subjectSeq };
     };
 
-    const alignment = generateSimulatedAlignment();
+    const alignment = getAlignmentData();
 
     return (
       <Box>
@@ -381,14 +422,14 @@ const AdvancedBlastAnalysis: React.FC<AdvancedBlastAnalysisProps> = ({
         </Typography>
         
         <Stack spacing={3}>
-          {/* Simulated Alignment Display */}
+          {/* Alignment Display */}
           <SequenceAlignmentDisplay
             querySequence={alignment.querySeq}
             subjectSequence={alignment.subjectSeq}
             queryStart={hit.query_start}
             subjectStart={hit.subject_start}
-            isAminoAcid={false}
-            title={`Simulated Alignment (${hit.identity.toFixed(1)}% identity)`}
+            isAminoAcid={alignment.isAminoAcid}
+            title={alignment.title}
           />
 
           <Card elevation={1}>
@@ -404,7 +445,28 @@ const AdvancedBlastAnalysis: React.FC<AdvancedBlastAnalysisProps> = ({
                 <Box display="flex" justifyContent="space-between">
                   <Typography variant="body2" color="textSecondary">Subject Sequence:</Typography>
                   <Typography variant="body2" fontFamily="monospace" fontWeight="bold">
-                    {hit.subject_id}
+                    {hit.subject_url ? (
+                      <Link
+                        href={hit.subject_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ 
+                          color: 'primary.main', 
+                          textDecoration: 'underline',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          '&:hover': { 
+                            color: 'primary.dark',
+                            textDecoration: 'underline',
+                            textDecorationThickness: '2px'
+                          }
+                        }}
+                      >
+                        {hit.subject_id}
+                      </Link>
+                    ) : (
+                      hit.subject_id
+                    )}
                   </Typography>
                 </Box>
                 <Box display="flex" justifyContent="space-between">
