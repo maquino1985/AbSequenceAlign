@@ -128,7 +128,13 @@ export const MSAViewerTool: React.FC = () => {
         pollCount++;
         
         // Stop polling after max attempts
-        if (pollCount > maxPolls) {
+
+    const pollJobStatus = async () => {
+      try {
+        pollCount++;
+        
+        // Stop polling after max attempts
+        if (pollCount > POLL_TIMEOUT_COUNT) {
           setMsaState(prev => ({
             ...prev,
             error: 'Job polling timeout. The job may still be processing. Please try refreshing the page.',
