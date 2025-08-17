@@ -16,6 +16,28 @@ env:
   FRONTEND_IMAGE_NAME: absequencealign-frontend
 
 jobs:
+- name: Show workflow token scopes (what Actions actually has)
+  uses: actions/github-script@v7
+  with:
+    script: |
+      const r = await github.request('GET /repos/{owner}/{repo}/actions/permissions/workflow', {
+        owner: context.repo.owner, repo: context.repo.repo
+      });
+      console.log('workflow_permissions:', r.data);
+
+- name: Identify PAT owner (must match docker/npm login user)
+  env:
+    TOKEN: ${{ secrets.PACKAGES_PAT }}
+  run: |
+    curl -sH "Authorization: Bearer $TOKEN" https://api.github.com/user | jq -r '.login,.type'
+
+- name: Echo target image path (OWNER must be correct)
+  run: |
+    echo "repo_owner=${{ github.repository_owner }}"
+    echo "actor=${{ github.actor }}"
+    IMAGE_OWNER=${{ github.repository_owner }}
+    IMAGE="ghcr.io/${IMAGE_OWNER}/my-image:$(git rev-parse --short HEAD)"
+    echo "pushing -> $IMAGE"
   # Backend Tests
   backend-tests:
     runs-on: ubuntu-latest
