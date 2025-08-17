@@ -1,0 +1,82 @@
+name: PR E2E (no-push)
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Run E2E on PR (no GHCR)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Backend env
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          activate-environment: AbSequenceAlign
+          environment-file: environment.yml
+          python-version: 3.11
+          auto-activate-base: false
+
+      - name: Backend deps
+        shell: bash -l {0}
+        run: |
+          conda activate AbSequenceAlign
+          pip install asyncpg==0.29.0 psycopg2-binary==2.9.9
+          pip install git+https://github.com/oxpig/ANARCI.git
+
+      - name: Start backend
+        shell: bash -l {0}
+        run: |
+          set -euo pipefail
+          conda activate AbSequenceAlign
+          cd app/backend
+          PYTHONPATH="$(pwd)/.." python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 &
+          sleep 10
+          curl -f http://localhost:8000/health
+
+      # Frontend build + serve (no docker push)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+          cache: 'npm'
+          cache-dependency-path: app/frontend/package-lock.json
+
+      - name: Install + build frontend
+        run: |
+          cd app/frontend
+          npm ci
+          npm run build
+
+      - name: Serve with nginx (prod-like)
+        run: |
+          cd app/frontend
+          docker run -d --name frontend-nginx \
+            -v $(pwd)/dist:/usr/share/nginx/html:ro \
+            -v $(pwd)/nginx.ci.conf:/etc/nginx/conf.d/default.conf:ro \
+            -p 5679:80 nginx:alpine
+          sleep 10
+          curl -f http://localhost:5679
+
+      - name: Run Cypress E2E
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: app/frontend
+          spec: |
+            cypress/e2e/0-health-check.cy.ts,
+            cypress/e2e/1-scfv-annotation.cy.ts,
+            cypress/e2e/2-igG-dvdi-tcr.cy.ts,
+            cypress/e2e/quick-ui-test.cy.ts
+          config: baseUrl=http://localhost:5679,defaultCommandTimeout=10000,requestTimeout=15000,responseTimeout=15000
+          wait-on: 'http://localhost:5679'
+          wait-on-timeout: 120
+
+      - name: Cleanup nginx
+        if: always()
+        run: |
+          docker rm -f frontend-nginx || true
