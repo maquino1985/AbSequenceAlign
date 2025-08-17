@@ -1,7 +1,9 @@
 name: CI/CD Pipeline
+
 permissions:
   contents: read
   packages: write
+
 on:
   push:
     branches: [ main, develop ]
@@ -14,29 +16,12 @@ env:
   REGISTRY: ghcr.io
   BACKEND_IMAGE_NAME: absequencealign-backend
   FRONTEND_IMAGE_NAME: absequencealign-frontend
+  # Set USE_PAT: 'true' if you want to force PAT login for pushes
+  USE_PAT: 'false'
+  # If USE_PAT is 'true', set secrets: PACKAGES_PAT and PAT_USERNAME
+  # PAT_USERNAME must be the username of the PAT owner
 
 jobs:
-- name: Show workflow token scopes (what Actions actually has)
-  uses: actions/github-script@v7
-  with:
-    script: |
-      const r = await github.request('GET /repos/{owner}/{repo}/actions/permissions/workflow', {
-        owner: context.repo.owner, repo: context.repo.repo
-      });
-      console.log('workflow_permissions:', r.data);
-
-- name: Identify PAT owner (must match docker/npm login user)
-  env:
-    TOKEN: ${{ secrets.PACKAGES_PAT }}
-  run: |
-    curl -sH "Authorization: Bearer $TOKEN" https://api.github.com/user | jq -r '.login,.type'
-
-- name: Echo target image path (OWNER must be correct)
-  run: |
-    echo "repo_owner=${{ github.repository_owner }}"
-    echo "actor=${{ github.actor }}"
-    IMAGE_OWNER=${{ github.repository_owner }}
-    IMAGE="ghcr.io/${IMAGE_OWNER}/my-image:$(git rev-parse --short HEAD)"
   pre-checks:
     name: Pre-checks
     runs-on: ubuntu-latest
@@ -51,9 +36,11 @@ jobs:
             console.log('workflow_permissions:', r.data);
 
       - name: Identify PAT owner (must match docker/npm login user)
+        if: env.USE_PAT == 'true'
         env:
           TOKEN: ${{ secrets.PACKAGES_PAT }}
         run: |
+          sudo apt-get update -y && sudo apt-get install -y jq >/dev/null
           curl -sH "Authorization: Bearer $TOKEN" https://api.github.com/user | jq -r '.login,.type'
 
       - name: Echo target image path (OWNER must be correct)
@@ -61,9 +48,9 @@ jobs:
           echo "repo_owner=${{ github.repository_owner }}"
           echo "actor=${{ github.actor }}"
           IMAGE_OWNER=${{ github.repository_owner }}
-          IMAGE="ghcr.io/${IMAGE_OWNER}/my-image:$(git rev-parse --short HEAD)"
+          IMAGE="ghcr.io/${IMAGE_OWNER}/my-image:$(git rev-parse --short HEAD || echo HEAD)"
           echo "pushing -> $IMAGE"
-  # Backend Tests
+
   backend-tests:
     runs-on: ubuntu-latest
     steps:
@@ -85,9 +72,6 @@ jobs:
           conda activate AbSequenceAlign
           pip install asyncpg==0.29.0 psycopg2-binary==2.9.9
           pip install git+https://github.com/oxpig/ANARCI.git
-
-      # Note: Docker base images are not needed for backend tests
-      # They are only needed for Docker tests and E2E tests
 
       - name: Run backend tests
         shell: bash -l {0}
@@ -118,7 +102,6 @@ jobs:
           flags: backend
           name: backend-coverage
 
-  # Frontend Tests
   frontend-tests:
     runs-on: ubuntu-latest
     steps:
@@ -157,7 +140,6 @@ jobs:
           cd app/frontend
           npm run build
 
-  # Docker Tests
   docker-tests:
     runs-on: ubuntu-latest
     needs: [backend-tests, frontend-tests]
@@ -168,6 +150,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Login for building/pushing test images (use GITHUB_TOKEN)
       - name: Log in to Container Registry
         uses: docker/login-action@v3
         with:
@@ -177,10 +160,7 @@ jobs:
 
       - name: Build and tag base images
         run: |
-          # Build base images for AMD64 (production target)
           ./scripts/build-base-images.sh
-          
-          # Tag base images for testing (but don't push)
           docker tag absequencealign-backend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
           docker tag absequencealign-frontend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
 
@@ -212,11 +192,10 @@ jobs:
             -f ./app/frontend/Dockerfile.e2e \
             -t test-frontend-e2e ./app/frontend
 
-  # Build PR Base Images (for E2E tests on PRs)
   build-pr-base-images:
     runs-on: ubuntu-latest
     needs: [docker-tests]
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -233,16 +212,12 @@ jobs:
 
       - name: Build and push PR base images
         run: |
-          # Build base images for AMD64 (production target)
           ./scripts/build-base-images.sh
-          
-          # Tag and push PR-specific base images to GitHub Container Registry
           docker tag absequencealign-backend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:pr-${{ github.event.number }}
           docker tag absequencealign-frontend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:pr-${{ github.event.number }}
           docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:pr-${{ github.event.number }}
           docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:pr-${{ github.event.number }}
 
-  # Push Base Images (only on non-PR events)
   push-base-images:
     runs-on: ubuntu-latest
     needs: [docker-tests]
@@ -254,7 +229,17 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Container Registry
+      # Login with PAT if requested (cross-org or strict org policies), else GITHUB_TOKEN
+      - name: Log in to Container Registry (PAT)
+        if: env.USE_PAT == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.PAT_USERNAME }}
+          password: ${{ secrets.PACKAGES_PAT }}
+
+      - name: Log in to Container Registry (GITHUB_TOKEN)
+        if: env.USE_PAT != 'true'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -263,28 +248,22 @@ jobs:
 
       - name: Build and push base images
         run: |
-          # Build base images for AMD64 (production target)
           ./scripts/build-base-images.sh
-          
-          # Tag and push base images to GitHub Container Registry
           docker tag absequencealign-backend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
           docker tag absequencealign-frontend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
           docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
           docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
 
-  # E2E Tests - Parallel
   e2e-tests:
     runs-on: ubuntu-latest
     needs: [backend-tests, frontend-tests, docker-tests]
     strategy:
       matrix:
-        # Split Cypress tests into parallel jobs
-        spec: [
-          'cypress/e2e/0-health-check.cy.ts',
-          'cypress/e2e/1-scfv-annotation.cy.ts',
-          'cypress/e2e/2-igG-dvdi-tcr.cy.ts',
-          'cypress/e2e/quick-ui-test.cy.ts'
-        ]
+        spec:
+          - 'cypress/e2e/0-health-check.cy.ts'
+          - 'cypress/e2e/1-scfv-annotation.cy.ts'
+          - 'cypress/e2e/2-igG-dvdi-tcr.cy.ts'
+          - 'cypress/e2e/quick-ui-test.cy.ts'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -334,30 +313,16 @@ jobs:
       - name: Start frontend with Nginx (production-like)
         run: |
           cd app/frontend
-          # Verify build output exists
-          echo "Checking build output..."
           ls -la dist/
-          
-          # Verify nginx config exists
-          echo "Checking nginx config..."
           ls -la nginx.ci.conf
-          
-          # Use a simple nginx container to serve the built assets
           docker run -d --name frontend-nginx \
             -v $(pwd)/dist:/usr/share/nginx/html:ro \
             -v $(pwd)/nginx.ci.conf:/etc/nginx/conf.d/default.conf:ro \
             -p 5679:80 \
             nginx:alpine
-          
-          # Check if container is running
-          echo "Checking container status..."
-          docker ps -a
-          docker logs frontend-nginx
-          
           sleep 10
-          
-          # Test connection with more verbose output
-          echo "Testing connection..."
+          docker ps -a
+          docker logs frontend-nginx || true
           curl -v http://localhost:5679 || echo "Connection failed"
 
       - name: Run Cypress tests
@@ -369,30 +334,12 @@ jobs:
           wait-on: 'http://localhost:5679'
           wait-on-timeout: 120
 
-      # Screenshots and videos disabled for faster CI/CD
-      # - name: Upload screenshots
-      #   uses: actions/upload-artifact@v4
-      #   if: failure()
-      #   with:
-      #     name: cypress-screenshots-${{ matrix.spec }}
-      #     path: app/frontend/cypress/screenshots
-      #     if-no-files-found: ignore
-
-      # - name: Upload videos
-      #   uses: actions/upload-artifact@v4
-      #   if: always()
-      #   with:
-      #     name: cypress-videos-${{ matrix.spec }}
-      #     path: app/frontend/cypress/videos
-      #     if-no-files-found: ignore
-
       - name: Cleanup frontend container
         if: always()
         run: |
           docker stop frontend-nginx || true
           docker rm frontend-nginx || true
 
-  # Security Scanning
   security-scan:
     runs-on: ubuntu-latest
     needs: [backend-tests, frontend-tests, docker-tests, e2e-tests]
@@ -414,7 +361,6 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
 
-  # Build and Push Docker Images
   build-and-push:
     runs-on: ubuntu-latest
     needs: [backend-tests, frontend-tests, docker-tests, e2e-tests, security-scan]
@@ -426,7 +372,16 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Container Registry
+      - name: Log in to Container Registry (PAT)
+        if: env.USE_PAT == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.PAT_USERNAME }}
+          password: ${{ secrets.PACKAGES_PAT }}
+
+      - name: Log in to Container Registry (GITHUB_TOKEN)
+        if: env.USE_PAT != 'true'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -473,6 +428,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./app/frontend
+          file: ./app/frontend/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.frontend-meta.outputs.tags }}
@@ -480,7 +436,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Deploy to Production (on release)
   deploy:
     runs-on: ubuntu-latest
     needs: [build-and-push]
@@ -494,26 +449,12 @@ jobs:
           echo "BACKEND_IMAGE=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.event.release.tag_name }}" >> $GITHUB_ENV
           echo "FRONTEND_IMAGE=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.event.release.tag_name }}" >> $GITHUB_ENV
 
-      # Add your deployment steps here
-      # Example for deploying to a server via SSH:
       - name: Deploy to production server
         run: |
           echo "🚀 Deployment would happen here"
           echo "Backend Image: ${{ env.BACKEND_IMAGE }}"
           echo "Frontend Image: ${{ env.FRONTEND_IMAGE }}"
-          # Example deployment commands:
-          # ssh user@server "docker-compose -f docker-compose.prod.yml pull"
-          # ssh user@server "docker-compose -f docker-compose.prod.yml up -d"
 
-      # Alternative: Deploy to cloud platforms
-      # - name: Deploy to AWS ECS
-      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-      #   with:
-      #     task-definition: task-definition.json
-      #     service: absequencealign-service
-      #     cluster: absequencealign-cluster
-
-  # Notification
   notify:
     runs-on: ubuntu-latest
     needs: [deploy]
