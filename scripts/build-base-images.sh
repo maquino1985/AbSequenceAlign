@@ -130,7 +130,7 @@ build_frontend_base() {
         # Store the new hash
         calculate_dependency_hash "app/frontend" > "$PROJECT_ROOT/app/frontend/.dependency-hash"
         
-        print_status "Frontend base image built successfully for AMD64!"
+        print_status "Frontend base image built successfully for $PLATFORM!"
     else
         print_status "Frontend base image is up to date."
     fi
