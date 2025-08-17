@@ -106,7 +106,7 @@ build_backend_base() {
         # Store the new hash
         calculate_dependency_hash "app/backend" > "$PROJECT_ROOT/app/backend/.dependency-hash"
         
-        print_status "Backend base image built successfully for AMD64!"
+        print_status "Backend base image built successfully for $PLATFORM!"
     else
         print_status "Backend base image is up to date."
     fi
