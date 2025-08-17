@@ -1,0 +1,40 @@
+# Git LFS configuration for large BLAST database files
+
+# BLAST database files
+data/blast/*.tar.gz filter=lfs diff=lfs merge=lfs -text
+data/blast/*.phr filter=lfs diff=lfs merge=lfs -text
+data/blast/*.pin filter=lfs diff=lfs merge=lfs -text
+data/blast/*.psq filter=lfs diff=lfs merge=lfs -text
+data/blast/*.nhr filter=lfs diff=lfs merge=lfs -text
+data/blast/*.nin filter=lfs diff=lfs merge=lfs -text
+data/blast/*.nsq filter=lfs diff=lfs merge=lfs -text
+data/blast/*.phd filter=lfs diff=lfs merge=lfs -text
+data/blast/*.pnd filter=lfs diff=lfs merge=lfs -text
+data/blast/*.pni filter=lfs diff=lfs merge=lfs -text
+data/blast/*.pog filter=lfs diff=lfs merge=lfs -text
+data/blast/*.psd filter=lfs diff=lfs merge=lfs -text
+data/blast/*.psi filter=lfs diff=lfs merge=lfs -text
+data/blast/*.pog filter=lfs diff=lfs merge=lfs -text
+
+# IgBLAST database files
+data/igblast/*.tar.gz filter=lfs diff=lfs merge=lfs -text
+data/igblast/internal_data/** filter=lfs diff=lfs merge=lfs -text
+data/igblast/optional_file/** filter=lfs diff=lfs merge=lfs -text
+
+# Large sequence files
+*.fasta filter=lfs diff=lfs merge=lfs -text
+*.fa filter=lfs diff=lfs merge=lfs -text
+*.fna filter=lfs diff=lfs merge=lfs -text
+*.faa filter=lfs diff=lfs merge=lfs -text
+
+# HMM files
+*.hmm filter=lfs diff=lfs merge=lfs -text
+*.h3f filter=lfs diff=lfs merge=lfs -text
+*.h3i filter=lfs diff=lfs merge=lfs -text
+*.h3m filter=lfs diff=lfs merge=lfs -text
+*.h3p filter=lfs diff=lfs merge=lfs -text
+
+# Large data files
+data/concatenated/*.hmm filter=lfs diff=lfs merge=lfs -text
+data/concatenated/*.h3* filter=lfs diff=lfs merge=lfs -text
+
