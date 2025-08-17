@@ -1,53 +1,37 @@
-name: CI/CD Pipeline
+name: GHCR Smoke Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]   # secrets only available for same-repo PRs
 
 permissions:
   contents: read
   packages: write
 
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
-  release:
-    types: [ published ]
-
 env:
   REGISTRY: ghcr.io
-  BACKEND_IMAGE_NAME: absequencealign-backend
-  FRONTEND_IMAGE_NAME: absequencealign-frontend
+  IMAGE_OWNER: ${{ secrets.PAT_USERNAME }}   # force pushes into PAT owner namespace
+  PKG_NAME: ghcr-auth-smoke
 
 jobs:
-  pre-checks:
-    name: Pre-checks
+  smoke:
     runs-on: ubuntu-latest
+    # allow PRs but block forks (no secrets there)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
     steps:
-      - name: Echo context
-        run: |
-          echo "repo_owner=${{ github.repository_owner }}"
-          echo "actor=${{ github.actor }}"
-          echo "event=${{ github.event_name }}"
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "fork?=${{ github.event.pull_request.head.repo.fork }}"
-          fi
+      - name: Checkout (tiny context only)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-      - name: Identify PAT owner (debug)
-        env:
-          TOKEN: ${{ secrets.CR_PAT }}
-        run: |
-          sudo apt-get update -y && sudo apt-get install -y jq >/dev/null
-          curl -sH "Authorization: Bearer $TOKEN" https://api.github.com/user | jq -r '["PAT login:", .login, "type:", .type] | @tsv'
-
-  auth-smoke:
-    name: GHCR auth smoke test
-    runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
-    steps:
       - name: Log in to GHCR with PAT
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ secrets.PAT_USERNAME }}
+          username: ${{ secrets.PAT_USERNAME }}   # e.g. "maquino1985"
           password: ${{ secrets.CR_PAT }}
 
       - name: Build tiny test image
@@ -56,405 +40,70 @@ jobs:
           FROM busybox:latest
           CMD ["echo","ok"]
           EOF
-          docker build -t ghcr.io/${{ secrets.PAT_USERNAME }}/ghcr-auth-smoke:run-${{ github.run_id }} .
+          docker build -t ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.PKG_NAME }}:local .
 
-      - name: Push tiny test image
+      - name: Tag & Push (latest, run, sha)
+        id: push
+        shell: bash
         run: |
-          docker push ghcr.io/${{ secrets.PAT_USERNAME }}/ghcr-auth-smoke:run-${{ github.run_id }}
+          set -euo pipefail
+          REPO="ghcr.io/${IMAGE_OWNER}/${PKG_NAME}"
+          TAG_LATEST="latest"
+          TAG_RUN="run-${GITHUB_RUN_ID}"
+          TAG_SHA="sha-${GITHUB_SHA:0:12}"
 
-  backend-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+          for TAG in "$TAG_LATEST" "$TAG_RUN" "$TAG_SHA"; do
+            echo "Tagging -> ${REPO}:${TAG}"
+            docker tag "${REPO}:local" "${REPO}:${TAG}"
+            echo "Pushing -> ${REPO}:${TAG}"
+            docker push "${REPO}:${TAG}"
+          done
 
-      - name: Setup Microconda
-        uses: conda-incubator/setup-miniconda@v3
+          # expose the three tags to cleanup step
+          echo "tag_latest=${TAG_LATEST}" >> $GITHUB_OUTPUT
+          echo "tag_run=${TAG_RUN}"       >> $GITHUB_OUTPUT
+          echo "tag_sha=${TAG_SHA}"       >> $GITHUB_OUTPUT
+
+      - name: Cleanup created versions (best effort)
+        if: always()   # try even if push failed; it's safe
+        uses: actions/github-script@v7
+        env:
+          PKG_OWNER: ${{ env.IMAGE_OWNER }}
+          PKG_NAME:  ${{ env.PKG_NAME }}
+          TAG_LATEST: ${{ steps.push.outputs.tag_latest }}
+          TAG_RUN:    ${{ steps.push.outputs.tag_run }}
+          TAG_SHA:    ${{ steps.push.outputs.tag_sha }}
         with:
-          miniforge-version: latest
-          activate-environment: AbSequenceAlign
-          environment-file: environment.yml
-          python-version: 3.11
-          auto-activate-base: false
+          github-token: ${{ secrets.CR_PAT }}  # needs package delete; if missing, it will just log
+          script: |
+            const owner = process.env.PKG_OWNER;
+            const pkg = process.env.PKG_NAME;
+            const targets = [process.env.TAG_LATEST, process.env.TAG_RUN, process.env.TAG_SHA].filter(Boolean);
+            const del = async (version_id) => {
+              try {
+                await github.request('DELETE /users/{username}/packages/container/{package_name}/versions/{package_version_id}', {
+                  username: owner, package_name: pkg, package_version_id: version_id
+                });
+                console.log(`Deleted version ${version_id}`);
+              } catch (e) {
+                console.log(`Delete failed for ${version_id}: ${e.status || ''} ${e.message}`);
+              }
+            };
 
-      - name: Install additional pip dependencies
-        shell: bash -l {0}
-        run: |
-          conda activate AbSequenceAlign
-          pip install asyncpg==0.29.0 psycopg2-binary==2.9.9
-          pip install git+https://github.com/oxpig/ANARCI.git
-
-      - name: Run backend tests
-        shell: bash -l {0}
-        run: |
-          conda activate AbSequenceAlign
-          cd app/backend
-          python -m pytest tests/ -v --cov=backend --cov-report=xml --cov-report=term-missing
-
-      - name: Run code formatting check
-        shell: bash -l {0}
-        run: |
-          conda activate AbSequenceAlign
-          cd app/backend
-          black . --check
-
-      - name: Run linting
-        shell: bash -l {0}
-        run: |
-          conda activate AbSequenceAlign
-          cd app/backend
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./app/backend/coverage.xml
-          flags: backend
-          name: backend-coverage
-
-  frontend-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22.16.0'
-          cache: 'npm'
-          cache-dependency-path: app/frontend/package-lock.json
-
-      - name: Install dependencies
-        run: |
-          cd app/frontend
-          npm ci
-
-      - name: Run linting
-        run: |
-          cd app/frontend
-          npm run lint
-
-      - name: Run type checking
-        run: |
-          cd app/frontend
-          npm run type-check
-
-      - name: Run tests
-        run: |
-          cd app/frontend
-          npm run test
-
-      - name: Build frontend
-        run: |
-          cd app/frontend
-          npm run build
-
-  docker-tests:
-    runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Container Registry (GITHUB_TOKEN for builds)
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and tag base images
-        run: |
-          ./scripts/build-base-images.sh
-          docker tag absequencealign-backend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:latest
-          docker tag absequencealign-frontend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:latest
-
-      - name: Test backend Docker build
-        run: |
-          docker build \
-            --build-arg BASE_IMAGE=absequencealign-backend-base:latest \
-            -f ./app/backend/Dockerfile \
-            -t test-backend .
-
-      - name: Test frontend Docker build
-        run: |
-          docker build \
-            --build-arg BASE_IMAGE=absequencealign-frontend-base:latest \
-            -f ./app/frontend/Dockerfile \
-            -t test-frontend ./app/frontend
-
-      - name: Test frontend test Docker build
-        run: |
-          docker build \
-            --build-arg BASE_IMAGE=absequencealign-frontend-base:latest \
-            -f ./app/frontend/Dockerfile.test \
-            -t test-frontend-test ./app/frontend
-
-      - name: Test frontend E2E Docker build
-        run: |
-          docker build \
-            --build-arg BASE_IMAGE=absequencealign-frontend-base:latest \
-            -f ./app/frontend/Dockerfile.e2e \
-            -t test-frontend-e2e ./app/frontend
-
-  build-pr-base-images:
-    runs-on: ubuntu-latest
-    needs: [docker-tests]
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Container Registry (GITHUB_TOKEN)
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push PR base images
-        run: |
-          ./scripts/build-base-images.sh
-          docker tag absequencealign-backend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:pr-${{ github.event.number }}
-          docker tag absequencealign-frontend-base:latest ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:pr-${{ github.event.number }}
-          docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-backend-base:pr-${{ github.event.number }}
-          docker push ${{ env.REGISTRY }}/${{ github.repository_owner }}/absequencealign-frontend-base:pr-${{ github.event.number }}
-
-  push-base-images:
-    runs-on: ubuntu-latest
-    needs: [docker-tests, auth-smoke]
-    if: github.event_name != 'pull_request'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Container Registry (PAT)
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.PAT_USERNAME }}
-          password: ${{ secrets.CR_PAT }}
-
-      - name: Build and push base images
-        run: |
-          ./scripts/build-base-images.sh
-          docker tag absequencealign-backend-base:latest ghcr.io/${{ github.repository_owner }}/absequencealign-backend-base:latest
-          docker tag absequencealign-frontend-base:latest ghcr.io/${{ github.repository_owner }}/absequencealign-frontend-base:latest
-          docker push ghcr.io/${{ github.repository_owner }}/absequencealign-backend-base:latest
-          docker push ghcr.io/${{ github.repository_owner }}/absequencealign-frontend-base:latest
-
-  e2e-tests:
-    runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests, docker-tests]
-    strategy:
-      matrix:
-        spec:
-          - 'cypress/e2e/0-health-check.cy.ts'
-          - 'cypress/e2e/1-scfv-annotation.cy.ts'
-          - 'cypress/e2e/2-igG-dvdi-tcr.cy.ts'
-          - 'cypress/e2e/quick-ui-test.cy.ts'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22.16.0'
-          cache: 'npm'
-          cache-dependency-path: app/frontend/package-lock.json
-
-      - name: Install dependencies
-        run: |
-          cd app/frontend
-          npm ci
-
-      - name: Setup Microconda for backend
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          miniforge-version: latest
-          activate-environment: AbSequenceAlign
-          environment-file: environment.yml
-          python-version: 3.11
-          auto-activate-base: false
-
-      - name: Install additional pip dependencies
-        shell: bash -l {0}
-        run: |
-          conda activate AbSequenceAlign
-          pip install asyncpg==0.29.0 psycopg2-binary==2.9.9
-          pip install git+https://github.com/oxpig/ANARCI.git
-
-      - name: Start backend server
-        shell: bash -l {0}
-        run: |
-          conda activate AbSequenceAlign
-          cd app/backend
-          PYTHONPATH="$(pwd)/.." python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 &
-          sleep 10
-          curl -f http://localhost:8000/health
-
-      - name: Build frontend for production-like testing
-        run: |
-          cd app/frontend
-          npm run build
-
-      - name: Start frontend with Nginx (production-like)
-        run: |
-          cd app/frontend
-          ls -la dist/
-          ls -la nginx.ci.conf
-          docker run -d --name frontend-nginx \
-            -v $(pwd)/dist:/usr/share/nginx/html:ro \
-            -v $(pwd)/nginx.ci.conf:/etc/nginx/conf.d/default.conf:ro \
-            -p 5679:80 \
-            nginx:alpine
-          sleep 10
-          docker ps -a
-          docker logs frontend-nginx || true
-          curl -v http://localhost:5679 || echo "Connection failed"
-
-      - name: Run Cypress tests
-        uses: cypress-io/github-action@v6
-        with:
-          working-directory: app/frontend
-          spec: ${{ matrix.spec }}
-          config: baseUrl=http://localhost:5679,defaultCommandTimeout=10000,requestTimeout=15000,responseTimeout=15000
-          wait-on: 'http://localhost:5679'
-          wait-on-timeout: 120
-
-      - name: Cleanup frontend container
-        if: always()
-        run: |
-          docker stop frontend-nginx || true
-          docker rm frontend-nginx || true
-
-  security-scan:
-    runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests, docker-tests, e2e-tests]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-  build-and-push:
-    runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests, docker-tests, e2e-tests, security-scan, auth-smoke]
-    if: github.event_name != 'pull_request'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Container Registry (PAT)
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.PAT_USERNAME }}
-          password: ${{ secrets.CR_PAT }}
-
-      - name: Extract metadata for backend
-        id: backend-meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.BACKEND_IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
-
-      - name: Extract metadata for frontend
-        id: frontend-meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.FRONTEND_IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
-
-      - name: Build and push backend image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./app/backend/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.backend-meta.outputs.tags }}
-          labels: ${{ steps.backend-meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build and push frontend image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./app/frontend
-          file: ./app/frontend/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.frontend-meta.outputs.tags }}
-          labels: ${{ steps.frontend-meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: [build-and-push]
-    if: github.event_name == 'release' && github.event.action == 'published'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup deployment environment
-        run: |
-          echo "BACKEND_IMAGE=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.event.release.tag_name }}" >> $GITHUB_ENV
-          echo "FRONTEND_IMAGE=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.event.release.tag_name }}" >> $GITHUB_ENV
-
-      - name: Deploy to production server
-        run: |
-          echo "🚀 Deployment would happen here"
-          echo "Backend Image: ${{ env.BACKEND_IMAGE }}"
-          echo "Frontend Image: ${{ env.FRONTEND_IMAGE }}"
-
-  notify:
-    runs-on: ubuntu-latest
-    needs: [deploy]
-    if: always()
-    steps:
-      - name: Notify deployment status
-        run: |
-          if [ "${{ needs.deploy.result }}" = "success" ]; then
-            echo "✅ Deployment successful!"
-          else
-            echo "❌ Deployment failed!"
-          fi
+            try {
+              // List versions
+              const { data: versions } = await github.request('GET /users/{username}/packages/container/{package_name}/versions', {
+                username: owner, package_name: pkg, per_page: 100
+              });
+              // Find versions that match our tags and delete only those
+              for (const v of versions) {
+                const tags = (v.metadata?.container?.tags) || [];
+                if (tags.some(t => targets.includes(t))) {
+                  console.log(`Cleaning version ${v.id} with tags [${tags.join(',')}]`);
+                  await del(v.id);
+                }
+              }
+            } catch (e) {
+              console.log(`Cleanup listing failed: ${e.status || ''} ${e.message}`);
+              console.log('This is non-fatal; images may remain in GHCR.');
+            }
