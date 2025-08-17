@@ -9,58 +9,106 @@ permissions:
 
 jobs:
   e2e:
-    name: Run E2E on PR (no GHCR)
+    name: Run full tests + E2E on PR (no pushes)
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    env:
+      BACKEND_CONDA_ENV: AbSequenceAlign
 
-      # Backend env
-      - uses: conda-incubator/setup-miniconda@v3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ---------- Backend: setup + unit/lint ----------
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
-          activate-environment: AbSequenceAlign
+          activate-environment: ${{ env.BACKEND_CONDA_ENV }}
           environment-file: environment.yml
           python-version: 3.11
           auto-activate-base: false
 
-      - name: Backend deps
-        shell: bash -l {0}
-        run: |
-          conda activate AbSequenceAlign
-          pip install asyncpg==0.29.0 psycopg2-binary==2.9.9
-          pip install git+https://github.com/oxpig/ANARCI.git
-
-      - name: Start backend
+      - name: Backend deps (extra)
         shell: bash -l {0}
         run: |
           set -euo pipefail
-          conda activate AbSequenceAlign
-          cd app/backend
-          PYTHONPATH="$(pwd)/.." python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 &
-          sleep 10
-          curl -f http://localhost:8000/health
+          conda activate "${BACKEND_CONDA_ENV}"
+          pip install asyncpg==0.29.0 psycopg2-binary==2.9.9
+          pip install git+https://github.com/oxpig/ANARCI.git
 
-      # Frontend build + serve (no docker push)
-      - uses: actions/setup-node@v4
+      - name: Backend unit tests + lint + format check
+        shell: bash -l {0}
+        run: |
+          set -euo pipefail
+          conda activate "${BACKEND_CONDA_ENV}"
+          cd app/backend
+          python -m pytest tests/ -v --cov=backend --cov-report=xml --cov-report=term-missing
+          black . --check
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./app/backend/coverage.xml
+          flags: backend
+          name: backend-coverage
+
+      # ---------- Frontend: setup + unit/lint/build ----------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '22.16.0'
           cache: 'npm'
           cache-dependency-path: app/frontend/package-lock.json
 
-      - name: Install + build frontend
+      - name: Frontend install
         run: |
+          set -euo pipefail
           cd app/frontend
           npm ci
+
+      - name: Frontend lint + types + unit tests
+        run: |
+          set -euo pipefail
+          cd app/frontend
+          npm run lint
+          npm run type-check
+          npm run test
+
+      - name: Frontend build
+        run: |
+          set -euo pipefail
+          cd app/frontend
           npm run build
 
-      - name: Serve with nginx (prod-like)
+      # ---------- Bring up services and run Cypress ----------
+      - name: Start backend (uvicorn)
+        shell: bash -l {0}
         run: |
+          set -euo pipefail
+          conda activate "${BACKEND_CONDA_ENV}"
+          cd app/backend
+          PYTHONPATH="$(pwd)/.." python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 &
+          # wait and health check
+          for i in {1..30}; do
+            curl -sf http://localhost:8000/health && break
+            sleep 1
+          done
+          curl -f http://localhost:8000/health
+
+      - name: Serve frontend with nginx (prod-like)
+        run: |
+          set -euo pipefail
           cd app/frontend
           docker run -d --name frontend-nginx \
-            -v $(pwd)/dist:/usr/share/nginx/html:ro \
-            -v $(pwd)/nginx.ci.conf:/etc/nginx/conf.d/default.conf:ro \
+            -v "$(pwd)/dist":/usr/share/nginx/html:ro \
+            -v "$(pwd)/nginx.ci.conf":/etc/nginx/conf.d/default.conf:ro \
             -p 5679:80 nginx:alpine
-          sleep 10
+          for i in {1..30}; do
+            curl -sf http://localhost:5679 && break
+            sleep 1
+          done
           curl -f http://localhost:5679
 
       - name: Run Cypress E2E
