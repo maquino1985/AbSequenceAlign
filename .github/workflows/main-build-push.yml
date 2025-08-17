@@ -98,7 +98,6 @@ jobs:
           tags: |
             type=ref,event=branch
             type=sha,prefix={{branch}}-
-
       - name: Build & push backend (multi-arch)
         uses: docker/build-push-action@v5
         with:
@@ -106,11 +105,12 @@ jobs:
           file: ./app/backend/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: |
+            BASE_IMAGE=ghcr.io/${{ env.IMAGE_OWNER }}/absequencealign-backend-base:latest
           tags: ${{ steps.backend-meta.outputs.tags }}
           labels: ${{ steps.backend-meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
       - name: Build & push frontend (multi-arch)
         uses: docker/build-push-action@v5
         with:
@@ -118,7 +118,10 @@ jobs:
           file: ./app/frontend/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: |
+            BASE_IMAGE=ghcr.io/${{ env.IMAGE_OWNER }}/absequencealign-frontend-base:latest
           tags: ${{ steps.frontend-meta.outputs.tags }}
           labels: ${{ steps.frontend-meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+

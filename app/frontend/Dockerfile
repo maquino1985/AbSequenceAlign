@@ -1,6 +1,6 @@
 # Frontend Dockerfile - Multi-stage build for production
 # In CI, this will be pulled from registry; locally, it will use the local image
-ARG BASE_IMAGE=absequencealign-frontend-base:latest
+ARG BASE_IMAGE=ghcr.io/maquino1985/absequencealign-frontend-base:latest
 FROM ${BASE_IMAGE} AS builder
 
 # Set working directory
