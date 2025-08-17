@@ -102,6 +102,41 @@ export const api = {
     const response = await apiClient.get('/msa-viewer/jobs');
     return response.data;
   },
+
+  // BLAST Methods
+  getBlastDatabases: async (): Promise<APIResponse<{ databases: any }>> => {
+    const response = await apiClient.get('/blast/databases');
+    return response.data;
+  },
+
+  searchPublicDatabases: async (request: any): Promise<APIResponse<any>> => {
+    const response = await apiClient.post('/blast/search/public', request);
+    return response.data;
+  },
+
+  searchInternalDatabase: async (request: any): Promise<APIResponse<any>> => {
+    const response = await apiClient.post('/blast/search/internal', request);
+    return response.data;
+  },
+
+  analyzeAntibodySequence: async (request: any): Promise<APIResponse<any>> => {
+    const response = await apiClient.post('/blast/search/antibody', request);
+    return response.data;
+  },
+
+  getSupportedOrganisms: async (): Promise<APIResponse<{ organisms: string[] }>> => {
+    const response = await apiClient.get('/blast/organisms');
+    return response.data;
+  },
+
+  uploadSequencesForBlast: async (data: FormData): Promise<APIResponse<any>> => {
+    const response = await apiClient.post('/blast/upload', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };
 
 export default api;

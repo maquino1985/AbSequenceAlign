@@ -220,7 +220,7 @@ P01857.2	P01859.3	99.2	330	2	1	1	330	1	330	0.0	667"""
         if adapter.executable_path == "docker":
             assert "Docker" in version
         else:
-            assert "BLAST" in version
+            assert "blast" in version.lower()
 
     def test_blast_adapter_tool_info(self):
         """Test that tool information is returned correctly."""

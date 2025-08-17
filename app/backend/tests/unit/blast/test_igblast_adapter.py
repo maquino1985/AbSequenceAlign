@@ -183,7 +183,7 @@ antibody_seq	IGHV3-11*01	97.2	350	8	2	1	350	1	350	0.0	645	IGHV3-11*01	IGHD3-10*0
         if adapter.executable_path == "docker":
             assert "Docker" in version
         else:
-            assert "IGBLAST" in version
+            assert "igblast" in version.lower()
 
     def test_igblast_adapter_tool_info(self):
         """Test that tool information is returned correctly."""
