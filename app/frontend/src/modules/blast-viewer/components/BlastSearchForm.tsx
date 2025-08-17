@@ -21,8 +21,8 @@ import { Search, Upload } from '@mui/icons-material';
 import api from '../../../services/api';
 
 interface BlastSearchFormProps {
-  databases: any;
-  onSearch: (searchData: any) => void;
+  databases: Record<string, unknown>;
+  onSearch: (searchData: Record<string, unknown>) => void;
   loading: boolean;
 }
 
@@ -92,7 +92,7 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
       const response = await api.uploadSequencesForBlast(formData);
       setSequence(response.data.sequence);
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(`Upload failed: ${err.message}`);
     }
   };

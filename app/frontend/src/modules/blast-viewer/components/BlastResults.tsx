@@ -16,12 +16,11 @@ import {
   Grid,
   Card,
   CardContent,
-  Divider,
 } from '@mui/material';
 import { ExpandMore, Biotech, Search } from '@mui/icons-material';
 
 interface BlastResultsProps {
-  results: any;
+  results: Record<string, unknown>;
   searchType: 'standard' | 'antibody';
 }
 
@@ -35,13 +34,13 @@ const BlastResults: React.FC<BlastResultsProps> = ({ results, searchType }) => {
     setExpanded(isExpanded ? panel : false);
   };
 
-  const formatEvalue = (evalue: number) => {
+  const formatEvalue = (evalue: number | string) => {
     if (evalue === 0) return '0.0';
     return evalue.toExponential(2);
   };
 
   const renderStandardResults = () => {
-    const hits = results.results?.hits || [];
+    const hits = (results.results?.hits as unknown[]) || [];
     
     return (
       <Box>

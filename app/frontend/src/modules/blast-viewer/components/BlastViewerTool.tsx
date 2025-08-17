@@ -41,9 +41,9 @@ export const BlastViewerTool: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [databases, setDatabases] = useState<any>(null);
+  const [databases, setDatabases] = useState<Record<string, unknown> | null>(null);
   const [organisms, setOrganisms] = useState<string[]>([]);
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     loadInitialData();
@@ -62,8 +62,8 @@ export const BlastViewerTool: React.FC = () => {
       
       setDatabases(dbResponse.data.databases);
       setOrganisms(orgResponse.data.organisms);
-    } catch (err: any) {
-      setError(`Failed to load initial data: ${err.message}`);
+    } catch (err: unknown) {
+      setError(`Failed to load initial data: ${(err as Error).message}`);
     } finally {
       setLoading(false);
     }
@@ -75,7 +75,7 @@ export const BlastViewerTool: React.FC = () => {
     setError(null);
   };
 
-  const handleSearch = async (searchData: any) => {
+  const handleSearch = async (searchData: Record<string, unknown>) => {
     setLoading(true);
     setError(null);
     setResults(null);
@@ -92,8 +92,8 @@ export const BlastViewerTool: React.FC = () => {
       }
       
       setResults(response.data);
-    } catch (err: any) {
-      setError(`Search failed: ${err.message}`);
+    } catch (err: unknown) {
+      setError(`Search failed: ${(err as Error).message}`);
     } finally {
       setLoading(false);
     }

@@ -18,7 +18,7 @@ import api from '../../../services/api';
 
 interface AntibodyAnalysisProps {
   organisms: string[];
-  onSearch: (searchData: any) => void;
+  onSearch: (searchData: Record<string, unknown>) => void;
   loading: boolean;
 }
 
@@ -78,7 +78,7 @@ const AntibodyAnalysis: React.FC<AntibodyAnalysisProps> = ({
       const response = await api.uploadSequencesForBlast(formData);
       setSequence(response.data.sequence);
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(`Upload failed: ${err.message}`);
     }
   };
