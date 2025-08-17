@@ -312,7 +312,8 @@ export const MSAViewerTool: React.FC = () => {
         
         // Check minimum length
         if (cleanSeq.length < 15) {
-          throw new Error(`Sequence ${name} is too short (${cleanSeq.length} AA). Minimum 15 AA required.`);
+        if (cleanSeq.length < MIN_SEQUENCE_LENGTH) {
+          throw new Error(`Sequence ${name} is too short (${cleanSeq.length} AA). Minimum ${MIN_SEQUENCE_LENGTH} AA required.`);
         }
         
         validatedSequences.push(cleanSeq);
