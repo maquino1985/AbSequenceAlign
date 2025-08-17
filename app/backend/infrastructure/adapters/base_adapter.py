@@ -137,6 +137,31 @@ class BaseExternalToolAdapter(AbstractExternalToolAdapter):
             if result.returncode == 0:
                 return result.stdout.strip()
 
+            # Try -version flag (for BLAST)
+            result = subprocess.run(
+                [self.executable_path, "-version"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode == 0:
+                return result.stdout.strip()
+
+            # Try -help flag as fallback
+            result = subprocess.run(
+                [self.executable_path, "-help"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode == 0:
+                # For BLAST, check if it's working
+                if "blastp:" in result.stdout or "blastp:" in result.stderr:
+                    return "BLAST (version info available)"
+                return result.stdout.strip()
+
             return None
 
         except Exception as e:

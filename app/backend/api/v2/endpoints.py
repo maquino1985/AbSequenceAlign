@@ -1,7 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, HTTPException, File, Form, UploadFile, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from backend.database.engine import get_db_session
+from fastapi import APIRouter, HTTPException, File, Form, UploadFile
 
 from backend.models.models import MSACreationRequest, MSAAnnotationRequest
 from backend.models.models_v2 import AnnotationResult as V2AnnotationResult
