@@ -1,5 +1,7 @@
 name: CI/CD Pipeline
-
+permissions:
+  contents: read
+  packages: write
 on:
   push:
     branches: [ main, develop ]
@@ -168,9 +170,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [docker-tests]
     if: github.event_name == 'pull_request'
-    permissions:
-      contents: read
-      packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -201,9 +200,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [docker-tests]
     if: github.event_name != 'pull_request'
-    permissions:
-      contents: read
-      packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -376,9 +372,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [backend-tests, frontend-tests, docker-tests, e2e-tests, security-scan]
     if: github.event_name != 'pull_request'
-    permissions:
-      contents: read
-      packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
