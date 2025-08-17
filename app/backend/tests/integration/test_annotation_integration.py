@@ -4,7 +4,6 @@ Tests the full flow from request to response with minimal mocking.
 """
 
 import pytest
-from unittest.mock import patch, Mock
 
 from backend.models.models import SequenceInput, NumberingScheme
 from backend.models.requests_v2 import AnnotationRequestV2

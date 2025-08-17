@@ -14,6 +14,7 @@ import api from '../../../services/api';
 import BlastSearchForm from './BlastSearchForm';
 import BlastResults from './BlastResults';
 import AntibodyAnalysis from './AntibodyAnalysis';
+import type { BlastSearchResponse, IgBlastSearchResponse } from '../../../types/apiV2';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -43,7 +44,7 @@ export const BlastViewerTool: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [databases, setDatabases] = useState<Record<string, unknown> | null>(null);
   const [organisms, setOrganisms] = useState<string[]>([]);
-  const [results, setResults] = useState<Record<string, unknown> | null>(null);
+  const [results, setResults] = useState<BlastSearchResponse['data'] | IgBlastSearchResponse['data'] | null>(null);
 
   useEffect(() => {
     loadInitialData();
@@ -60,8 +61,8 @@ export const BlastViewerTool: React.FC = () => {
         api.getSupportedOrganisms()
       ]);
       
-      setDatabases(dbResponse.data.databases);
-      setOrganisms(orgResponse.data.organisms);
+      setDatabases(dbResponse.data?.databases || {});
+      setOrganisms(orgResponse.data?.organisms || []);
     } catch (err: unknown) {
       setError(`Failed to load initial data: ${(err as Error).message}`);
     } finally {
@@ -91,7 +92,9 @@ export const BlastViewerTool: React.FC = () => {
         response = await api.searchPublicDatabases(searchData);
       }
       
-      setResults(response.data);
+      if (response.data) {
+        setResults(response.data as BlastSearchResponse['data'] | IgBlastSearchResponse['data']);
+      }
     } catch (err: unknown) {
       setError(`Search failed: ${(err as Error).message}`);
     } finally {
@@ -147,11 +150,11 @@ export const BlastViewerTool: React.FC = () => {
         </Tabs>
 
         <TabPanel value={tabValue} index={0}>
-          <BlastSearchForm
-            databases={databases}
-            onSearch={handleSearch}
-            loading={loading}
-          />
+                      <BlastSearchForm
+              databases={databases || null}
+              onSearch={handleSearch}
+              loading={loading}
+            />
           {results && (
             <BlastResults 
               results={results} 

@@ -25,7 +25,20 @@ class BlastService:
         # Initialize adapters with dependency injection for testing
         if blast_adapter is None:
             try:
-                self.blast_adapter = BlastAdapter()
+                # Try to initialize Docker client for BLAST
+                docker_client = None
+                try:
+                    import docker
+
+                    docker_client = docker.from_env()
+                except ImportError:
+                    self._logger.warning("Docker Python package not available")
+                except Exception as e:
+                    self._logger.warning(
+                        f"Could not initialize Docker client: {e}"
+                    )
+
+                self.blast_adapter = BlastAdapter(docker_client=docker_client)
             except Exception as e:
                 self._logger.warning(f"Could not initialize BlastAdapter: {e}")
                 self.blast_adapter = None
@@ -184,15 +197,75 @@ class BlastService:
             Dictionary containing available databases by category
         """
         return {
-            "public": {
-                "nr": "NCBI non-redundant protein database",
-                "pdb": "Protein Data Bank",
-                "swissprot": "Swiss-Prot protein database",
-                "refseq_protein": "RefSeq protein database",
-            },
+            "public": self._get_public_databases(),
             "custom": self._get_custom_databases(),
             "internal": self._get_internal_databases(),
         }
+
+    def _get_public_databases(self) -> Dict[str, str]:
+        """
+        Dynamically discover available public databases from the BLAST database directory.
+
+        Returns:
+            Dictionary mapping database names to descriptions
+        """
+        from backend.config import BLAST_DB_DIR
+
+        databases = {}
+
+        if not BLAST_DB_DIR.exists():
+            self._logger.warning(
+                f"BLAST database directory does not exist: {BLAST_DB_DIR}"
+            )
+            return databases
+
+        # Look for protein databases (.phr, .pin, .psq files)
+        for file_path in BLAST_DB_DIR.glob("*.phr"):
+            db_name = file_path.stem  # Remove .phr extension
+
+            # Check if corresponding .pin and .psq files exist
+            pin_file = file_path.with_suffix(".pin")
+            psq_file = file_path.with_suffix(".psq")
+
+            if pin_file.exists() and psq_file.exists():
+                # Map common database names to descriptions
+                descriptions = {
+                    "swissprot": "Swiss-Prot protein database",
+                    "pdbaa": "Protein Data Bank",
+                    "nr": "NCBI non-redundant protein database",
+                    "refseq_protein": "RefSeq protein database",
+                }
+
+                description = descriptions.get(
+                    db_name, f"{db_name} protein database"
+                )
+                databases[db_name] = description
+
+        # Look for nucleotide databases (.nhr, .nin, .nsq files)
+        for file_path in BLAST_DB_DIR.glob("*.nhr"):
+            db_name = file_path.stem  # Remove .nhr extension
+
+            # Check if corresponding .nin and .nsq files exist
+            nin_file = file_path.with_suffix(".nin")
+            nsq_file = file_path.with_suffix(".nsq")
+
+            if nin_file.exists() and nsq_file.exists():
+                # Map common database names to descriptions
+                descriptions = {
+                    "nt": "NCBI non-redundant nucleotide database",
+                    "refseq_nucleotide": "RefSeq nucleotide database",
+                    "16S_ribosomal_RNA": "16S ribosomal RNA database",
+                }
+
+                description = descriptions.get(
+                    db_name, f"{db_name} nucleotide database"
+                )
+                databases[db_name] = description
+
+        self._logger.info(
+            f"Found {len(databases)} available databases: {list(databases.keys())}"
+        )
+        return databases
 
     def validate_sequence(self, sequence: str, sequence_type: str) -> bool:
         """

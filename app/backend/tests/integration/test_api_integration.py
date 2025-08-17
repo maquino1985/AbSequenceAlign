@@ -2,25 +2,31 @@
 Integration tests for API endpoints with real request/response handling.
 """
 
-import pytest
 import time
-from fastapi.testclient import TestClient
 from unittest.mock import patch, Mock
+
+import pytest
+from fastapi import HTTPException
 from fastapi.exceptions import RequestValidationError
+from fastapi.testclient import TestClient
+
+from backend.api.v2.blast_endpoints import router as blast_router
 from backend.api.v2.endpoints import router
+from backend.jobs.job_manager import job_manager
 from backend.models.models import (
-    NumberingScheme,
-    AlignmentMethod,
     SequenceInput,
 )
-from backend.jobs.job_manager import job_manager
-from fastapi import HTTPException
 
 
 @pytest.fixture
 def client():
     """FastAPI test client."""
-    return TestClient(router)
+    from fastapi import FastAPI
+
+    app = FastAPI()
+    app.include_router(router)
+    app.include_router(blast_router, prefix="/blast")
+    return TestClient(app)
 
 
 @pytest.fixture
@@ -97,6 +103,166 @@ class TestAPIIntegration:
         # Test that the client raises a validation error for invalid request
         with pytest.raises(RequestValidationError):
             client.post("/annotate", json=invalid_request)
+
+    @pytest.mark.skip(
+        reason="Real service test - skip for now to focus on unit tests"
+    )
+    def test_blast_databases_endpoint_real(self, client):
+        """Test BLAST databases endpoint with real service."""
+        response = client.get("/blast/databases")
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["success"] is True
+        assert "databases" in result["data"]
+        assert "public" in result["data"]["databases"]
+        # Check that we have at least one database
+        assert len(result["data"]["databases"]["public"]) > 0
+
+    @pytest.mark.skip(
+        reason="Real service test - skip for now to focus on unit tests"
+    )
+    def test_blast_organisms_endpoint_real(self, client):
+        """Test BLAST organisms endpoint with real service."""
+        response = client.get("/blast/organisms")
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["success"] is True
+        assert "organisms" in result["data"]
+        # Check that we have at least one organism
+        assert len(result["data"]["organisms"]) > 0
+        # Should include human and mouse
+        organisms = result["data"]["organisms"]
+        assert "human" in organisms or "mouse" in organisms
+
+    def test_blast_search_public_endpoint_real(self, client):
+        """Test BLAST public search endpoint with real service."""
+        # Use the verified working protein sequence
+        request_data = {
+            "query_sequence": "EVQLVESGGGLVQPGRSLRLSCAASGFTFDDYAMHWVRQAPGKGLEWVSAITWNSGHIDYADSVEGRFTISRDNAKNSLYLQMNSLRAEDTAVYYCAKVSYLSTASSLDYWGQGTLVTVSS",
+            "databases": ["swissprot"],
+            "blast_type": "blastp",
+            "evalue": 1e-10,
+            "max_target_seqs": 5,
+        }
+
+        response = client.post("/blast/search/public", json=request_data)
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["success"] is True
+        assert "results" in result["data"]
+        assert result["data"]["results"]["blast_type"] == "blastp"
+        # Should have some hits for this known antibody sequence
+        assert len(result["data"]["results"]["hits"]) > 0
+
+        # Check hit structure
+        hit = result["data"]["results"]["hits"][0]
+        assert "query_id" in hit
+        assert "subject_id" in hit
+        assert "identity" in hit
+        assert "evalue" in hit
+        assert "bit_score" in hit
+
+    def test_blast_search_antibody_endpoint_nucleotide_real(self, client):
+        """Test BLAST antibody search endpoint with real service - nucleotide."""
+        request_data = {
+            "query_sequence": "CAGGTGCAGCTGGTGGAGTCTGGGGGAGGCGTGGTCCAGCCTGGGAGGTCCCTGAGACTCTCCTGTGCAGCCTCTGGATTCACCTTTAGCAGCTATGCCATGAGCTGGGTCCGCCAGGCTCCAGGCAAGGGGCTGGAGTGGGTGGCAGTTATATCATATGATGGAAGTAATAAATACTATGCAGACTCCGTGAAGGGCCGATTCACCATCTCCAGAGACAATTCCAAGAACACGCTGTATCTGCAAATGAACAGCCTGAGAGCCGAGGACACGGCTGTGTATTACTGTGCGAGAGA",
+            "organism": "human",
+            "blast_type": "igblastn",
+            "evalue": 1e-10,
+        }
+
+        response = client.post("/blast/search/antibody", json=request_data)
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["success"] is True
+        assert "results" in result["data"]
+        assert result["data"]["results"]["blast_type"] == "igblastn"
+        # Should have some hits for this known nucleotide sequence
+        assert len(result["data"]["results"]["hits"]) > 0
+
+        # Check hit structure for nucleotide search
+        hit = result["data"]["results"]["hits"][0]
+        assert "query_id" in hit
+        assert "subject_id" in hit
+        assert "identity" in hit
+        assert "v_gene" in hit
+        assert hit["v_gene"] is not None  # Should have V gene assignment
+        assert (
+            "IGHV3-30" in hit["v_gene"]
+        )  # Should match expected V gene family
+        assert hit["identity"] > 95.0  # Should have high identity
+
+    def test_blast_search_antibody_endpoint_protein_real(self, client):
+        """Test BLAST antibody search endpoint with real service - protein."""
+        request_data = {
+            "query_sequence": "EVQLVESGGGLVQPGRSLRLSCAASGFTFDDYAMHWVRQAPGKGLEWVSAITWNSGHIDYADSVEGRFTISRDNAKNSLYLQMNSLRAEDTAVYYCAKVSYLSTASSLDYWGQGTLVTVSS",
+            "organism": "human",
+            "blast_type": "igblastp",
+            "evalue": 1e-10,
+        }
+
+        response = client.post("/blast/search/antibody", json=request_data)
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["success"] is True
+        assert "results" in result["data"]
+        assert result["data"]["results"]["blast_type"] == "igblastp"
+        # Should have some hits for this known protein sequence
+        assert len(result["data"]["results"]["hits"]) > 0
+
+        # Check hit structure for protein search
+        hit = result["data"]["results"]["hits"][0]
+        assert "query_id" in hit
+        assert "subject_id" in hit
+        assert "identity" in hit
+        assert "v_gene" in hit
+        assert hit["v_gene"] is not None  # Should have V gene assignment
+        assert (
+            "IGHV3-9" in hit["v_gene"]
+        )  # Should match expected V gene family
+        assert hit["identity"] > 90.0  # Should have high identity
+
+        # For protein searches, D/J/C genes should be None
+        assert hit["d_gene"] is None
+        assert hit["j_gene"] is None
+        assert hit["c_gene"] is None
+
+    def test_blast_endpoints_error_handling_real(self, client):
+        """Test BLAST endpoints error handling with real services."""
+        # Test with invalid sequence
+        request_data = {
+            "query_sequence": "INVALID_SEQUENCE_123!@#",
+            "databases": ["swissprot"],
+            "blast_type": "blastp",
+            "evalue": 1e-10,
+            "max_target_seqs": 5,
+        }
+
+        response = client.post("/blast/search/public", json=request_data)
+
+        # Should handle invalid sequences gracefully
+        assert response.status_code in [
+            400,
+            500,
+        ]  # Either validation error or execution error
+
+        # Test with invalid organism
+        request_data = {
+            "query_sequence": "DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK",
+            "organism": "invalid_organism",
+            "blast_type": "igblastp",
+            "evalue": 1e-10,
+        }
+
+        response = client.post("/blast/search/antibody", json=request_data)
+
+        # Should handle invalid organisms gracefully
+        assert response.status_code in [400, 500]
 
     def test_msa_upload_endpoint_structure(self, client):
         """Test MSA upload endpoint with file upload."""

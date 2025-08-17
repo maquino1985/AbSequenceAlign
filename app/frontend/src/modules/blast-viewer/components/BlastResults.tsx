@@ -13,14 +13,14 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Grid,
   Card,
   CardContent,
 } from '@mui/material';
 import { ExpandMore, Biotech, Search } from '@mui/icons-material';
+import type { BlastSearchResponse, IgBlastSearchResponse } from '../../../types/apiV2';
 
 interface BlastResultsProps {
-  results: Record<string, unknown>;
+  results: BlastSearchResponse['data'] | IgBlastSearchResponse['data'];
   searchType: 'standard' | 'antibody';
 }
 
@@ -36,11 +36,13 @@ const BlastResults: React.FC<BlastResultsProps> = ({ results, searchType }) => {
 
   const formatEvalue = (evalue: number | string) => {
     if (evalue === 0) return '0.0';
-    return evalue.toExponential(2);
+    const numValue = typeof evalue === 'string' ? parseFloat(evalue) : evalue;
+    return numValue.toExponential(2);
   };
 
   const renderStandardResults = () => {
-    const hits = (results.results?.hits as unknown[]) || [];
+    const blastResults = results as BlastSearchResponse['data'];
+    const hits = blastResults.results?.hits || [];
     
     return (
       <Box>
@@ -49,44 +51,38 @@ const BlastResults: React.FC<BlastResultsProps> = ({ results, searchType }) => {
           BLAST Search Results
         </Typography>
         
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom>
-                  Total Hits
-                </Typography>
-                <Typography variant="h4">
-                  {hits.length}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom>
-                  BLAST Type
-                </Typography>
-                <Typography variant="h6">
-                  {results.results?.blast_type || 'Unknown'}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom>
-                  Query Info
-                </Typography>
-                <Typography variant="body2">
-                  {results.results?.query_info?.query_id || 'Unknown'}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
+          <Card sx={{ flex: 1, minWidth: 200 }}>
+            <CardContent>
+              <Typography color="text.secondary" gutterBottom>
+                Total Hits
+              </Typography>
+              <Typography variant="h4">
+                {hits.length}
+              </Typography>
+            </CardContent>
+          </Card>
+          <Card sx={{ flex: 1, minWidth: 200 }}>
+            <CardContent>
+              <Typography color="text.secondary" gutterBottom>
+                BLAST Type
+              </Typography>
+              <Typography variant="h6">
+                {blastResults.results?.blast_type || 'Unknown'}
+              </Typography>
+            </CardContent>
+          </Card>
+          <Card sx={{ flex: 1, minWidth: 200 }}>
+            <CardContent>
+              <Typography color="text.secondary" gutterBottom>
+                Query Info
+              </Typography>
+              <Typography variant="body2">
+                {blastResults.results?.query_info?.query_id || 'Unknown'}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
 
         {hits.length > 0 ? (
           <TableContainer component={Paper}>
@@ -101,7 +97,7 @@ const BlastResults: React.FC<BlastResultsProps> = ({ results, searchType }) => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {hits.map((hit: Record<string, unknown>, index: number) => (
+                {hits.map((hit, index: number) => (
                   <TableRow key={index}>
                     <TableCell>{hit.subject_id}</TableCell>
                     <TableCell>{hit.identity?.toFixed(1)}</TableCell>
@@ -123,10 +119,11 @@ const BlastResults: React.FC<BlastResultsProps> = ({ results, searchType }) => {
   };
 
   const renderAntibodyResults = () => {
-    const hits = results.results?.hits || [];
-    const summary = results.summary;
-    const geneAssignments = results.gene_assignments;
-    const cdr3Info = results.cdr3_info;
+    const igblastResults = results as IgBlastSearchResponse['data'];
+    const hits = igblastResults.results?.hits || [];
+    const summary = igblastResults.summary;
+    const geneAssignments = igblastResults.gene_assignments;
+    const cdr3Info = igblastResults.cdr3_info;
     
     return (
       <Box>
@@ -136,56 +133,48 @@ const BlastResults: React.FC<BlastResultsProps> = ({ results, searchType }) => {
         </Typography>
 
         {/* Summary Cards */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom>
-                  Total Hits
-                </Typography>
-                <Typography variant="h4">
-                  {summary?.total_hits || 0}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom>
-                  Best Identity
-                </Typography>
-                <Typography variant="h6">
-                  {summary?.best_identity?.toFixed(1) || 0}%
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom>
-                  V Gene
-                </Typography>
-                <Typography variant="body2">
-                  {geneAssignments?.v_gene || 'Not found'}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom>
-                  CDR3 Sequence
-                </Typography>
-                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                  {cdr3Info?.sequence || 'Not found'}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
+          <Card sx={{ flex: 1, minWidth: 200 }}>
+            <CardContent>
+              <Typography color="text.secondary" gutterBottom>
+                Total Hits
+              </Typography>
+              <Typography variant="h4">
+                {summary?.total_hits || 0}
+              </Typography>
+            </CardContent>
+          </Card>
+          <Card sx={{ flex: 1, minWidth: 200 }}>
+            <CardContent>
+              <Typography color="text.secondary" gutterBottom>
+                Best Identity
+              </Typography>
+              <Typography variant="h6">
+                {summary?.best_identity?.toFixed(1) || 0}%
+              </Typography>
+            </CardContent>
+          </Card>
+          <Card sx={{ flex: 1, minWidth: 200 }}>
+            <CardContent>
+              <Typography color="text.secondary" gutterBottom>
+                V Gene
+              </Typography>
+              <Typography variant="body2">
+                {geneAssignments?.v_gene || 'Not found'}
+              </Typography>
+            </CardContent>
+          </Card>
+          <Card sx={{ flex: 1, minWidth: 200 }}>
+            <CardContent>
+              <Typography color="text.secondary" gutterBottom>
+                CDR3 Sequence
+              </Typography>
+              <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                {cdr3Info?.sequence || 'Not found'}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
 
         {/* Gene Assignments */}
         {geneAssignments && (
@@ -194,24 +183,24 @@ const BlastResults: React.FC<BlastResultsProps> = ({ results, searchType }) => {
               <Typography variant="h6">Gene Assignments</Typography>
             </AccordionSummary>
             <AccordionDetails>
-              <Grid container spacing={2}>
-                <Grid item xs={6} md={3}>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <Box sx={{ minWidth: 150 }}>
                   <Typography variant="subtitle2" color="text.secondary">V Gene</Typography>
                   <Chip label={geneAssignments.v_gene || 'Not found'} variant="outlined" />
-                </Grid>
-                <Grid item xs={6} md={3}>
+                </Box>
+                <Box sx={{ minWidth: 150 }}>
                   <Typography variant="subtitle2" color="text.secondary">D Gene</Typography>
                   <Chip label={geneAssignments.d_gene || 'Not found'} variant="outlined" />
-                </Grid>
-                <Grid item xs={6} md={3}>
+                </Box>
+                <Box sx={{ minWidth: 150 }}>
                   <Typography variant="subtitle2" color="text.secondary">J Gene</Typography>
                   <Chip label={geneAssignments.j_gene || 'Not found'} variant="outlined" />
-                </Grid>
-                <Grid item xs={6} md={3}>
+                </Box>
+                <Box sx={{ minWidth: 150 }}>
                   <Typography variant="subtitle2" color="text.secondary">C Gene</Typography>
                   <Chip label={geneAssignments.c_gene || 'Not found'} variant="outlined" />
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             </AccordionDetails>
           </Accordion>
         )}
@@ -223,22 +212,22 @@ const BlastResults: React.FC<BlastResultsProps> = ({ results, searchType }) => {
               <Typography variant="h6">CDR3 Information</Typography>
             </AccordionSummary>
             <AccordionDetails>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={4}>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <Box sx={{ flex: 1, minWidth: 200 }}>
                   <Typography variant="subtitle2" color="text.secondary">CDR3 Sequence</Typography>
                   <Typography variant="body1" sx={{ fontFamily: 'monospace', backgroundColor: '#f5f5f5', p: 1, borderRadius: 1 }}>
                     {cdr3Info.sequence}
                   </Typography>
-                </Grid>
-                <Grid item xs={6} md={4}>
+                </Box>
+                <Box sx={{ minWidth: 150 }}>
                   <Typography variant="subtitle2" color="text.secondary">Start Position</Typography>
                   <Typography variant="body1">{cdr3Info.start}</Typography>
-                </Grid>
-                <Grid item xs={6} md={4}>
+                </Box>
+                <Box sx={{ minWidth: 150 }}>
                   <Typography variant="subtitle2" color="text.secondary">End Position</Typography>
                   <Typography variant="body1">{cdr3Info.end}</Typography>
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             </AccordionDetails>
           </Accordion>
         )}
@@ -264,10 +253,10 @@ const BlastResults: React.FC<BlastResultsProps> = ({ results, searchType }) => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {hits.map((hit: Record<string, unknown>, index: number) => (
+                    {hits.map((hit, index: number) => (
                       <TableRow key={index}>
                         <TableCell>{hit.subject_id}</TableCell>
-                        <TableCell>{hit.identity?.toFixed(1)}</TableCell>
+                        <TableCell>{hit.identity.toFixed(1)}</TableCell>
                         <TableCell>{hit.v_gene || 'N/A'}</TableCell>
                         <TableCell>{hit.d_gene || 'N/A'}</TableCell>
                         <TableCell>{hit.j_gene || 'N/A'}</TableCell>

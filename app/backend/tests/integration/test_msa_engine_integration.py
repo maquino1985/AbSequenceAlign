@@ -3,12 +3,13 @@ Integration tests for MSAEngine with real sequences.
 Tests all alignment methods, consensus generation, and PSSM calculation.
 """
 
-import pytest
-from typing import List, Tuple
 import subprocess
+from typing import List, Tuple
 
+import pytest
+
+from backend.models.models import AlignmentMethod, MSAResult
 from backend.msa.msa_engine import MSAEngine
-from backend.models.models import AlignmentMethod, MSAResult, MSASequence
 
 
 class TestMSAEngineIntegration:

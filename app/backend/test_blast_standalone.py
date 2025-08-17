@@ -4,7 +4,6 @@ Standalone test script for BLAST services
 """
 
 import sys
-import os
 
 sys.path.append(".")
 

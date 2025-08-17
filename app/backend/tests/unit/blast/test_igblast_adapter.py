@@ -4,16 +4,14 @@ Following TDD principles - tests are written before implementation.
 IgBLAST is specifically designed for immunoglobulin and T-cell receptor analysis.
 """
 
-import pytest
-import tempfile
 import os
-import docker
 
-from backend.infrastructure.adapters.igblast_adapter import IgBlastAdapter
+import docker
+import pytest
+
 from backend.core.exceptions import ExternalToolError
+from backend.infrastructure.adapters.igblast_adapter import IgBlastAdapter
 from backend.tests.data.blast.test_sequences import (
-    HUMAN_IGG1_CONSTANT,
-    HUMAN_IGG2_CONSTANT,
     TEST_SEQUENCES,
 )
 

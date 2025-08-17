@@ -44,6 +44,49 @@ services:
       retries: 3
       start_period: 10s
 
+  # BLAST Service
+  blast:
+    image: ncbi/blast:latest
+    container_name: absequencealign-blast
+    restart: unless-stopped
+    volumes:
+      - ./data/blast:/blast/blastdb:ro
+      - /tmp:/tmp
+      - ./data/blast:/blast/blastdb_custom:ro
+    environment:
+      - BLASTDB=/blast/blastdb:/blast/blastdb_custom
+    networks:
+      - app-network
+    command: ["sleep", "infinity"]
+    healthcheck:
+      test: ["CMD", "blastp", "-help"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # IgBLAST Service
+  igblast:
+    image: ncbi/igblast:latest
+    container_name: absequencealign-igblast
+    restart: unless-stopped
+    volumes:
+      - ./data/igblast:/blast/blastdb:ro
+      - ./data/igblast/internal_data:/blast/internal_data:ro
+      - ./data/igblast/optional_file:/blast/optional_file:ro
+      - /tmp:/tmp
+    environment:
+      - IGDATA=/blast
+    networks:
+      - app-network
+    command: ["sleep", "infinity"]
+    healthcheck:
+      test: ["CMD", "igblastn", "-help"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
 networks:
   app-network:
     driver: bridge

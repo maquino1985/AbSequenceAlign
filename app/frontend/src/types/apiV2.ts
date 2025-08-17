@@ -97,6 +97,88 @@ export const AlignmentMethodV2 = {
 
 export type AlignmentMethodV2 = typeof AlignmentMethodV2[keyof typeof AlignmentMethodV2];
 
+// BLAST Types
+export interface BlastHit {
+  query_id: string;
+  subject_id: string;
+  identity: number;
+  alignment_length: number;
+  mismatches: number;
+  gap_opens: number;
+  query_start: number;
+  query_end: number;
+  subject_start: number;
+  subject_end: number;
+  evalue: number;
+  bit_score: number;
+}
+
+export interface BlastQueryInfo {
+  query_id: string;
+  database?: string;
+}
+
+export interface BlastResult {
+  blast_type: string;
+  query_info: BlastQueryInfo;
+  hits: BlastHit[];
+  total_hits: number;
+}
+
+export interface BlastSearchResponse {
+  success: boolean;
+  message: string;
+  data: {
+    results: BlastResult;
+  };
+}
+
+// IgBLAST specific types
+export interface IgBlastHit extends BlastHit {
+  v_gene?: string;
+  d_gene?: string;
+  j_gene?: string;
+  c_gene?: string;
+}
+
+export interface IgBlastResult extends BlastResult {
+  hits: IgBlastHit[];
+}
+
+export interface IgBlastSearchResponse {
+  success: boolean;
+  message: string;
+  data: {
+    results: IgBlastResult;
+    summary: {
+      total_hits: number;
+      best_identity: number;
+      gene_assignments: {
+        v_gene?: string;
+        d_gene?: string;
+        j_gene?: string;
+        c_gene?: string;
+      } | null;
+      cdr3_info: {
+        sequence: string;
+        start: number;
+        end: number;
+      } | null;
+    };
+    cdr3_info: {
+      sequence: string;
+      start: number;
+      end: number;
+    } | null;
+    gene_assignments: {
+      v_gene?: string;
+      d_gene?: string;
+      j_gene?: string;
+      c_gene?: string;
+    } | null;
+  };
+}
+
 export interface MSASequenceV2 {
   name: string;
   original_sequence: string;

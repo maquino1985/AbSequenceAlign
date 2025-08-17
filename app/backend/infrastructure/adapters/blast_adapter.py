@@ -10,7 +10,8 @@ from typing import Dict, Any, List
 import logging
 
 from .base_adapter import BaseExternalToolAdapter
-from ...core.exceptions import ExternalToolError
+from backend.core.exceptions import ExternalToolError
+from backend.config import BLAST_DB_DIR
 
 
 class BlastAdapter(BaseExternalToolAdapter):
@@ -113,6 +114,8 @@ class BlastAdapter(BaseExternalToolAdapter):
                 "linux/amd64",
                 "-v",
                 f"{work_dir}:/work",
+                "-v",
+                f"{BLAST_DB_DIR.resolve()}:/blast/blastdb:ro",
                 "-w",
                 "/work",
                 "ncbi/blast:latest",
@@ -240,24 +243,29 @@ class BlastAdapter(BaseExternalToolAdapter):
         }
 
     def _validate_sequence(self, sequence: str, blast_type: str) -> None:
-        """Validate input sequence"""
+        """Validate input sequence (case insensitive)"""
         if not sequence or not isinstance(sequence, str):
             raise ValueError("Sequence must be a non-empty string")
 
-        sequence = sequence.upper().strip()
+        # Clean and normalize sequence (case insensitive)
+        # Remove newlines, spaces, tabs, and other whitespace
+        sequence_clean = "".join(sequence.split()).upper()
+
+        if not sequence_clean:
+            raise ValueError("Sequence cannot be empty after cleaning")
 
         if blast_type in ["blastp", "blastx", "tblastn"]:
             # Protein sequence validation
             valid_aa = set("ACDEFGHIKLMNPQRSTVWY")
-            invalid_chars = set(sequence) - valid_aa
+            invalid_chars = set(sequence_clean) - valid_aa
             if invalid_chars:
                 raise ValueError(
                     f"Invalid amino acid characters: {invalid_chars}"
                 )
         elif blast_type in ["blastn", "tblastx"]:
-            # DNA/RNA sequence validation
-            valid_nt = set("ATGCU")
-            invalid_chars = set(sequence) - valid_nt
+            # DNA/RNA sequence validation - support both DNA (ATGC) and RNA (ATGCU)
+            valid_nt = set("ATGCUN")  # N for ambiguous nucleotides
+            invalid_chars = set(sequence_clean) - valid_nt
             if invalid_chars:
                 raise ValueError(
                     f"Invalid nucleotide characters: {invalid_chars}"
@@ -265,10 +273,12 @@ class BlastAdapter(BaseExternalToolAdapter):
 
     def _create_query_file(self, sequence: str) -> str:
         """Create a temporary FASTA file for the query sequence"""
+        # Clean the sequence before writing to file
+        clean_sequence = "".join(sequence.split()).upper()
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".fasta", delete=False
         ) as f:
-            f.write(f">query\n{sequence}\n")
+            f.write(f">query\n{clean_sequence}\n")
             return f.name
 
     def _create_blast_database(

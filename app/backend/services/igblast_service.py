@@ -18,7 +18,22 @@ class IgBlastService:
         # Initialize adapter with dependency injection for testing
         if igblast_adapter is None:
             try:
-                self.igblast_adapter = IgBlastAdapter()
+                # Try to initialize Docker client for IgBLAST
+                docker_client = None
+                try:
+                    import docker
+
+                    docker_client = docker.from_env()
+                except ImportError:
+                    self._logger.warning("Docker Python package not available")
+                except Exception as e:
+                    self._logger.warning(
+                        f"Could not initialize Docker client: {e}"
+                    )
+
+                self.igblast_adapter = IgBlastAdapter(
+                    docker_client=docker_client
+                )
             except Exception as e:
                 self._logger.warning(
                     f"Could not initialize IgBlastAdapter: {e}"
@@ -59,6 +74,11 @@ class IgBlastService:
             raise ValueError("Invalid antibody sequence provided")
 
         # Execute IgBLAST analysis
+        if self.igblast_adapter is None:
+            raise ValueError(
+                "IgBLAST adapter is not available. Please check if IgBLAST is properly installed."
+            )
+
         results = self.igblast_adapter.execute(
             query_sequence=query_sequence,
             organism=organism,
@@ -76,7 +96,17 @@ class IgBlastService:
         Returns:
             List of supported organism names
         """
-        return self.igblast_adapter.get_supported_organisms()
+        if self.igblast_adapter is None:
+            self._logger.warning(
+                "IgBLAST adapter is not available, returning default organisms"
+            )
+            return ["human", "mouse"]  # Default fallback organisms
+
+        try:
+            return self.igblast_adapter.get_supported_organisms()
+        except Exception as e:
+            self._logger.error(f"Failed to get supported organisms: {e}")
+            return ["human", "mouse"]  # Fallback organisms
 
     def validate_antibody_sequence(
         self, sequence: str, sequence_type: str
@@ -92,13 +122,21 @@ class IgBlastService:
             True if sequence is valid, False otherwise
         """
         try:
+            # Clean and normalize the sequence (case insensitive)
+            # Remove newlines, spaces, tabs, and other whitespace
+            sequence_clean = "".join(sequence.split()).upper()
+
+            # Check for empty sequence
+            if not sequence_clean:
+                return False
+
             if sequence_type == "protein":
                 valid_chars = set("ACDEFGHIKLMNPQRSTVWY")
             else:  # nucleotide
-                valid_chars = set("ATGCU")
+                # Support both DNA (ATGC) and RNA (ATGCU) nucleotides
+                valid_chars = set("ATGCUN")  # N for ambiguous nucleotides
 
-            sequence_upper = sequence.upper().strip()
-            invalid_chars = set(sequence_upper) - valid_chars
+            invalid_chars = set(sequence_clean) - valid_chars
 
             return len(invalid_chars) == 0
 

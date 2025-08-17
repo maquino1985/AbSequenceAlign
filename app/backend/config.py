@@ -42,4 +42,77 @@ DB_POOL_RECYCLE = int(os.getenv("DB_POOL_RECYCLE", "3600"))
 DB_ECHO = os.getenv("DB_ECHO", "true").lower() == "true"
 DB_ECHO_POOL = os.getenv("DB_ECHO_POOL", "false").lower() == "true"
 
-# Add other config constants as needed
+from pathlib import Path
+
+# BLAST and IgBLAST Configuration
+BLAST_DB_DIR = Path(os.getenv("BLAST_DB_DIR", os.path.join(DATA_DIR, "blast")))
+IGBLAST_DB_DIR = Path(
+    os.getenv("IGBLAST_DB_DIR", os.path.join(DATA_DIR, "igblast"))
+)
+IGBLAST_INTERNAL_DATA_DIR = Path(
+    os.getenv(
+        "IGBLAST_INTERNAL_DATA_DIR",
+        os.path.join(IGBLAST_DB_DIR, "internal_data"),
+    )
+)
+IGBLAST_OPTIONAL_FILE_DIR = Path(
+    os.getenv(
+        "IGBLAST_OPTIONAL_FILE_DIR",
+        os.path.join(IGBLAST_DB_DIR, "optional_file"),
+    )
+)
+
+# IgBLAST Database Paths
+IGBLAST_HUMAN_V_DB = Path(
+    os.getenv(
+        "IGBLAST_HUMAN_V_DB",
+        os.path.join(IGBLAST_INTERNAL_DATA_DIR, "human", "airr_c_human_ig.V"),
+    )
+)
+IGBLAST_HUMAN_D_DB = Path(
+    os.getenv(
+        "IGBLAST_HUMAN_D_DB",
+        os.path.join(IGBLAST_INTERNAL_DATA_DIR, "human", "airr_c_human_igh.D"),
+    )
+)
+IGBLAST_HUMAN_J_DB = Path(
+    os.getenv(
+        "IGBLAST_HUMAN_J_DB",
+        os.path.join(IGBLAST_INTERNAL_DATA_DIR, "human", "airr_c_human_ig.J"),
+    )
+)
+IGBLAST_HUMAN_C_DB = Path(
+    os.getenv(
+        "IGBLAST_HUMAN_C_DB",
+        os.path.join(IGBLAST_INTERNAL_DATA_DIR, "ncbi_human_c_genes"),
+    )
+)
+
+
+# Generic IgBLAST database path patterns
+def get_igblast_v_db_path(organism: str) -> Path:
+    """Get V gene database path for organism"""
+    if organism == "human":
+        return IGBLAST_HUMAN_V_DB
+    return IGBLAST_INTERNAL_DATA_DIR / organism / f"{organism}_V"
+
+
+def get_igblast_d_db_path(organism: str) -> Path:
+    """Get D gene database path for organism"""
+    if organism == "human":
+        return IGBLAST_HUMAN_D_DB
+    return IGBLAST_INTERNAL_DATA_DIR / organism / f"{organism}_D"
+
+
+def get_igblast_j_db_path(organism: str) -> Path:
+    """Get J gene database path for organism"""
+    if organism == "human":
+        return IGBLAST_HUMAN_J_DB
+    return IGBLAST_INTERNAL_DATA_DIR / organism / f"{organism}_J"
+
+
+def get_igblast_c_db_path(organism: str) -> Path:
+    """Get C gene database path for organism"""
+    if organism == "human":
+        return IGBLAST_HUMAN_C_DB
+    return IGBLAST_INTERNAL_DATA_DIR / f"ncbi_{organism}_c_genes"

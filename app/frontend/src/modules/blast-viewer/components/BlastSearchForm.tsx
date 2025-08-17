@@ -11,17 +11,16 @@ import {
   MenuItem,
   Chip,
   OutlinedInput,
-  SelectChangeEvent,
   FormHelperText,
-  Grid,
   Alert,
   CircularProgress,
 } from '@mui/material';
 import { Search, Upload } from '@mui/icons-material';
 import api from '../../../services/api';
+import { validateSequence, getSequenceTypeFromBlastType } from '../../../utils/fastaParser';
 
 interface BlastSearchFormProps {
-  databases: Record<string, unknown>;
+  databases: Record<string, unknown> | null;
   onSearch: (searchData: Record<string, unknown>) => void;
   loading: boolean;
 }
@@ -32,7 +31,7 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
   loading,
 }) => {
   const [sequence, setSequence] = useState('');
-  const [selectedDatabases, setSelectedDatabases] = useState<string[]>([]);
+  const [selectedDatabase, setSelectedDatabase] = useState<string>('');
   const [blastType, setBlastType] = useState('blastp');
   const [evalue, setEvalue] = useState('1e-10');
   const [maxTargetSeqs, setMaxTargetSeqs] = useState('10');
@@ -46,27 +45,31 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
     { value: 'tblastn', label: 'TBLASTN (Protein vs Nucleotide)' },
   ];
 
-  const handleDatabaseChange = (event: SelectChangeEvent<string[]>) => {
-    const value = event.target.value;
-    setSelectedDatabases(typeof value === 'string' ? value.split(',') : value);
+  const handleDatabaseChange = (event: any) => {
+    const value = event.target.value as string;
+    setSelectedDatabase(value);
   };
 
   const handleSearch = async () => {
-    if (!sequence.trim()) {
-      setError('Please enter a sequence');
+    // Validate sequence
+    const sequenceType = getSequenceTypeFromBlastType(blastType);
+    const validation = validateSequence(sequence, sequenceType);
+    
+    if (!validation.isValid) {
+      setError(`Sequence validation failed: ${validation.errors.join(', ')}`);
       return;
     }
 
-    if (searchType === 'public' && selectedDatabases.length === 0) {
-      setError('Please select at least one database');
+    if (searchType === 'public' && !selectedDatabase) {
+      setError('Please select a database');
       return;
     }
 
     setError(null);
 
     const searchData = {
-      query_sequence: sequence.trim(),
-      databases: selectedDatabases,
+      query_sequence: validation.cleanSequence,
+      databases: [selectedDatabase],
       blast_type: blastType,
       evalue: parseFloat(evalue),
       max_target_seqs: parseInt(maxTargetSeqs),
@@ -90,10 +93,12 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
 
     try {
       const response = await api.uploadSequencesForBlast(formData);
-      setSequence(response.data.sequence);
+      if (response.data?.sequence) {
+        setSequence(response.data.sequence as string);
+      }
       setError(null);
     } catch (err: unknown) {
-      setError(`Upload failed: ${err.message}`);
+      setError(`Upload failed: ${(err as Error).message}`);
     }
   };
 
@@ -103,14 +108,20 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
     const options: { value: string; label: string }[] = [];
     
     if (databases.public) {
-      Object.entries(databases.public).forEach(([key, value]) => {
+      Object.entries(databases.public as Record<string, unknown>).forEach(([key, value]) => {
         options.push({ value: key, label: `${key} - ${value}` });
       });
     }
     
     if (databases.custom) {
-      Object.entries(databases.custom).forEach(([key, value]) => {
+      Object.entries(databases.custom as Record<string, unknown>).forEach(([key, value]) => {
         options.push({ value: key, label: `Custom: ${key} - ${value}` });
+      });
+    }
+
+    if (databases.internal) {
+      Object.entries(databases.internal as Record<string, unknown>).forEach(([key, value]) => {
+        options.push({ value: key, label: `Internal: ${key} - ${value}` });
       });
     }
 
@@ -129,10 +140,10 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
         </Alert>
       )}
 
-      <Grid container spacing={3}>
-        {/* Search Type */}
-        <Grid item xs={12} md={6}>
-          <FormControl fullWidth>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {/* Search Type and BLAST Type */}
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <FormControl sx={{ minWidth: 200, flex: 1 }}>
             <InputLabel>Search Type</InputLabel>
             <Select
               value={searchType}
@@ -143,11 +154,8 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
               <MenuItem value="internal">Internal Database</MenuItem>
             </Select>
           </FormControl>
-        </Grid>
 
-        {/* BLAST Type */}
-        <Grid item xs={12} md={6}>
-          <FormControl fullWidth>
+          <FormControl sx={{ minWidth: 200, flex: 1 }}>
             <InputLabel>BLAST Type</InputLabel>
             <Select
               value={blastType}
@@ -161,25 +169,17 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
               ))}
             </Select>
           </FormControl>
-        </Grid>
+        </Box>
 
         {/* Database Selection (only for public searches) */}
         {searchType === 'public' && (
-          <Grid item xs={12}>
-            <FormControl fullWidth>
-              <InputLabel>Databases</InputLabel>
+          <FormControl fullWidth>
+            <InputLabel>Database</InputLabel>
+            {databases ? (
               <Select
-                multiple
-                value={selectedDatabases}
+                value={selectedDatabase}
                 onChange={handleDatabaseChange}
-                input={<OutlinedInput label="Databases" />}
-                renderValue={(selected) => (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {selected.map((value) => (
-                      <Chip key={value} label={value} />
-                    ))}
-                  </Box>
-                )}
+                input={<OutlinedInput label="Database" />}
               >
                 {renderDatabaseOptions().map((option) => (
                   <MenuItem key={option.value} value={option.value}>
@@ -187,36 +187,47 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
                   </MenuItem>
                 ))}
               </Select>
-              <FormHelperText>
-                Select one or more databases to search against
-              </FormHelperText>
-            </FormControl>
-          </Grid>
+            ) : (
+              <Select
+                value=""
+                input={<OutlinedInput label="Database" />}
+                disabled
+              >
+                <MenuItem value="">Loading databases...</MenuItem>
+              </Select>
+            )}
+            <FormHelperText>
+              {databases 
+                ? renderDatabaseOptions().length > 0
+                  ? `Select a database to search against (${renderDatabaseOptions().length} available)`
+                  : 'No databases available'
+                : 'Loading available databases...'
+              }
+            </FormHelperText>
+          </FormControl>
         )}
 
         {/* Parameters */}
-        <Grid item xs={12} md={6}>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
           <TextField
-            fullWidth
+            sx={{ flex: 1, minWidth: 200 }}
             label="E-value"
             value={evalue}
             onChange={(e) => setEvalue(e.target.value)}
             helperText="E-value threshold (e.g., 1e-10)"
           />
-        </Grid>
 
-        <Grid item xs={12} md={6}>
           <TextField
-            fullWidth
+            sx={{ flex: 1, minWidth: 200 }}
             label="Max Target Sequences"
             value={maxTargetSeqs}
             onChange={(e) => setMaxTargetSeqs(e.target.value)}
             helperText="Maximum number of hits to return"
           />
-        </Grid>
+        </Box>
 
         {/* Sequence Input */}
-        <Grid item xs={12}>
+        <Box>
           <Typography variant="subtitle1" gutterBottom>
             Query Sequence
           </Typography>
@@ -250,10 +261,10 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
             placeholder="Enter your sequence here (FASTA format or raw sequence)..."
             variant="outlined"
           />
-        </Grid>
+        </Box>
 
         {/* Search Button */}
-        <Grid item xs={12}>
+        <Box>
           <Button
             variant="contained"
             size="large"
@@ -264,8 +275,8 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
           >
             {loading ? 'Searching...' : 'Run BLAST Search'}
           </Button>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
     </Paper>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -9,12 +9,13 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Grid,
   Alert,
   CircularProgress,
+  FormHelperText,
 } from '@mui/material';
 import { Biotech, Upload } from '@mui/icons-material';
 import api from '../../../services/api';
+import { validateSequence, getSequenceTypeFromBlastType } from '../../../utils/fastaParser';
 
 interface AntibodyAnalysisProps {
   organisms: string[];
@@ -28,10 +29,17 @@ const AntibodyAnalysis: React.FC<AntibodyAnalysisProps> = ({
   loading,
 }) => {
   const [sequence, setSequence] = useState('');
-  const [organism, setOrganism] = useState('human');
+  const [organism, setOrganism] = useState('');
   const [blastType, setBlastType] = useState('igblastn');
   const [evalue, setEvalue] = useState('1e-10');
   const [error, setError] = useState<string | null>(null);
+
+  // Set default organism when organisms list is loaded
+  useEffect(() => {
+    if (organisms.length > 0 && !organism) {
+      setOrganism(organisms[0]);
+    }
+  }, [organisms, organism]);
 
   const blastTypes = [
     { value: 'igblastn', label: 'IgBLASTN (Nucleotide antibody sequences)' },
@@ -39,8 +47,12 @@ const AntibodyAnalysis: React.FC<AntibodyAnalysisProps> = ({
   ];
 
   const handleSearch = async () => {
-    if (!sequence.trim()) {
-      setError('Please enter a sequence');
+    // Validate sequence
+    const sequenceType = getSequenceTypeFromBlastType(blastType);
+    const validation = validateSequence(sequence, sequenceType);
+    
+    if (!validation.isValid) {
+      setError(`Antibody sequence validation failed: ${validation.errors.join(', ')}`);
       return;
     }
 
@@ -52,7 +64,7 @@ const AntibodyAnalysis: React.FC<AntibodyAnalysisProps> = ({
     setError(null);
 
     const searchData = {
-      query_sequence: sequence.trim(),
+      query_sequence: validation.cleanSequence,
       organism: organism,
       blast_type: blastType,
       evalue: parseFloat(evalue),
@@ -76,11 +88,13 @@ const AntibodyAnalysis: React.FC<AntibodyAnalysisProps> = ({
 
     try {
       const response = await api.uploadSequencesForBlast(formData);
-      setSequence(response.data.sequence);
-      setError(null);
-    } catch (err: unknown) {
-      setError(`Upload failed: ${err.message}`);
-    }
+              if (response.data?.sequence) {
+          setSequence(response.data.sequence as string);
+        }
+        setError(null);
+      } catch (err: unknown) {
+        setError(`Upload failed: ${(err as Error).message}`);
+      }
   };
 
   return (
@@ -100,28 +114,41 @@ const AntibodyAnalysis: React.FC<AntibodyAnalysisProps> = ({
         </Alert>
       )}
 
-      <Grid container spacing={3}>
-        {/* Organism Selection */}
-        <Grid item xs={12} md={6}>
-          <FormControl fullWidth>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {/* Organism Selection and BLAST Type */}
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <FormControl sx={{ minWidth: 200, flex: 1 }}>
             <InputLabel>Organism</InputLabel>
-            <Select
-              value={organism}
-              label="Organism"
-              onChange={(e) => setOrganism(e.target.value)}
-            >
-              {organisms.map((org) => (
-                <MenuItem key={org} value={org}>
-                  {org.charAt(0).toUpperCase() + org.slice(1)}
-                </MenuItem>
-              ))}
-            </Select>
+            {organisms.length > 0 ? (
+              <Select
+                value={organism}
+                label="Organism"
+                onChange={(e) => setOrganism(e.target.value)}
+              >
+                {organisms.map((org) => (
+                  <MenuItem key={org} value={org}>
+                    {org.charAt(0).toUpperCase() + org.slice(1)}
+                  </MenuItem>
+                ))}
+              </Select>
+            ) : (
+              <Select
+                value=""
+                label="Organism"
+                disabled
+              >
+                <MenuItem value="">Loading organisms...</MenuItem>
+              </Select>
+            )}
+            <FormHelperText>
+              {organisms.length > 0 
+                ? `Select an organism for IgBLAST analysis (${organisms.length} available)`
+                : 'Loading available organisms...'
+              }
+            </FormHelperText>
           </FormControl>
-        </Grid>
 
-        {/* BLAST Type */}
-        <Grid item xs={12} md={6}>
-          <FormControl fullWidth>
+          <FormControl sx={{ minWidth: 200, flex: 1 }}>
             <InputLabel>BLAST Type</InputLabel>
             <Select
               value={blastType}
@@ -135,21 +162,19 @@ const AntibodyAnalysis: React.FC<AntibodyAnalysisProps> = ({
               ))}
             </Select>
           </FormControl>
-        </Grid>
+        </Box>
 
         {/* E-value */}
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            label="E-value"
-            value={evalue}
-            onChange={(e) => setEvalue(e.target.value)}
-            helperText="E-value threshold (e.g., 1e-10)"
-          />
-        </Grid>
+        <TextField
+          sx={{ maxWidth: 300 }}
+          label="E-value"
+          value={evalue}
+          onChange={(e) => setEvalue(e.target.value)}
+          helperText="E-value threshold (e.g., 1e-10)"
+        />
 
         {/* Sequence Input */}
-        <Grid item xs={12}>
+        <Box>
           <Typography variant="subtitle1" gutterBottom>
             Antibody Sequence
           </Typography>
@@ -183,10 +208,10 @@ const AntibodyAnalysis: React.FC<AntibodyAnalysisProps> = ({
             placeholder="Enter your antibody sequence here (FASTA format or raw sequence)..."
             variant="outlined"
           />
-        </Grid>
+        </Box>
 
         {/* Search Button */}
-        <Grid item xs={12}>
+        <Box>
           <Button
             variant="contained"
             size="large"
@@ -197,8 +222,8 @@ const AntibodyAnalysis: React.FC<AntibodyAnalysisProps> = ({
           >
             {loading ? 'Analyzing...' : 'Run Antibody Analysis'}
           </Button>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
     </Paper>
   );
 };

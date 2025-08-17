@@ -4,7 +4,6 @@ Simple test script for BLAST API endpoints
 """
 
 import sys
-import os
 
 sys.path.append(".")
 

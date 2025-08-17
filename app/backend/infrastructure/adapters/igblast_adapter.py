@@ -7,28 +7,83 @@ IgBLAST is specifically designed for antibody and TCR sequence analysis.
 import subprocess
 import tempfile
 import os
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import logging
 
-from .base_adapter import BaseExternalToolAdapter
-from ...core.exceptions import ExternalToolError
+from backend.infrastructure.adapters.base_adapter import (
+    BaseExternalToolAdapter,
+)
+from backend.core.exceptions import ExternalToolError
+from backend.config import (
+    IGBLAST_INTERNAL_DATA_DIR,
+    get_igblast_v_db_path,
+    get_igblast_d_db_path,
+    get_igblast_j_db_path,
+    get_igblast_c_db_path,
+)
+from backend.infrastructure.parsers.airr_parser import AIRRParser
 
 
 class IgBlastAdapter(BaseExternalToolAdapter):
     """Adapter for the IgBLAST tool for immunoglobulin and TCR sequence analysis"""
 
     def __init__(self, docker_client=None):
-        self.docker_client = docker_client
+        # Initialize Docker client if not provided
+        if docker_client is None:
+            try:
+                import docker
+
+                self.docker_client = docker.from_env()
+            except ImportError:
+                self._logger = logging.getLogger(f"{self.__class__.__name__}")
+                self._logger.warning("Docker Python package not available")
+                self.docker_client = None
+            except Exception as e:
+                self._logger = logging.getLogger(f"{self.__class__.__name__}")
+                self._logger.warning(
+                    f"Could not initialize Docker client: {e}"
+                )
+                self.docker_client = None
+        else:
+            self.docker_client = docker_client
+
         self._supported_blast_types = ["igblastn", "igblastp"]
-        self._supported_organisms = [
-            "human",
-            "mouse",
-            "rat",
-            "rabbit",
-            "rhesus_monkey",
-        ]
         super().__init__("igblast")
         self._logger = logging.getLogger(f"{self.__class__.__name__}")
+        self._supported_organisms = self._discover_supported_organisms()
+        self._airr_parser = AIRRParser()
+
+    def _discover_supported_organisms(self) -> List[str]:
+        """Dynamically discover supported organisms from the database directory"""
+        try:
+            if not IGBLAST_INTERNAL_DATA_DIR.exists():
+                self._logger.warning(
+                    f"IgBLAST internal data directory not found: {IGBLAST_INTERNAL_DATA_DIR}"
+                )
+                return ["human", "mouse"]  # Default fallback
+
+            # Look for organism subdirectories
+            organisms = []
+            for item in IGBLAST_INTERNAL_DATA_DIR.iterdir():
+                if item.is_dir():
+                    # Check if this directory contains V gene database files with the naming pattern {organism}_V.nhr
+                    organism_name = item.name
+                    v_gene_file = item / f"{organism_name}_V.nhr"
+                    if v_gene_file.exists():
+                        organisms.append(organism_name)
+
+            if not organisms:
+                self._logger.warning(
+                    "No organism databases found in IgBLAST internal data directory"
+                )
+                return ["human", "mouse"]  # Default fallback
+
+            self._logger.info(f"Discovered supported organisms: {organisms}")
+            return organisms
+
+        except Exception as e:
+            self._logger.error(f"Error discovering supported organisms: {e}")
+            return ["human", "mouse"]  # Default fallback
 
     def _find_executable(self) -> str:
         """Find the IgBLAST executable path"""
@@ -116,6 +171,8 @@ class IgBlastAdapter(BaseExternalToolAdapter):
                 "linux/amd64",
                 "-v",
                 f"{work_dir}:/work",
+                "-v",
+                f"{IGBLAST_INTERNAL_DATA_DIR.resolve()}:/blast/internal_data:ro",
                 "-w",
                 "/work",
                 "ncbi/igblast:latest",
@@ -131,6 +188,55 @@ class IgBlastAdapter(BaseExternalToolAdapter):
             command.extend(["-query", query_file])
 
         command.extend(["-organism", organism])
+
+        # Add germline database parameters based on organism and BLAST type
+        if organism in self._supported_organisms:
+            # Get database paths from configuration
+            v_db_path = get_igblast_v_db_path(organism)
+            command.extend(
+                [
+                    "-germline_db_V",
+                    f"/blast/internal_data/{v_db_path.relative_to(IGBLAST_INTERNAL_DATA_DIR)}",
+                ]
+            )
+
+            # D and J gene databases are only used for nucleotide searches
+            if blast_type == "igblastn":
+                d_db_path = get_igblast_d_db_path(organism)
+                j_db_path = get_igblast_j_db_path(organism)
+                c_db_path = get_igblast_c_db_path(organism)
+
+                command.extend(
+                    [
+                        "-germline_db_D",
+                        f"/blast/internal_data/{d_db_path.relative_to(IGBLAST_INTERNAL_DATA_DIR)}",
+                    ]
+                )
+                command.extend(
+                    [
+                        "-germline_db_J",
+                        f"/blast/internal_data/{j_db_path.relative_to(IGBLAST_INTERNAL_DATA_DIR)}",
+                    ]
+                )
+                # Add constant region database for C gene detection
+                command.extend(
+                    [
+                        "-c_region_db",
+                        f"/blast/internal_data/{c_db_path.relative_to(IGBLAST_INTERNAL_DATA_DIR)}",
+                    ]
+                )
+
+                self._logger.debug(
+                    f"Using C region database for {organism}: {c_db_path}"
+                )
+            else:
+                self._logger.debug(
+                    f"Protein search - C gene detection not available for {blast_type}"
+                )
+        else:
+            raise ValueError(
+                f"Organism '{organism}' is not supported. Available organisms: {self._supported_organisms}"
+            )
 
         # Add optional parameters
         if "evalue" in kwargs:
@@ -154,13 +260,12 @@ class IgBlastAdapter(BaseExternalToolAdapter):
         if "outfmt" in kwargs:
             command.extend(["-outfmt", str(kwargs["outfmt"])])
         else:
-            # Default to tabular format with antibody-specific fields
-            command.extend(
-                [
-                    "-outfmt",
-                    "7 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore v_gene d_gene j_gene c_gene cdr3_start cdr3_end cdr3_seq",
-                ]
-            )
+            # Use AIRR format for nucleotide searches (has gene assignments)
+            # Use default tabular format for protein searches (AIRR not supported)
+            if blast_type == "igblastn":
+                command.extend(["-outfmt", "19"])  # AIRR format
+            else:
+                command.extend(["-outfmt", "7"])  # Default tabular format
 
         # Add additional parameters
         for key, value in kwargs.items():
@@ -188,7 +293,7 @@ class IgBlastAdapter(BaseExternalToolAdapter):
         blast_type = kwargs.get("blast_type", "igblastn")
         outfmt = kwargs.get("outfmt", "7")
 
-        if outfmt == "7":
+        if outfmt == "7" or outfmt == "19":
             return self._parse_tabular_output(output, blast_type)
         else:
             return self._parse_standard_output(output, blast_type)
@@ -196,7 +301,197 @@ class IgBlastAdapter(BaseExternalToolAdapter):
     def _parse_tabular_output(
         self, output: str, blast_type: str
     ) -> Dict[str, Any]:
-        """Parse tabular IgBLAST output (outfmt 7)"""
+        """Parse IgBLAST output (AIRR for nucleotide, tabular for protein)"""
+
+        if blast_type == "igblastn":
+            return self._parse_airr_output(output, blast_type)
+        else:
+            return self._parse_default_tabular_output(output, blast_type)
+
+    def _parse_airr_output(
+        self, output: str, blast_type: str
+    ) -> Dict[str, Any]:
+        """Parse IgBLAST AIRR format output (outfmt 19) using advanced parser"""
+
+        try:
+            # Use the advanced AIRR parser
+            airr_result = self._airr_parser.parse_airr_output(output)
+
+            # Convert to backward-compatible format for existing API
+            hits = []
+            query_info = {}
+
+            for rearrangement in airr_result.rearrangements:
+                # Convert advanced AIRR data to legacy hit format for backward compatibility
+                hit = self._convert_rearrangement_to_hit(rearrangement)
+                hits.append(hit)
+
+                # Use first rearrangement for query info
+                if not query_info:
+                    query_info["query_id"] = rearrangement.sequence_id
+
+            # Create analysis summary with enhanced data
+            analysis_summary = self._create_enhanced_analysis_summary(
+                airr_result
+            )
+
+            return {
+                "blast_type": blast_type,
+                "query_info": query_info,
+                "hits": hits,
+                "analysis_summary": analysis_summary,
+                "total_hits": len(hits),
+                # Include the full AIRR result for advanced users
+                "airr_result": (
+                    airr_result.model_dump()
+                    if airr_result.rearrangements
+                    else None
+                ),
+            }
+
+        except Exception as e:
+            self._logger.error(
+                f"Error parsing AIRR output with advanced parser: {e}"
+            )
+            # Fallback to basic parsing
+            return self._parse_airr_output_fallback(output, blast_type)
+
+    def _convert_rearrangement_to_hit(self, rearrangement) -> Dict[str, Any]:
+        """Convert advanced AIRR rearrangement to legacy hit format"""
+
+        # Extract CDR3 information from junction region
+        cdr3_sequence = None
+        cdr3_start = None
+        cdr3_end = None
+
+        if rearrangement.junction_region:
+            cdr3_sequence = (
+                rearrangement.junction_region.cdr3
+                or rearrangement.junction_region.junction
+                or rearrangement.junction_region.np2
+            )
+            cdr3_start = rearrangement.junction_region.cdr3_start
+            cdr3_end = rearrangement.junction_region.cdr3_end
+
+        # Calculate alignment length from V gene alignment
+        alignment_length = 0
+        if (
+            rearrangement.v_alignment
+            and rearrangement.v_alignment.start
+            and rearrangement.v_alignment.end
+        ):
+            alignment_length = (
+                rearrangement.v_alignment.end
+                - rearrangement.v_alignment.start
+                + 1
+            )
+        elif rearrangement.v_sequence_start and rearrangement.v_sequence_end:
+            alignment_length = (
+                rearrangement.v_sequence_end
+                - rearrangement.v_sequence_start
+                + 1
+            )
+
+        return {
+            "query_id": rearrangement.sequence_id,
+            "subject_id": rearrangement.v_call or "",
+            "identity": (
+                rearrangement.v_alignment.identity
+                if rearrangement.v_alignment
+                else 0.0
+            ),
+            "alignment_length": alignment_length,
+            "mismatches": 0,  # Not directly available in AIRR
+            "gap_opens": 0,  # Not directly available in AIRR
+            "query_start": rearrangement.v_sequence_start or 0,
+            "query_end": rearrangement.v_sequence_end or 0,
+            "subject_start": rearrangement.v_germline_start or 0,
+            "subject_end": rearrangement.v_germline_end or 0,
+            "evalue": 0.0,  # Not directly available in AIRR
+            "bit_score": (
+                rearrangement.v_alignment.score
+                if rearrangement.v_alignment
+                else 0.0
+            ),
+            "v_gene": rearrangement.v_call,
+            "d_gene": rearrangement.d_call,
+            "j_gene": rearrangement.j_call,
+            "c_gene": rearrangement.c_call,
+            "cdr3_start": cdr3_start,
+            "cdr3_end": cdr3_end,
+            "cdr3_sequence": cdr3_sequence,
+            # Add advanced fields for enhanced analysis
+            "productive": (
+                str(rearrangement.productive.value)
+                if rearrangement.productive
+                else None
+            ),
+            "locus": (
+                str(rearrangement.locus.value) if rearrangement.locus else None
+            ),
+            "complete_vdj": rearrangement.complete_vdj,
+            "stop_codon": rearrangement.stop_codon,
+            "vj_in_frame": rearrangement.vj_in_frame,
+        }
+
+    def _create_enhanced_analysis_summary(self, airr_result) -> Dict[str, Any]:
+        """Create enhanced analysis summary from AIRR result"""
+
+        if not airr_result.rearrangements:
+            return {"total_hits": 0}
+
+        # Use the first (best) rearrangement for summary
+        best = airr_result.rearrangements[0]
+
+        summary = {
+            "best_v_gene": best.v_call,
+            "best_d_gene": best.d_call,
+            "best_j_gene": best.j_call,
+            "best_c_gene": best.c_call,
+            "total_hits": len(airr_result.rearrangements),
+            # Enhanced summary information
+            "productive_sequences": airr_result.productive_sequences,
+            "unique_v_genes": airr_result.unique_v_genes,
+            "unique_d_genes": airr_result.unique_d_genes,
+            "unique_j_genes": airr_result.unique_j_genes,
+            "locus": str(best.locus.value) if best.locus else None,
+        }
+
+        # Add CDR3 information
+        if best.junction_region:
+            summary.update(
+                {
+                    "cdr3_sequence": (
+                        best.junction_region.cdr3
+                        or best.junction_region.junction
+                        or best.junction_region.np2
+                    ),
+                    "cdr3_start": best.junction_region.cdr3_start,
+                    "cdr3_end": best.junction_region.cdr3_end,
+                    "junction_length": best.junction_region.junction_length,
+                    "cdr3_aa": best.junction_region.cdr3_aa,
+                    "junction_aa": best.junction_region.junction_aa,
+                }
+            )
+
+        # Add framework and CDR region information
+        if best.fwr1:
+            summary["fwr1_sequence"] = best.fwr1.sequence_aa
+        if best.cdr1:
+            summary["cdr1_sequence"] = best.cdr1.sequence_aa
+        if best.fwr2:
+            summary["fwr2_sequence"] = best.fwr2.sequence_aa
+        if best.cdr2:
+            summary["cdr2_sequence"] = best.cdr2.sequence_aa
+        if best.fwr3:
+            summary["fwr3_sequence"] = best.fwr3.sequence_aa
+
+        return summary
+
+    def _parse_default_tabular_output(
+        self, output: str, blast_type: str
+    ) -> Dict[str, Any]:
+        """Parse default IgBLAST tabular output (outfmt 7) for protein searches"""
         lines = output.strip().split("\n")
         hits = []
         query_info = {}
@@ -223,47 +518,40 @@ class IgBlastAdapter(BaseExternalToolAdapter):
                 continue
 
             fields = line.split("\t")
-            if len(fields) >= 17:  # IgBLAST tabular format has 17+ fields
+
+            # Default IgBLAST format: chain_type, qseqid, sseqid, pident, length, mismatch, gapopen, gaps, qstart, qend, sstart, send, evalue, bitscore
+            min_fields = 14
+
+            if len(fields) >= min_fields:
                 hit = {
-                    "query_id": fields[0],
-                    "subject_id": fields[1],
-                    "identity": float(fields[2]),
-                    "alignment_length": int(fields[3]),
-                    "mismatches": int(fields[4]),
-                    "gap_opens": int(fields[5]),
-                    "query_start": int(fields[6]),
-                    "query_end": int(fields[7]),
-                    "subject_start": int(fields[8]),
-                    "subject_end": int(fields[9]),
-                    "evalue": float(fields[10]),
-                    "bit_score": float(fields[11]),
-                    "v_gene": fields[12] if fields[12] != "N/A" else None,
-                    "d_gene": fields[13] if fields[13] != "N/A" else None,
-                    "j_gene": fields[14] if fields[14] != "N/A" else None,
-                    "c_gene": fields[15] if fields[15] != "N/A" else None,
+                    "query_id": fields[1],  # qseqid
+                    "subject_id": fields[2],  # sseqid
+                    "identity": float(fields[3]),  # pident
+                    "alignment_length": int(fields[4]),  # length
+                    "mismatches": int(fields[5]),  # mismatch
+                    "gap_opens": int(fields[6]),  # gapopen
+                    "query_start": int(fields[8]),  # qstart (skip gaps field)
+                    "query_end": int(fields[9]),  # qend
+                    "subject_start": int(fields[10]),  # sstart
+                    "subject_end": int(fields[11]),  # send
+                    "evalue": float(fields[12]),  # evalue
+                    "bit_score": float(fields[13]),  # bitscore
+                    "v_gene": (
+                        fields[2] if fields[0] == "V" else None
+                    ),  # Use subject_id for V gene
                 }
 
-                # Add CDR3 information if present
-                if len(fields) > 16:
-                    try:
-                        hit["cdr3_start"] = (
-                            int(fields[16]) if fields[16] != "N/A" else None
-                        )
-                    except ValueError:
-                        hit["cdr3_start"] = None
-
-                if len(fields) > 17:
-                    try:
-                        hit["cdr3_end"] = (
-                            int(fields[17]) if fields[17] != "N/A" else None
-                        )
-                    except ValueError:
-                        hit["cdr3_end"] = None
-
-                if len(fields) > 18:
-                    hit["cdr3_sequence"] = (
-                        fields[18] if fields[18] != "N/A" else None
-                    )
+                # For protein searches, limited gene assignment info available
+                hit["d_gene"] = None  # Not applicable for protein searches
+                hit["j_gene"] = (
+                    None  # Not easily extractable from tabular format
+                )
+                hit["c_gene"] = (
+                    None  # Not easily extractable from tabular format
+                )
+                hit["cdr3_start"] = None
+                hit["cdr3_end"] = None
+                hit["cdr3_sequence"] = None
 
                 hits.append(hit)
 
@@ -304,16 +592,21 @@ class IgBlastAdapter(BaseExternalToolAdapter):
         }
 
     def _validate_sequence(self, sequence: str, blast_type: str) -> None:
-        """Validate input sequence"""
+        """Validate input sequence (case insensitive)"""
         if not sequence or not isinstance(sequence, str):
             raise ValueError("Sequence must be a non-empty string")
 
-        sequence = sequence.upper().strip()
+        # Clean and normalize sequence (case insensitive)
+        # Remove newlines, spaces, tabs, and other whitespace
+        sequence_clean = "".join(sequence.split()).upper()
+
+        if not sequence_clean:
+            raise ValueError("Sequence cannot be empty after cleaning")
 
         if blast_type == "igblastn":
-            # DNA sequence validation
-            valid_nt = set("ATGCU")
-            invalid_chars = set(sequence) - valid_nt
+            # DNA/RNA sequence validation - support both DNA (ATGC) and RNA (ATGCU)
+            valid_nt = set("ATGCUN")  # N for ambiguous nucleotides
+            invalid_chars = set(sequence_clean) - valid_nt
             if invalid_chars:
                 raise ValueError(
                     f"Invalid nucleotide characters: {invalid_chars}"
@@ -321,7 +614,7 @@ class IgBlastAdapter(BaseExternalToolAdapter):
         elif blast_type == "igblastp":
             # Protein sequence validation
             valid_aa = set("ACDEFGHIKLMNPQRSTVWY")
-            invalid_chars = set(sequence) - valid_aa
+            invalid_chars = set(sequence_clean) - valid_aa
             if invalid_chars:
                 raise ValueError(
                     f"Invalid amino acid characters: {invalid_chars}"
@@ -329,10 +622,12 @@ class IgBlastAdapter(BaseExternalToolAdapter):
 
     def _create_query_file(self, sequence: str) -> str:
         """Create a temporary FASTA file for the query sequence"""
+        # Clean the sequence before writing to file
+        clean_sequence = "".join(sequence.split()).upper()
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".fasta", delete=False
         ) as f:
-            f.write(f">query\n{sequence}\n")
+            f.write(f">query\n{clean_sequence}\n")
             return f.name
 
     def get_supported_organisms(self) -> List[str]:
@@ -342,3 +637,211 @@ class IgBlastAdapter(BaseExternalToolAdapter):
     def get_supported_blast_types(self) -> List[str]:
         """Get list of supported IgBLAST types"""
         return self._supported_blast_types.copy()
+
+    def _parse_airr_output_fallback(
+        self, output: str, blast_type: str
+    ) -> Dict[str, Any]:
+        """Fallback AIRR parsing method using the original logic"""
+        lines = output.strip().split("\n")
+        hits = []
+        query_info = {}
+        analysis_summary = {}
+
+        if len(lines) < 2:  # Need at least header + data
+            return {
+                "blast_type": blast_type,
+                "query_info": query_info,
+                "hits": hits,
+                "analysis_summary": analysis_summary,
+                "total_hits": 0,
+            }
+
+        # First line is header, second line is data
+        header = lines[0].split("\t")
+
+        # Find the data line (skip empty lines)
+        data_line = None
+        for line in lines[1:]:
+            if line.strip():
+                data_line = line.split("\t")
+                break
+
+        if not data_line:
+            return {
+                "blast_type": blast_type,
+                "query_info": query_info,
+                "hits": hits,
+                "analysis_summary": analysis_summary,
+                "total_hits": 0,
+            }
+
+        # Pad data_line with empty strings if it's shorter than header
+        while len(data_line) < len(header):
+            data_line.append("")
+
+        # Create a dictionary from header and data
+        airr_data = dict(zip(header, data_line))
+
+        # Extract query info
+        query_info["query_id"] = airr_data.get("sequence_id", "")
+
+        # Convert AIRR format to our hit format
+        hit = {
+            "query_id": airr_data.get("sequence_id", ""),
+            "subject_id": airr_data.get("v_call", ""),
+            "identity": (
+                float(airr_data.get("v_identity", 0))
+                if airr_data.get("v_identity")
+                else 0.0
+            ),
+            "alignment_length": (
+                int(airr_data.get("v_alignment_end", 0))
+                - int(airr_data.get("v_alignment_start", 0))
+                + 1
+                if airr_data.get("v_alignment_start")
+                and airr_data.get("v_alignment_end")
+                else 0
+            ),
+            "mismatches": 0,  # Not directly available in AIRR
+            "gap_opens": 0,  # Not directly available in AIRR
+            "query_start": (
+                int(airr_data.get("v_sequence_start", 0))
+                if airr_data.get("v_sequence_start")
+                else 0
+            ),
+            "query_end": (
+                int(airr_data.get("v_sequence_end", 0))
+                if airr_data.get("v_sequence_end")
+                else 0
+            ),
+            "subject_start": (
+                int(airr_data.get("v_germline_start", 0))
+                if airr_data.get("v_germline_start")
+                else 0
+            ),
+            "subject_end": (
+                int(airr_data.get("v_germline_end", 0))
+                if airr_data.get("v_germline_end")
+                else 0
+            ),
+            "evalue": 0.0,  # Not directly available in AIRR
+            "bit_score": (
+                float(airr_data.get("v_score", 0))
+                if airr_data.get("v_score")
+                else 0.0
+            ),
+            "v_gene": (
+                airr_data.get("v_call") if airr_data.get("v_call") else None
+            ),
+            "d_gene": (
+                airr_data.get("d_call") if airr_data.get("d_call") else None
+            ),
+            "j_gene": (
+                airr_data.get("j_call") if airr_data.get("j_call") else None
+            ),
+            "c_gene": (
+                airr_data.get("c_call") if airr_data.get("c_call") else None
+            ),
+            "cdr3_start": self._extract_cdr3_start(airr_data),
+            "cdr3_end": self._extract_cdr3_end(airr_data),
+            # CDR3 sequence is often in the junction field or np2 field for IgBLAST
+            "cdr3_sequence": (
+                airr_data.get("junction")
+                or airr_data.get("cdr3")
+                or airr_data.get("np2")
+                or None
+            ),
+        }
+
+        hits.append(hit)
+
+        # Create analysis summary
+        analysis_summary = {
+            "best_v_gene": hit.get("v_gene"),
+            "best_d_gene": hit.get("d_gene"),
+            "best_j_gene": hit.get("j_gene"),
+            "best_c_gene": hit.get("c_gene"),
+            "cdr3_sequence": hit.get("cdr3_sequence"),
+            "cdr3_start": hit.get("cdr3_start"),
+            "cdr3_end": hit.get("cdr3_end"),
+            "total_hits": len(hits),
+        }
+
+        return {
+            "blast_type": blast_type,
+            "query_info": query_info,
+            "hits": hits,
+            "analysis_summary": analysis_summary,
+            "total_hits": len(hits),
+        }
+
+    def _extract_cdr3_start(self, airr_data: Dict[str, str]) -> Optional[int]:
+        """Extract CDR3 start position from AIRR data."""
+        # Try direct field first
+        if airr_data.get("cdr3_start") and airr_data.get("cdr3_start").strip():
+            try:
+                return int(airr_data["cdr3_start"])
+            except (ValueError, TypeError):
+                pass
+
+        # Try to infer from other position fields
+        # CDR3 typically starts after FWR3 ends
+        fwr3_end = airr_data.get("fwr3_end")
+        if fwr3_end and fwr3_end.strip():
+            try:
+                return int(fwr3_end) + 1
+            except (ValueError, TypeError):
+                pass
+
+        # Try to use V gene end position as approximation
+        v_end = airr_data.get("v_sequence_end")
+        if v_end and v_end.strip():
+            try:
+                # CDR3 usually starts near the end of V gene
+                return int(v_end) - 10  # Approximate offset
+            except (ValueError, TypeError):
+                pass
+
+        return None
+
+    def _extract_cdr3_end(self, airr_data: Dict[str, str]) -> Optional[int]:
+        """Extract CDR3 end position from AIRR data."""
+        # Try direct field first
+        if airr_data.get("cdr3_end") and airr_data.get("cdr3_end").strip():
+            try:
+                return int(airr_data["cdr3_end"])
+            except (ValueError, TypeError):
+                pass
+
+        # Try to infer from other position fields
+        # CDR3 typically ends before FWR4 starts
+        fwr4_start = airr_data.get("fwr4_start")
+        if fwr4_start and fwr4_start.strip():
+            try:
+                return int(fwr4_start) - 1
+            except (ValueError, TypeError):
+                pass
+
+        # Try to use J gene start position as approximation
+        j_start = airr_data.get("j_sequence_start")
+        if j_start and j_start.strip():
+            try:
+                # CDR3 usually ends near the start of J gene
+                return int(j_start) + 10  # Approximate offset
+            except (ValueError, TypeError):
+                pass
+
+        # Try to calculate from CDR3 start + junction length
+        cdr3_start = self._extract_cdr3_start(airr_data)
+        junction_length = airr_data.get("junction_length")
+        if (
+            cdr3_start is not None
+            and junction_length
+            and junction_length.strip()
+        ):
+            try:
+                return cdr3_start + int(junction_length) - 1
+            except (ValueError, TypeError):
+                pass
+
+        return None

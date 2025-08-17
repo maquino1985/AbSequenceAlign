@@ -21,7 +21,15 @@ class BlastSearchRequest(BaseModel):
     blast_type: str = "blastp"
     evalue: float = 1e-10
     max_target_seqs: int = 10
-    organism: Optional[str] = None  # For IgBLAST
+
+
+class IgBlastSearchRequest(BaseModel):
+    """Request model for IgBLAST antibody analysis"""
+
+    query_sequence: str
+    organism: str  # Required for IgBLAST
+    blast_type: str = "igblastn"
+    evalue: float = 1e-10
 
 
 class BlastSearchResponse(BaseModel):
@@ -85,12 +93,38 @@ async def search_public_databases(request: BlastSearchRequest):
             data={"results": results},
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # Handle validation errors (e.g., invalid sequences, parameters)
+        error_msg = str(e)
+        if "Invalid" in error_msg and "characters" in error_msg:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid sequence: {error_msg}. Please check your sequence contains only valid amino acid or nucleotide characters.",
+            )
+        elif "empty" in error_msg.lower():
+            raise HTTPException(
+                status_code=400,
+                detail="Empty sequence provided. Please provide a valid sequence.",
+            )
+        else:
+            raise HTTPException(
+                status_code=400, detail=f"Validation error: {error_msg}"
+            )
     except Exception as e:
         logger.error(f"BLAST search failed: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"BLAST search failed: {e}"
-        )
+        error_msg = str(e)
+        if "Database error" in error_msg:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error: The requested database may not be available. {error_msg}",
+            )
+        elif "Tool execution failed" in error_msg:
+            raise HTTPException(
+                status_code=500, detail=f"BLAST execution error: {error_msg}"
+            )
+        else:
+            raise HTTPException(
+                status_code=500, detail=f"BLAST search failed: {e}"
+            )
 
 
 @router.post("/search/internal", response_model=BlastSearchResponse)
@@ -112,23 +146,44 @@ async def search_internal_database(request: BlastSearchRequest):
             data={"results": results},
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # Handle validation errors (e.g., invalid sequences, parameters)
+        error_msg = str(e)
+        if "Invalid" in error_msg and "characters" in error_msg:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid sequence: {error_msg}. Please check your sequence contains only valid amino acid or nucleotide characters.",
+            )
+        elif "empty" in error_msg.lower():
+            raise HTTPException(
+                status_code=400,
+                detail="Empty sequence provided. Please provide a valid sequence.",
+            )
+        else:
+            raise HTTPException(
+                status_code=400, detail=f"Validation error: {error_msg}"
+            )
     except Exception as e:
         logger.error(f"Internal BLAST search failed: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Internal BLAST search failed: {e}"
-        )
+        error_msg = str(e)
+        if "Database error" in error_msg:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error: The internal database may not be available. {error_msg}",
+            )
+        elif "Tool execution failed" in error_msg:
+            raise HTTPException(
+                status_code=500, detail=f"BLAST execution error: {error_msg}"
+            )
+        else:
+            raise HTTPException(
+                status_code=500, detail=f"Internal BLAST search failed: {e}"
+            )
 
 
 @router.post("/search/antibody", response_model=BlastSearchResponse)
-async def analyze_antibody_sequence(request: BlastSearchRequest):
+async def analyze_antibody_sequence(request: IgBlastSearchRequest):
     """Analyze antibody sequences using IgBLAST"""
     try:
-        if not request.organism:
-            raise HTTPException(
-                status_code=400,
-                detail="Organism is required for antibody analysis",
-            )
 
         igblast_service = IgBlastService()
 
@@ -155,12 +210,45 @@ async def analyze_antibody_sequence(request: BlastSearchRequest):
             },
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # Handle validation errors (e.g., invalid sequences, parameters)
+        error_msg = str(e)
+        if "Invalid antibody sequence" in error_msg or (
+            "Invalid" in error_msg and "characters" in error_msg
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid antibody sequence: {error_msg}. Please check your sequence contains only valid amino acid or nucleotide characters and represents a valid antibody sequence.",
+            )
+        elif "empty" in error_msg.lower():
+            raise HTTPException(
+                status_code=400,
+                detail="Empty sequence provided. Please provide a valid antibody sequence.",
+            )
+        else:
+            raise HTTPException(
+                status_code=400, detail=f"Validation error: {error_msg}"
+            )
     except Exception as e:
         logger.error(f"Antibody analysis failed: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Antibody analysis failed: {e}"
-        )
+        error_msg = str(e)
+        if "Database error" in error_msg or "database" in error_msg.lower():
+            raise HTTPException(
+                status_code=500,
+                detail=f"IgBLAST database error: The antibody database may not be available for the requested organism. {error_msg}",
+            )
+        elif "Tool execution failed" in error_msg:
+            raise HTTPException(
+                status_code=500, detail=f"IgBLAST execution error: {error_msg}"
+            )
+        elif "Unknown argument" in error_msg:
+            raise HTTPException(
+                status_code=500,
+                detail=f"IgBLAST configuration error: {error_msg}. This may be a temporary issue.",
+            )
+        else:
+            raise HTTPException(
+                status_code=500, detail=f"Antibody analysis failed: {e}"
+            )
 
 
 @router.post("/database/create", response_model=BlastSearchResponse)
