@@ -242,25 +242,74 @@ class BlastService:
                 databases[db_name] = description
 
         # Look for nucleotide databases (.nhr, .nin, .nsq files)
+        # First, collect all database base names (without .00, .01 suffixes)
+        nucleotide_dbs = {}
+
         for file_path in BLAST_DB_DIR.glob("*.nhr"):
             db_name = file_path.stem  # Remove .nhr extension
+
+            # Skip IgBLAST-specific databases
+            if any(
+                skip_pattern in db_name.lower()
+                for skip_pattern in [
+                    "ncbi_human_c_genes",
+                    "ncbi_mouse_c_genes",
+                    "mouse_c_genes",
+                    "human_c_genes",
+                    "airr_c_",
+                    "gl_",
+                    "_gl_",
+                ]
+            ):
+                continue
 
             # Check if corresponding .nin and .nsq files exist
             nin_file = file_path.with_suffix(".nin")
             nsq_file = file_path.with_suffix(".nsq")
 
             if nin_file.exists() and nsq_file.exists():
-                # Map common database names to descriptions
-                descriptions = {
-                    "nt": "NCBI non-redundant nucleotide database",
-                    "refseq_nucleotide": "RefSeq nucleotide database",
-                    "16S_ribosomal_RNA": "16S ribosomal RNA database",
-                }
+                # Handle split databases (e.g., GCF_000001405.39_top_level.00, GCF_000001405.39_top_level.01)
+                if db_name.endswith(".00"):
+                    base_name = db_name[:-3]  # Remove .00
+                    # Check if .01 version exists
+                    db_01_name = base_name + ".01"
+                    db_01_nhr = file_path.parent / f"{db_01_name}.nhr"
+                    db_01_nin = file_path.parent / f"{db_01_name}.nin"
+                    db_01_nsq = file_path.parent / f"{db_01_name}.nsq"
 
-                description = descriptions.get(
-                    db_name, f"{db_name} nucleotide database"
-                )
-                databases[db_name] = description
+                    if (
+                        db_01_nhr.exists()
+                        and db_01_nin.exists()
+                        and db_01_nsq.exists()
+                    ):
+                        # This is a split database, use the base name
+                        nucleotide_dbs[base_name] = file_path
+                    else:
+                        # Only .00 exists, use the full name
+                        nucleotide_dbs[db_name] = file_path
+                elif db_name.endswith(".01"):
+                    # Skip .01 files as they'll be handled with .00
+                    continue
+                else:
+                    # Regular database name
+                    nucleotide_dbs[db_name] = file_path
+
+        # Now create descriptions for the nucleotide databases
+        for db_name, file_path in nucleotide_dbs.items():
+            # Map common database names to human-readable descriptions
+            descriptions = {
+                "nt": "NCBI non-redundant nucleotide database",
+                "refseq_nucleotide": "RefSeq nucleotide database",
+                "16S_ribosomal_RNA": "16S ribosomal RNA database",
+                "refseq_select_rna": "RefSeq Select RNA database",
+                "GCF_000001405.39_top_level": "Human genome (GRCh38.p13)",
+                "GCF_000001635.27_top_level": "Mouse genome (GRCm39)",
+            }
+
+            description = descriptions.get(
+                db_name, f"{db_name} nucleotide database"
+            )
+            databases[db_name] = description
 
         self._logger.info(
             f"Found {len(databases)} available databases: {list(databases.keys())}"

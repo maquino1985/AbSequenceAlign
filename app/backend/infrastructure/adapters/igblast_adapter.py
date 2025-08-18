@@ -86,6 +86,58 @@ class IgBlastAdapter(BaseExternalToolAdapter):
             self._logger.error(f"Error discovering supported organisms: {e}")
             return ["human", "mouse"]  # Default fallback
 
+    def _check_c_gene_db_exists(self, organism: str) -> bool:
+        """Check if C gene database exists for the given organism"""
+        try:
+            # Check for common C gene database naming patterns
+            c_db_path = get_igblast_c_db_path(organism)
+
+            # Check if the database files exist
+            if c_db_path.exists():
+                # Check for the main database file (.nhr)
+                nhr_file = c_db_path.with_suffix(".nhr")
+                if nhr_file.exists():
+                    self._logger.debug(
+                        f"C gene database found for {organism}: {nhr_file}"
+                    )
+                    return True
+
+            # Check for alternative naming patterns
+            alt_patterns = [
+                f"{organism}_C.nhr",
+                f"{organism}_gl_C.nhr",
+                f"ncbi_{organism}_c_genes.nhr",
+                f"airr_c_{organism}.nhr",
+            ]
+
+            # For mouse, also check for strain-specific databases
+            if organism == "mouse":
+                alt_patterns.extend(
+                    [
+                        "airr_c_C57BL_6J.V.nhr",
+                        "airr_c_C57BL_6.V.nhr",
+                        "airr_c_BALB_c_ByJ.V.nhr",
+                        "airr_c_BALB_c.V.nhr",
+                    ]
+                )
+
+            for pattern in alt_patterns:
+                alt_path = IGBLAST_INTERNAL_DATA_DIR / pattern
+                if alt_path.exists():
+                    self._logger.debug(
+                        f"C gene database found for {organism} (alternative): {alt_path}"
+                    )
+                    return True
+
+            self._logger.debug(f"C gene database not found for {organism}")
+            return False
+
+        except Exception as e:
+            self._logger.warning(
+                f"Error checking C gene database for {organism}: {e}"
+            )
+            return False
+
     def _find_executable(self) -> str:
         """Find the IgBLAST executable path"""
         # First try to find igblastn in PATH
@@ -219,17 +271,24 @@ class IgBlastAdapter(BaseExternalToolAdapter):
                         f"/blast/internal_data/{j_db_path.relative_to(IGBLAST_INTERNAL_DATA_DIR)}",
                     ]
                 )
-                # Add constant region database for C gene detection
-                command.extend(
-                    [
-                        "-c_region_db",
-                        f"/blast/internal_data/{c_db_path.relative_to(IGBLAST_INTERNAL_DATA_DIR)}",
-                    ]
-                )
 
-                self._logger.debug(
-                    f"Using C region database for {organism}: {c_db_path}"
-                )
+                # Add constant region database for C gene detection only if it exists
+                # Check if the C gene database files exist in the Docker container
+                c_db_exists = self._check_c_gene_db_exists(organism)
+                if c_db_exists:
+                    command.extend(
+                        [
+                            "-c_region_db",
+                            f"/blast/internal_data/{c_db_path.relative_to(IGBLAST_INTERNAL_DATA_DIR)}",
+                        ]
+                    )
+                    self._logger.debug(
+                        f"Using C region database for {organism}: {c_db_path}"
+                    )
+                else:
+                    self._logger.warning(
+                        f"C gene database not available for {organism}. C gene detection will be disabled."
+                    )
             else:
                 self._logger.debug(
                     f"Protein search - C gene detection not available for {blast_type}"

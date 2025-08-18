@@ -118,5 +118,8 @@ def get_igblast_c_db_path(organism: str) -> Path:
     """Get C gene database path for organism"""
     if organism == "human":
         return IGBLAST_HUMAN_C_DB
-    # For mouse and other organisms, use the gl_ prefix pattern
+    elif organism == "mouse":
+        # Use the newly created mouse C gene database
+        return IGBLAST_INTERNAL_DATA_DIR / "mouse_c_genes"
+    # For other organisms, use the gl_ prefix pattern
     return IGBLAST_INTERNAL_DATA_DIR / f"ncbi_{organism}_c_genes"
