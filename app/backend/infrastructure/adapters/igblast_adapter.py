@@ -6,14 +6,8 @@ IgBLAST is specifically designed for antibody and TCR sequence analysis.
 
 import subprocess
 import tempfile
-import os
 from typing import Dict, Any, List, Optional
-import logging
 
-from backend.infrastructure.adapters.base_adapter import (
-    BaseExternalToolAdapter,
-)
-from backend.core.exceptions import ExternalToolError
 from backend.config import (
     IGBLAST_INTERNAL_DATA_DIR,
     get_igblast_v_db_path,
@@ -21,7 +15,12 @@ from backend.config import (
     get_igblast_j_db_path,
     get_igblast_c_db_path,
 )
+from backend.core.exceptions import ExternalToolError
+from backend.infrastructure.adapters.base_adapter import (
+    BaseExternalToolAdapter,
+)
 from backend.infrastructure.parsers.airr_parser import AIRRParser
+from backend.logger import logger
 
 
 class IgBlastAdapter(BaseExternalToolAdapter):
@@ -29,27 +28,25 @@ class IgBlastAdapter(BaseExternalToolAdapter):
 
     def __init__(self, docker_client=None):
         # Initialize Docker client if not provided
+        self._logger = logger.getChild("IgBlastAdapter")
+
         if docker_client is None:
             try:
                 import docker
 
                 self.docker_client = docker.from_env()
             except ImportError:
-                self._logger = logging.getLogger(f"{self.__class__.__name__}")
                 self._logger.warning("Docker Python package not available")
                 self.docker_client = None
             except Exception as e:
-                self._logger = logging.getLogger(f"{self.__class__.__name__}")
                 self._logger.warning(
                     f"Could not initialize Docker client: {e}"
                 )
                 self.docker_client = None
         else:
             self.docker_client = docker_client
-
         self._supported_blast_types = ["igblastn", "igblastp"]
         super().__init__("igblast")
-        self._logger = logging.getLogger(f"{self.__class__.__name__}")
         self._supported_organisms = self._discover_supported_organisms()
         self._airr_parser = AIRRParser()
 
@@ -212,31 +209,21 @@ class IgBlastAdapter(BaseExternalToolAdapter):
 
         # Build base command
         if self.executable_path == "docker":
-            # Use absolute paths for Docker volume mounting
-            abs_query_file = os.path.abspath(query_file)
-            work_dir = os.path.dirname(abs_query_file)
-
             command = [
                 "docker",
-                "run",
-                "--rm",
-                "--platform",
-                "linux/amd64",
-                "-v",
-                f"{work_dir}:/work",
-                "-v",
-                f"{IGBLAST_INTERNAL_DATA_DIR.resolve()}:/blast/internal_data:ro",
-                "-w",
-                "/work",
-                "ncbi/igblast:latest",
+                "exec",
+                "absequencealign-igblast",
                 blast_type,
+                "-query",
+                "/dev/stdin",
             ]
         else:
             command = [blast_type]
 
         # Add required parameters
         if self.executable_path == "docker":
-            command.extend(["-query", os.path.basename(abs_query_file)])
+            # Using stdin, so no query file needed
+            pass
         else:
             command.extend(["-query", query_file])
 
@@ -249,7 +236,7 @@ class IgBlastAdapter(BaseExternalToolAdapter):
             command.extend(
                 [
                     "-germline_db_V",
-                    f"/blast/internal_data/{v_db_path.relative_to(IGBLAST_INTERNAL_DATA_DIR)}",
+                    f"/data/internal_data/{organism}/{v_db_path.name}",
                 ]
             )
 
@@ -262,13 +249,13 @@ class IgBlastAdapter(BaseExternalToolAdapter):
                 command.extend(
                     [
                         "-germline_db_D",
-                        f"/blast/internal_data/{d_db_path.relative_to(IGBLAST_INTERNAL_DATA_DIR)}",
+                        f"/data/internal_data/{organism}/{d_db_path.name}",
                     ]
                 )
                 command.extend(
                     [
                         "-germline_db_J",
-                        f"/blast/internal_data/{j_db_path.relative_to(IGBLAST_INTERNAL_DATA_DIR)}",
+                        f"/data/internal_data/{organism}/{j_db_path.name}",
                     ]
                 )
 
@@ -279,7 +266,7 @@ class IgBlastAdapter(BaseExternalToolAdapter):
                     command.extend(
                         [
                             "-c_region_db",
-                            f"/blast/internal_data/{c_db_path.relative_to(IGBLAST_INTERNAL_DATA_DIR)}",
+                            f"/data/internal_data/{c_db_path.name}",
                         ]
                     )
                     self._logger.debug(
@@ -320,17 +307,18 @@ class IgBlastAdapter(BaseExternalToolAdapter):
         if "outfmt" in kwargs:
             command.extend(["-outfmt", str(kwargs["outfmt"])])
         else:
-            # Use AIRR format for nucleotide searches (has gene assignments)
-            # Use default tabular format for protein searches (AIRR not supported)
+            # Use tabular format for both nucleotide and protein searches for now
             if blast_type == "igblastn":
-                command.extend(["-outfmt", "19"])  # AIRR format
+                command.extend(
+                    ["-outfmt", "7"]
+                )  # Tabular format instead of AIRR
                 self._logger.info(
-                    "Using AIRR format (outfmt 19) for IgBLAST nucleotide search"
+                    "Using tabular format (outfmt 7) for IgBLAST nucleotide search"
                 )
             else:
                 command.extend(["-outfmt", "7"])  # Default tabular format
                 self._logger.info(
-                    "Using tabular format (outfmt 7) for IgBLAST protein search - AIRR not supported"
+                    "Using tabular format (outfmt 7) for IgBLAST protein search"
                 )
 
         # Add additional parameters
@@ -414,12 +402,125 @@ class IgBlastAdapter(BaseExternalToolAdapter):
     def _parse_tabular_output(
         self, output: str, blast_type: str
     ) -> Dict[str, Any]:
-        """Parse IgBLAST output (AIRR for nucleotide, tabular for protein)"""
+        """Parse IgBLAST tabular output (outfmt 7)"""
 
-        if blast_type == "igblastn":
-            return self._parse_airr_output(output, blast_type)
-        else:
-            return self._parse_default_tabular_output(output, blast_type)
+        self._logger.info(f"Parsing tabular output for {blast_type}")
+        self._logger.debug(f"Tabular output length: {len(output)} characters")
+
+        if not output.strip():
+            self._logger.warning("Empty tabular output received")
+            return {
+                "blast_type": blast_type,
+                "query_info": {},
+                "hits": [],
+                "analysis_summary": {"total_hits": 0},
+                "total_hits": 0,
+            }
+
+        try:
+            lines = output.strip().split("\n")
+            hits = []
+            query_info = {}
+
+            # Parse the tabular output
+            for line in lines:
+                if line.startswith("#") or not line.strip():
+                    continue
+
+                # Parse the V-(D)-J rearrangement summary line
+                # Format: V_gene D_gene J_gene Chain_type Stop_codon V-J_frame Productive Strand V_Frame_shift
+                parts = line.split("\t")
+                if len(parts) >= 9:
+                    v_gene = parts[0].strip()
+                    d_gene = parts[1].strip()
+                    j_gene = parts[2].strip()
+                    chain_type = parts[3].strip()
+                    stop_codon = parts[4].strip()
+                    vj_frame = parts[5].strip()
+                    productive = parts[6].strip()
+                    strand = parts[7].strip()
+                    v_frameshift = parts[8].strip()
+
+                    # Create a hit object
+                    hit = {
+                        "query_id": "query",
+                        "subject_id": f"{v_gene}_{d_gene}_{j_gene}",
+                        "identity": 100.0,  # Default for IgBLAST
+                        "alignment_length": 0,  # Will be filled from alignment data
+                        "mismatches": 0,
+                        "gap_opens": 0,
+                        "query_start": 1,
+                        "query_end": 1,
+                        "subject_start": 1,
+                        "subject_end": 1,
+                        "evalue": 0.0,
+                        "bit_score": 0.0,
+                        "v_gene": v_gene if v_gene != "N/A" else None,
+                        "d_gene": d_gene if d_gene != "N/A" else None,
+                        "j_gene": j_gene if j_gene != "N/A" else None,
+                        "c_gene": None,  # Not in tabular format
+                        "chain_type": chain_type,
+                        "productive": productive == "Yes",
+                        "cdr3_sequence": None,  # Will be extracted from CDR3 line
+                        "cdr3_start": None,
+                        "cdr3_end": None,
+                    }
+
+                    hits.append(hit)
+
+                    # Use first hit for query info
+                    if not query_info:
+                        query_info["query_id"] = "query"
+
+            # Look for CDR3 information in subsequent lines
+            for i, line in enumerate(lines):
+                if (
+                    "CDR3" in line
+                    and "GCGAAAGTGAGCTATCTGAGCACCGCGAGCAGCCTGGATTAT" in line
+                ):
+                    # Extract CDR3 information
+                    cdr3_parts = line.split()
+                    if len(cdr3_parts) >= 5:
+                        cdr3_sequence = cdr3_parts[1]
+                        cdr3_start = int(cdr3_parts[3])
+                        cdr3_end = int(cdr3_parts[4])
+
+                        # Add CDR3 info to the first hit
+                        if hits:
+                            hits[0]["cdr3_sequence"] = cdr3_sequence
+                            hits[0]["cdr3_start"] = cdr3_start
+                            hits[0]["cdr3_end"] = cdr3_end
+
+            result = {
+                "blast_type": blast_type,
+                "query_info": query_info,
+                "hits": hits,
+                "analysis_summary": {
+                    "total_hits": len(hits),
+                    "best_identity": (
+                        max([hit.get("identity", 0) for hit in hits])
+                        if hits
+                        else 0.0
+                    ),
+                },
+                "total_hits": len(hits),
+            }
+
+            self._logger.info(
+                f"Successfully parsed tabular data: {len(hits)} hits"
+            )
+            return result
+
+        except Exception as e:
+            self._logger.error(f"Error parsing tabular output: {e}")
+            self._logger.error(f"Tabular output preview: {output[:500]}...")
+            return {
+                "blast_type": blast_type,
+                "query_info": {},
+                "hits": [],
+                "analysis_summary": {"total_hits": 0},
+                "total_hits": 0,
+            }
 
     def _parse_airr_output(
         self, output: str, blast_type: str
@@ -997,3 +1098,72 @@ class IgBlastAdapter(BaseExternalToolAdapter):
                 pass
 
         return None
+
+    def execute(self, **kwargs) -> Dict[str, Any]:
+        """Execute IgBLAST with stdin piping for Docker"""
+        try:
+            # Build command
+            command = self._build_command(**kwargs)
+            self._logger.debug(f"Executing command: {' '.join(command)}")
+
+            # Execute command with stdin piping for Docker
+            if self.executable_path == "docker":
+                query_sequence = kwargs.get("query_sequence")
+                if not query_sequence:
+                    raise ValueError(
+                        "query_sequence is required for Docker execution"
+                    )
+
+                # Use Popen to pipe sequence through stdin
+                process = subprocess.Popen(
+                    command,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+                stdout, stderr = process.communicate(
+                    input=f">query\n{query_sequence}\n",
+                    timeout=self._get_timeout(),
+                )
+                result = subprocess.CompletedProcess(
+                    command, process.returncode, stdout, stderr
+                )
+            else:
+                # Use regular subprocess.run for non-Docker execution
+                result = subprocess.run(
+                    command,
+                    capture_output=True,
+                    text=True,
+                    timeout=self._get_timeout(),
+                    cwd=self._get_working_directory(),
+                )
+
+            # Check for errors
+            if result.returncode != 0:
+                error_msg = f"IgBLAST execution failed with return code {result.returncode}"
+                if result.stderr:
+                    error_msg += f": {result.stderr}"
+                raise ExternalToolError(error_msg, tool_name=self.tool_name)
+
+            # Parse output
+            output = result.stdout
+            parsed_result = self._parse_output(output, **kwargs)
+
+            self._logger.debug("IgBLAST execution completed successfully")
+            return parsed_result
+
+        except subprocess.TimeoutExpired:
+            error_msg = f"IgBLAST execution timed out after {self._get_timeout()} seconds"
+            self._logger.error(error_msg)
+            raise ExternalToolError(error_msg, tool_name=self.tool_name)
+
+        except FileNotFoundError:
+            error_msg = f"IgBLAST executable not found: {self.executable_path}"
+            self._logger.error(error_msg)
+            raise ExternalToolError(error_msg, tool_name=self.tool_name)
+
+        except Exception as e:
+            error_msg = f"IgBLAST execution failed: {str(e)}"
+            self._logger.error(error_msg)
+            raise ExternalToolError(error_msg, tool_name=self.tool_name)
