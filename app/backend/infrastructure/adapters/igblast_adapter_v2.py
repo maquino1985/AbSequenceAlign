@@ -18,7 +18,7 @@ from backend.infrastructure.adapters.base_adapter import (
 class IgBlastAdapterV2(BaseExternalToolAdapter):
     """Clean IgBLAST adapter implementation with advanced features."""
 
-    def __init__(self):
+    def __init__(self, docker_client=None):
         """Initialize the IgBLAST adapter."""
         super().__init__("igblast", "docker")
         self._logger = logging.getLogger(__name__)
@@ -130,7 +130,6 @@ class IgBlastAdapterV2(BaseExternalToolAdapter):
                 "-num_alignments_V",
                 "1",  # Only need top V hit
             ]
-
             # Add V database only for quick scan (no D/J databases)
             if organism == "human":
                 command.extend(
@@ -164,6 +163,7 @@ class IgBlastAdapterV2(BaseExternalToolAdapter):
             if process.returncode != 0:
                 self._logger.warning(f"Chain type detection failed: {stderr}")
                 return "unknown"
+            self._logger.warning(f"Chain type detection output: {stdout}")
 
             # Parse V gene from output
             for line in stdout.split("\n"):

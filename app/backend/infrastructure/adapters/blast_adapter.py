@@ -209,8 +209,23 @@ class BlastAdapter(BaseExternalToolAdapter):
             The full path to the database
         """
         if self.executable_path == "docker":
-            # In Docker container, databases are mounted at /blast/blastdb
-            return f"/blast/blastdb/{database}"
+            # In Docker container, databases are organized in protein/ and nucleotide/ subdirectories
+            # Check if it's a protein database
+            protein_dbs = ["swissprot", "pdb"]
+            nucleotide_dbs = [
+                "refseq_select_rna",
+                "16S_ribosomal_RNA",
+                "human_genome",
+                "mouse_genome",
+            ]
+
+            if database in protein_dbs:
+                return f"/blast/blastdb/protein/{database}/{database}"
+            elif database in nucleotide_dbs:
+                return f"/blast/blastdb/nucleotide/{database}/{database}"
+            else:
+                # Fallback to root directory
+                return f"/blast/blastdb/{database}"
         else:
             # For local execution, use the BLAST_DB_DIR
             return str(BLAST_DB_DIR / database)

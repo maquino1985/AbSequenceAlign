@@ -3,8 +3,8 @@ IgBLAST service for antibody and TCR sequence analysis.
 Provides high-level interface for immunoglobulin-specific BLAST operations.
 """
 
-from typing import Dict, Any, List, Optional
 import logging
+from typing import Dict, Any, List, Optional
 
 from backend.infrastructure.adapters import IgBlastAdapter
 
