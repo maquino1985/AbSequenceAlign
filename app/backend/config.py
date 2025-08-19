@@ -123,3 +123,20 @@ def get_igblast_c_db_path(organism: str) -> Path:
         return IGBLAST_INTERNAL_DATA_DIR / "mouse_c_genes"
     # For other organisms, use the gl_ prefix pattern
     return IGBLAST_INTERNAL_DATA_DIR / f"ncbi_{organism}_c_genes"
+
+
+# BLAST Database Name Mappings
+# Maps logical database names to actual BLAST database names
+BLAST_DB_NAME_MAPPINGS = {
+    "human_genome": "GCF_000001405.39_top_level",
+    "mouse_genome": "GCF_000001635.27_top_level",
+    "refseq_select_rna": "refseq_select_rna",
+    "16S_ribosomal_RNA": "16S_ribosomal_RNA",
+    "swissprot": "swissprot",
+    "pdb": "pdb",
+}
+
+
+def get_blast_db_name(logical_name: str) -> str:
+    """Get the actual BLAST database name from logical name"""
+    return BLAST_DB_NAME_MAPPINGS.get(logical_name, logical_name)

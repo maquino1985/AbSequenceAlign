@@ -11,7 +11,7 @@ import logging
 
 from .base_adapter import BaseExternalToolAdapter
 from backend.core.exceptions import ExternalToolError
-from backend.config import BLAST_DB_DIR
+from backend.config import BLAST_DB_DIR, get_blast_db_name
 
 
 class BlastAdapter(BaseExternalToolAdapter):
@@ -222,7 +222,9 @@ class BlastAdapter(BaseExternalToolAdapter):
             if database in protein_dbs:
                 return f"/blast/blastdb/protein/{database}/{database}"
             elif database in nucleotide_dbs:
-                return f"/blast/blastdb/nucleotide/{database}/{database}"
+                # For nucleotide databases, use the configuration mapping
+                actual_db_name = get_blast_db_name(database)
+                return actual_db_name
             else:
                 # Fallback to root directory
                 return f"/blast/blastdb/{database}"

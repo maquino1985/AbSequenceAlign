@@ -49,7 +49,7 @@ export const BlastViewerTool: React.FC = () => {
   const [organisms, setOrganisms] = useState<string[]>([]);
   const [results, setResults] = useState<BlastSearchResponse['data'] | IgBlastSearchResponse['data'] | null>(null);
   const [useEnhancedView, setUseEnhancedView] = useState(true);
-  const [currentSearchType, setCurrentSearchType] = useState<'standard' | 'antibody'>('standard');
+
 
   useEffect(() => {
     loadInitialData();
@@ -60,14 +60,13 @@ export const BlastViewerTool: React.FC = () => {
     setError(null);
     
     try {
-      // Load databases and organisms in parallel
-      const [dbResponse, orgResponse] = await Promise.all([
-        api.getBlastDatabases(),
-        api.getSupportedOrganisms()
-      ]);
+      // Load databases (organisms endpoint doesn't exist yet)
+      const dbResponse = await api.getBlastDatabases();
       
-      setDatabases(dbResponse.data?.databases || {});
-      setOrganisms(orgResponse.data?.organisms || []);
+      console.log('BLAST Database Response:', dbResponse);
+      
+      setDatabases(dbResponse.databases || {});
+      setOrganisms([]); // TODO: Add organisms endpoint
     } catch (err: unknown) {
       setError(`Failed to load initial data: ${(err as Error).message}`);
     } finally {
@@ -79,7 +78,6 @@ export const BlastViewerTool: React.FC = () => {
     setTabValue(newValue);
     setResults(null);
     setError(null);
-    setCurrentSearchType(newValue === 0 ? 'standard' : 'antibody');
   };
 
   const handleSearch = async (searchData: Record<string, unknown>) => {
@@ -88,15 +86,7 @@ export const BlastViewerTool: React.FC = () => {
     setResults(null);
 
     try {
-      let response;
-      
-      if (searchData.searchType === 'antibody') {
-        response = await api.analyzeAntibodySequence(searchData);
-      } else if (searchData.searchType === 'internal') {
-        response = await api.searchInternalDatabase(searchData);
-      } else {
-        response = await api.searchPublicDatabases(searchData);
-      }
+      const response = await api.searchPublicDatabases(searchData);
       
       if (response.data) {
         setResults(response.data as BlastSearchResponse['data'] | IgBlastSearchResponse['data']);
@@ -127,7 +117,7 @@ export const BlastViewerTool: React.FC = () => {
       </Typography>
       
       <Typography variant="body1" color="text.secondary" paragraph>
-        Search sequences against public databases, internal databases, or perform antibody-specific analysis using IgBLAST.
+        Search sequences against protein and nucleotide databases, or perform antibody-specific analysis using IgBLAST.
       </Typography>
 
       {error && (
@@ -178,12 +168,12 @@ export const BlastViewerTool: React.FC = () => {
               {useEnhancedView ? (
                 <SimpleEnhancedBlastResults 
                   results={results} 
-                  searchType="standard"
+                  searchType="blast"
                 />
               ) : (
                 <BlastResults 
                   results={results} 
-                  searchType="standard"
+                  searchType="blast"
                 />
               )}
             </>

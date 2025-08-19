@@ -6,7 +6,7 @@ Provides high-level interface for immunoglobulin-specific BLAST operations.
 import logging
 from typing import Dict, Any, List, Optional
 
-from backend.infrastructure.adapters import IgBlastAdapter
+from backend.infrastructure.adapters.igblast_adapter_v3 import IgBlastAdapterV3
 
 
 class IgBlastService:
@@ -18,25 +18,10 @@ class IgBlastService:
         # Initialize adapter with dependency injection for testing
         if igblast_adapter is None:
             try:
-                # Try to initialize Docker client for IgBLAST
-                docker_client = None
-                try:
-                    import docker
-
-                    docker_client = docker.from_env()
-                except ImportError:
-                    self._logger.warning("Docker Python package not available")
-                except Exception as e:
-                    self._logger.warning(
-                        f"Could not initialize Docker client: {e}"
-                    )
-
-                self.igblast_adapter = IgBlastAdapter(
-                    docker_client=docker_client
-                )
+                self.igblast_adapter = IgBlastAdapterV3()
             except Exception as e:
                 self._logger.warning(
-                    f"Could not initialize IgBlastAdapter: {e}"
+                    f"Could not initialize IgBlastAdapterV3: {e}"
                 )
                 self.igblast_adapter = None
         else:
@@ -79,13 +64,34 @@ class IgBlastService:
                 "IgBLAST adapter is not available. Please check if IgBLAST is properly installed."
             )
 
-        results = self.igblast_adapter.execute(
-            query_sequence=query_sequence,
-            organism=organism,
-            blast_type=blast_type,
-            evalue=evalue,
-            **kwargs,
-        )
+        # Get database paths for the organism
+        databases = self.igblast_adapter.get_available_databases()
+        if organism not in databases:
+            raise ValueError(
+                f"Organism '{organism}' not supported. Available organisms: {list(databases.keys())}"
+            )
+
+        organism_dbs = databases[organism]
+
+        # Execute with appropriate databases
+        if blast_type == "igblastp":
+            # For protein IgBLAST, only use V database
+            results = self.igblast_adapter.execute(
+                query_sequence=query_sequence,
+                v_db=organism_dbs["V"]["path"],
+                blast_type=blast_type,
+                **kwargs,
+            )
+        else:
+            # For nucleotide IgBLAST, use V, D, J databases
+            results = self.igblast_adapter.execute(
+                query_sequence=query_sequence,
+                v_db=organism_dbs["V"]["path"],
+                d_db=organism_dbs["D"]["path"],
+                j_db=organism_dbs["J"]["path"],
+                blast_type=blast_type,
+                **kwargs,
+            )
 
         return results
 
@@ -103,7 +109,8 @@ class IgBlastService:
             return ["human", "mouse"]  # Default fallback organisms
 
         try:
-            return self.igblast_adapter.get_supported_organisms()
+            databases = self.igblast_adapter.get_available_databases()
+            return list(databases.keys())
         except Exception as e:
             self._logger.error(f"Failed to get supported organisms: {e}")
             return ["human", "mouse"]  # Fallback organisms

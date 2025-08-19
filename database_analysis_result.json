@@ -1,0 +1,902 @@
+{
+  "igblast_analysis": {
+    "total_count": 36,
+    "by_organism": {
+      "mouse_MSM": {
+        "V": [
+          {
+            "name": "airr_c_MSM_MsJI.V",
+            "path": "airr_c_MSM_MsJI.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_MSM_MsJI.V.nhr"
+          }
+        ]
+      },
+      "mouse_balbc": {
+        "V": [
+          {
+            "name": "airr_c_balbc.V",
+            "path": "airr_c_balbc.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_balbc.V.nhr"
+          }
+        ]
+      },
+      "mouse_MRL": {
+        "V": [
+          {
+            "name": "airr_c_MRL_MpJ.V",
+            "path": "airr_c_MRL_MpJ.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_MRL_MpJ.V.nhr"
+          }
+        ]
+      },
+      "mouse_NZB": {
+        "V": [
+          {
+            "name": "airr_c_NZB_BlNJ.V",
+            "path": "airr_c_NZB_BlNJ.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_NZB_BlNJ.V.nhr"
+          }
+        ]
+      },
+      "mouse_PWD": {
+        "V": [
+          {
+            "name": "airr_c_PWD_PhJ.V",
+            "path": "airr_c_PWD_PhJ.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_PWD_PhJ.V.nhr"
+          }
+        ]
+      },
+      "mouse_CBA": {
+        "V": [
+          {
+            "name": "airr_c_CBA_J.V",
+            "path": "airr_c_CBA_J.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_CBA_J.V.nhr"
+          }
+        ]
+      },
+      "mouse_129S1": {
+        "V": [
+          {
+            "name": "airr_c_129S1_SvImJ.V",
+            "path": "airr_c_129S1_SvImJ.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_129S1_SvImJ.V.nhr"
+          }
+        ]
+      },
+      "mouse_DBA": {
+        "V": [
+          {
+            "name": "airr_c_DBA_1J.V",
+            "path": "airr_c_DBA_1J.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_DBA_1J.V.nhr"
+          },
+          {
+            "name": "airr_c_DBA_2J.V",
+            "path": "airr_c_DBA_2J.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_DBA_2J.V.nhr"
+          }
+        ]
+      },
+      "mouse_NOD": {
+        "V": [
+          {
+            "name": "airr_c_NOD_ShiLtJ.V",
+            "path": "airr_c_NOD_ShiLtJ.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_NOD_ShiLtJ.V.nhr"
+          }
+        ]
+      },
+      "mouse_LEWES": {
+        "V": [
+          {
+            "name": "airr_c_LEWES_EiJ.V",
+            "path": "airr_c_LEWES_EiJ.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_LEWES_EiJ.V.nhr"
+          }
+        ]
+      },
+      "mouse_CAST": {
+        "V": [
+          {
+            "name": "airr_c_CAST_EiJ.V",
+            "path": "airr_c_CAST_EiJ.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_CAST_EiJ.V.nhr"
+          }
+        ]
+      },
+      "rhesus": {
+        "J": [
+          {
+            "name": "rhesus_monkey_J",
+            "path": "rhesus_monkey_J.nhr",
+            "full_path": "data/igblast/internal_data/rhesus_monkey_J.nhr"
+          }
+        ],
+        "V": [
+          {
+            "name": "rhesus_monkey_V",
+            "path": "rhesus_monkey_V.nhr",
+            "full_path": "data/igblast/internal_data/rhesus_monkey_V.nhr"
+          }
+        ]
+      },
+      "mouse_C57BL": {
+        "V": [
+          {
+            "name": "airr_c_C57BL_6.V",
+            "path": "airr_c_C57BL_6.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_C57BL_6.V.nhr"
+          },
+          {
+            "name": "airr_c_C57BL_6J.V",
+            "path": "airr_c_C57BL_6J.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_C57BL_6J.V.nhr"
+          }
+        ]
+      },
+      "mouse_C3H": {
+        "V": [
+          {
+            "name": "airr_c_C3H_HeJ.V",
+            "path": "airr_c_C3H_HeJ.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_C3H_HeJ.V.nhr"
+          }
+        ]
+      },
+      "human": {
+        "C": [
+          {
+            "name": "ncbi_human_c_genes",
+            "path": "ncbi_human_c_genes.nhr",
+            "full_path": "data/igblast/internal_data/ncbi_human_c_genes.nhr"
+          }
+        ],
+        "D": [
+          {
+            "name": "airr_c_human_igh.D",
+            "path": "human/airr_c_human_igh.D.nhr",
+            "full_path": "data/igblast/internal_data/human/airr_c_human_igh.D.nhr"
+          },
+          {
+            "name": "human_D",
+            "path": "human/human_D.nhr",
+            "full_path": "data/igblast/internal_data/human/human_D.nhr"
+          }
+        ],
+        "J": [
+          {
+            "name": "human_J",
+            "path": "human/human_J.nhr",
+            "full_path": "data/igblast/internal_data/human/human_J.nhr"
+          },
+          {
+            "name": "airr_c_human_ig.J",
+            "path": "human/airr_c_human_ig.J.nhr",
+            "full_path": "data/igblast/internal_data/human/airr_c_human_ig.J.nhr"
+          }
+        ],
+        "V": [
+          {
+            "name": "airr_c_human_ig.V",
+            "path": "human/airr_c_human_ig.V.nhr",
+            "full_path": "data/igblast/internal_data/human/airr_c_human_ig.V.nhr"
+          },
+          {
+            "name": "human_V",
+            "path": "human/human_V.nhr",
+            "full_path": "data/igblast/internal_data/human/human_V.nhr"
+          }
+        ]
+      },
+      "mouse_SJL": {
+        "V": [
+          {
+            "name": "airr_c_SJL_J.V",
+            "path": "airr_c_SJL_J.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_SJL_J.V.nhr"
+          }
+        ]
+      },
+      "mouse_AKR": {
+        "V": [
+          {
+            "name": "airr_c_AKR_J.V",
+            "path": "airr_c_AKR_J.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_AKR_J.V.nhr"
+          }
+        ]
+      },
+      "mouse_A_J": {
+        "V": [
+          {
+            "name": "airr_c_A_J.V",
+            "path": "airr_c_A_J.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_A_J.V.nhr"
+          }
+        ]
+      },
+      "mouse": {
+        "C": [
+          {
+            "name": "mouse_c_genes",
+            "path": "mouse_c_genes.nhr",
+            "full_path": "data/igblast/internal_data/mouse_c_genes.nhr"
+          }
+        ],
+        "J": [
+          {
+            "name": "mouse_gl_J",
+            "path": "mouse/mouse_gl_J.nhr",
+            "full_path": "data/igblast/internal_data/mouse/mouse_gl_J.nhr"
+          },
+          {
+            "name": "mouse_J",
+            "path": "mouse/mouse_J.nhr",
+            "full_path": "data/igblast/internal_data/mouse/mouse_J.nhr"
+          }
+        ],
+        "D": [
+          {
+            "name": "mouse_gl_D",
+            "path": "mouse/mouse_gl_D.nhr",
+            "full_path": "data/igblast/internal_data/mouse/mouse_gl_D.nhr"
+          },
+          {
+            "name": "mouse_D",
+            "path": "mouse/mouse_D.nhr",
+            "full_path": "data/igblast/internal_data/mouse/mouse_D.nhr"
+          }
+        ],
+        "V": [
+          {
+            "name": "mouse_V",
+            "path": "mouse/mouse_V.nhr",
+            "full_path": "data/igblast/internal_data/mouse/mouse_V.nhr"
+          },
+          {
+            "name": "mouse_gl_V",
+            "path": "mouse/mouse_gl_V.nhr",
+            "full_path": "data/igblast/internal_data/mouse/mouse_gl_V.nhr"
+          }
+        ]
+      },
+      "mouse_NOR": {
+        "V": [
+          {
+            "name": "airr_c_NOR_LtJ.V",
+            "path": "airr_c_NOR_LtJ.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_NOR_LtJ.V.nhr"
+          }
+        ]
+      }
+    },
+    "by_gene_type": {
+      "V": [
+        {
+          "name": "airr_c_MSM_MsJI.V",
+          "organism": "mouse_MSM",
+          "path": "airr_c_MSM_MsJI.V.nhr"
+        },
+        {
+          "name": "airr_c_balbc.V",
+          "organism": "mouse_balbc",
+          "path": "airr_c_balbc.V.nhr"
+        },
+        {
+          "name": "airr_c_MRL_MpJ.V",
+          "organism": "mouse_MRL",
+          "path": "airr_c_MRL_MpJ.V.nhr"
+        },
+        {
+          "name": "airr_c_NZB_BlNJ.V",
+          "organism": "mouse_NZB",
+          "path": "airr_c_NZB_BlNJ.V.nhr"
+        },
+        {
+          "name": "airr_c_PWD_PhJ.V",
+          "organism": "mouse_PWD",
+          "path": "airr_c_PWD_PhJ.V.nhr"
+        },
+        {
+          "name": "airr_c_CBA_J.V",
+          "organism": "mouse_CBA",
+          "path": "airr_c_CBA_J.V.nhr"
+        },
+        {
+          "name": "airr_c_129S1_SvImJ.V",
+          "organism": "mouse_129S1",
+          "path": "airr_c_129S1_SvImJ.V.nhr"
+        },
+        {
+          "name": "airr_c_DBA_1J.V",
+          "organism": "mouse_DBA",
+          "path": "airr_c_DBA_1J.V.nhr"
+        },
+        {
+          "name": "airr_c_NOD_ShiLtJ.V",
+          "organism": "mouse_NOD",
+          "path": "airr_c_NOD_ShiLtJ.V.nhr"
+        },
+        {
+          "name": "airr_c_LEWES_EiJ.V",
+          "organism": "mouse_LEWES",
+          "path": "airr_c_LEWES_EiJ.V.nhr"
+        },
+        {
+          "name": "airr_c_CAST_EiJ.V",
+          "organism": "mouse_CAST",
+          "path": "airr_c_CAST_EiJ.V.nhr"
+        },
+        {
+          "name": "airr_c_C57BL_6.V",
+          "organism": "mouse_C57BL",
+          "path": "airr_c_C57BL_6.V.nhr"
+        },
+        {
+          "name": "airr_c_C3H_HeJ.V",
+          "organism": "mouse_C3H",
+          "path": "airr_c_C3H_HeJ.V.nhr"
+        },
+        {
+          "name": "rhesus_monkey_V",
+          "organism": "rhesus",
+          "path": "rhesus_monkey_V.nhr"
+        },
+        {
+          "name": "airr_c_SJL_J.V",
+          "organism": "mouse_SJL",
+          "path": "airr_c_SJL_J.V.nhr"
+        },
+        {
+          "name": "airr_c_AKR_J.V",
+          "organism": "mouse_AKR",
+          "path": "airr_c_AKR_J.V.nhr"
+        },
+        {
+          "name": "airr_c_A_J.V",
+          "organism": "mouse_A_J",
+          "path": "airr_c_A_J.V.nhr"
+        },
+        {
+          "name": "airr_c_DBA_2J.V",
+          "organism": "mouse_DBA",
+          "path": "airr_c_DBA_2J.V.nhr"
+        },
+        {
+          "name": "airr_c_C57BL_6J.V",
+          "organism": "mouse_C57BL",
+          "path": "airr_c_C57BL_6J.V.nhr"
+        },
+        {
+          "name": "airr_c_NOR_LtJ.V",
+          "organism": "mouse_NOR",
+          "path": "airr_c_NOR_LtJ.V.nhr"
+        },
+        {
+          "name": "mouse_V",
+          "organism": "mouse",
+          "path": "mouse/mouse_V.nhr"
+        },
+        {
+          "name": "mouse_gl_V",
+          "organism": "mouse",
+          "path": "mouse/mouse_gl_V.nhr"
+        },
+        {
+          "name": "airr_c_human_ig.V",
+          "organism": "human",
+          "path": "human/airr_c_human_ig.V.nhr"
+        },
+        {
+          "name": "human_V",
+          "organism": "human",
+          "path": "human/human_V.nhr"
+        }
+      ],
+      "J": [
+        {
+          "name": "rhesus_monkey_J",
+          "organism": "rhesus",
+          "path": "rhesus_monkey_J.nhr"
+        },
+        {
+          "name": "mouse_gl_J",
+          "organism": "mouse",
+          "path": "mouse/mouse_gl_J.nhr"
+        },
+        {
+          "name": "mouse_J",
+          "organism": "mouse",
+          "path": "mouse/mouse_J.nhr"
+        },
+        {
+          "name": "human_J",
+          "organism": "human",
+          "path": "human/human_J.nhr"
+        },
+        {
+          "name": "airr_c_human_ig.J",
+          "organism": "human",
+          "path": "human/airr_c_human_ig.J.nhr"
+        }
+      ],
+      "C": [
+        {
+          "name": "ncbi_human_c_genes",
+          "organism": "human",
+          "path": "ncbi_human_c_genes.nhr"
+        },
+        {
+          "name": "mouse_c_genes",
+          "organism": "mouse",
+          "path": "mouse_c_genes.nhr"
+        }
+      ],
+      "D": [
+        {
+          "name": "mouse_gl_D",
+          "organism": "mouse",
+          "path": "mouse/mouse_gl_D.nhr"
+        },
+        {
+          "name": "mouse_D",
+          "organism": "mouse",
+          "path": "mouse/mouse_D.nhr"
+        },
+        {
+          "name": "airr_c_human_igh.D",
+          "organism": "human",
+          "path": "human/airr_c_human_igh.D.nhr"
+        },
+        {
+          "name": "human_D",
+          "organism": "human",
+          "path": "human/human_D.nhr"
+        }
+      ]
+    },
+    "duplicates": [
+      {
+        "organism": "mouse_DBA",
+        "gene_type": "V",
+        "databases": [
+          {
+            "name": "airr_c_DBA_1J.V",
+            "path": "airr_c_DBA_1J.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_DBA_1J.V.nhr"
+          },
+          {
+            "name": "airr_c_DBA_2J.V",
+            "path": "airr_c_DBA_2J.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_DBA_2J.V.nhr"
+          }
+        ]
+      },
+      {
+        "organism": "mouse_C57BL",
+        "gene_type": "V",
+        "databases": [
+          {
+            "name": "airr_c_C57BL_6.V",
+            "path": "airr_c_C57BL_6.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_C57BL_6.V.nhr"
+          },
+          {
+            "name": "airr_c_C57BL_6J.V",
+            "path": "airr_c_C57BL_6J.V.nhr",
+            "full_path": "data/igblast/internal_data/airr_c_C57BL_6J.V.nhr"
+          }
+        ]
+      },
+      {
+        "organism": "human",
+        "gene_type": "D",
+        "databases": [
+          {
+            "name": "airr_c_human_igh.D",
+            "path": "human/airr_c_human_igh.D.nhr",
+            "full_path": "data/igblast/internal_data/human/airr_c_human_igh.D.nhr"
+          },
+          {
+            "name": "human_D",
+            "path": "human/human_D.nhr",
+            "full_path": "data/igblast/internal_data/human/human_D.nhr"
+          }
+        ]
+      },
+      {
+        "organism": "human",
+        "gene_type": "J",
+        "databases": [
+          {
+            "name": "human_J",
+            "path": "human/human_J.nhr",
+            "full_path": "data/igblast/internal_data/human/human_J.nhr"
+          },
+          {
+            "name": "airr_c_human_ig.J",
+            "path": "human/airr_c_human_ig.J.nhr",
+            "full_path": "data/igblast/internal_data/human/airr_c_human_ig.J.nhr"
+          }
+        ]
+      },
+      {
+        "organism": "human",
+        "gene_type": "V",
+        "databases": [
+          {
+            "name": "airr_c_human_ig.V",
+            "path": "human/airr_c_human_ig.V.nhr",
+            "full_path": "data/igblast/internal_data/human/airr_c_human_ig.V.nhr"
+          },
+          {
+            "name": "human_V",
+            "path": "human/human_V.nhr",
+            "full_path": "data/igblast/internal_data/human/human_V.nhr"
+          }
+        ]
+      },
+      {
+        "organism": "mouse",
+        "gene_type": "J",
+        "databases": [
+          {
+            "name": "mouse_gl_J",
+            "path": "mouse/mouse_gl_J.nhr",
+            "full_path": "data/igblast/internal_data/mouse/mouse_gl_J.nhr"
+          },
+          {
+            "name": "mouse_J",
+            "path": "mouse/mouse_J.nhr",
+            "full_path": "data/igblast/internal_data/mouse/mouse_J.nhr"
+          }
+        ]
+      },
+      {
+        "organism": "mouse",
+        "gene_type": "D",
+        "databases": [
+          {
+            "name": "mouse_gl_D",
+            "path": "mouse/mouse_gl_D.nhr",
+            "full_path": "data/igblast/internal_data/mouse/mouse_gl_D.nhr"
+          },
+          {
+            "name": "mouse_D",
+            "path": "mouse/mouse_D.nhr",
+            "full_path": "data/igblast/internal_data/mouse/mouse_D.nhr"
+          }
+        ]
+      },
+      {
+        "organism": "mouse",
+        "gene_type": "V",
+        "databases": [
+          {
+            "name": "mouse_V",
+            "path": "mouse/mouse_V.nhr",
+            "full_path": "data/igblast/internal_data/mouse/mouse_V.nhr"
+          },
+          {
+            "name": "mouse_gl_V",
+            "path": "mouse/mouse_gl_V.nhr",
+            "full_path": "data/igblast/internal_data/mouse/mouse_gl_V.nhr"
+          }
+        ]
+      }
+    ],
+    "redundant_mouse_strains": [
+      "mouse_MSM",
+      "mouse_balbc",
+      "mouse_MRL",
+      "mouse_NZB",
+      "mouse_PWD",
+      "mouse_CBA",
+      "mouse_129S1",
+      "mouse_DBA",
+      "mouse_NOD",
+      "mouse_LEWES",
+      "mouse_CAST",
+      "mouse_C57BL",
+      "mouse_C3H",
+      "mouse_SJL",
+      "mouse_AKR",
+      "mouse_A_J",
+      "mouse_NOR"
+    ],
+    "essential_databases": [
+      {
+        "name": "ncbi_human_c_genes",
+        "path": "ncbi_human_c_genes.nhr",
+        "full_path": "data/igblast/internal_data/ncbi_human_c_genes.nhr"
+      },
+      {
+        "name": "airr_c_human_igh.D",
+        "path": "human/airr_c_human_igh.D.nhr",
+        "full_path": "data/igblast/internal_data/human/airr_c_human_igh.D.nhr"
+      },
+      {
+        "name": "airr_c_human_ig.J",
+        "path": "human/airr_c_human_ig.J.nhr",
+        "full_path": "data/igblast/internal_data/human/airr_c_human_ig.J.nhr"
+      },
+      {
+        "name": "airr_c_human_ig.V",
+        "path": "human/airr_c_human_ig.V.nhr",
+        "full_path": "data/igblast/internal_data/human/airr_c_human_ig.V.nhr"
+      },
+      {
+        "name": "mouse_c_genes",
+        "path": "mouse_c_genes.nhr",
+        "full_path": "data/igblast/internal_data/mouse_c_genes.nhr"
+      },
+      {
+        "name": "mouse_gl_J",
+        "path": "mouse/mouse_gl_J.nhr",
+        "full_path": "data/igblast/internal_data/mouse/mouse_gl_J.nhr"
+      },
+      {
+        "name": "mouse_gl_D",
+        "path": "mouse/mouse_gl_D.nhr",
+        "full_path": "data/igblast/internal_data/mouse/mouse_gl_D.nhr"
+      },
+      {
+        "name": "mouse_V",
+        "path": "mouse/mouse_V.nhr",
+        "full_path": "data/igblast/internal_data/mouse/mouse_V.nhr"
+      },
+      {
+        "name": "rhesus_monkey_J",
+        "path": "rhesus_monkey_J.nhr",
+        "full_path": "data/igblast/internal_data/rhesus_monkey_J.nhr"
+      },
+      {
+        "name": "rhesus_monkey_V",
+        "path": "rhesus_monkey_V.nhr",
+        "full_path": "data/igblast/internal_data/rhesus_monkey_V.nhr"
+      }
+    ]
+  },
+  "blast_analysis": {
+    "protein": [
+      {
+        "name": "swissprot",
+        "path": "swissprot.phr",
+        "size_mb": 120.17635345458984
+      },
+      {
+        "name": "pdbaa",
+        "path": "pdbaa.phr",
+        "size_mb": 133.35743618011475
+      }
+    ],
+    "nucleotide": [
+      {
+        "name": "refseq_select_rna",
+        "path": "refseq_select_rna.nhr",
+        "size_mb": 9.544534683227539
+      },
+      {
+        "name": "GCF_000001635.27_top_level.00",
+        "path": "GCF_000001635.27_top_level.00.nhr",
+        "size_mb": 0.0117340087890625
+      },
+      {
+        "name": "GCF_000001635.27_top_level.01",
+        "path": "GCF_000001635.27_top_level.01.nhr",
+        "size_mb": 0.00110626220703125
+      },
+      {
+        "name": "GCF_000001405.39_top_level.01",
+        "path": "GCF_000001405.39_top_level.01.nsq",
+        "size_mb": 308.7589588165283
+      },
+      {
+        "name": "GCF_000001405.39_top_level.00",
+        "path": "GCF_000001405.39_top_level.00.nsq",
+        "size_mb": 471.67923069000244
+      },
+      {
+        "name": "ncbi_human_c_genes",
+        "path": "ncbi_human_c_genes.nsq",
+        "size_mb": 0.0029001235961914062
+      },
+      {
+        "name": "mouse_c_genes",
+        "path": "mouse_c_genes.nin",
+        "size_mb": 0.000213623046875
+      },
+      {
+        "name": "16S_ribosomal_RNA",
+        "path": "16S_ribosomal_RNA.nhr",
+        "size_mb": 4.10124397277832
+      }
+    ],
+    "total_size_mb": 1047.6337118148804
+  },
+  "recommendations": {
+    "databases_to_keep": [
+      {
+        "name": "airr_c_DBA_1J.V",
+        "path": "airr_c_DBA_1J.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_DBA_1J.V.nhr"
+      },
+      {
+        "name": "airr_c_C57BL_6.V",
+        "path": "airr_c_C57BL_6.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_C57BL_6.V.nhr"
+      },
+      {
+        "name": "airr_c_human_igh.D",
+        "path": "human/airr_c_human_igh.D.nhr",
+        "full_path": "data/igblast/internal_data/human/airr_c_human_igh.D.nhr"
+      },
+      {
+        "name": "airr_c_human_ig.J",
+        "path": "human/airr_c_human_ig.J.nhr",
+        "full_path": "data/igblast/internal_data/human/airr_c_human_ig.J.nhr"
+      },
+      {
+        "name": "airr_c_human_ig.V",
+        "path": "human/airr_c_human_ig.V.nhr",
+        "full_path": "data/igblast/internal_data/human/airr_c_human_ig.V.nhr"
+      },
+      {
+        "name": "mouse_gl_J",
+        "path": "mouse/mouse_gl_J.nhr",
+        "full_path": "data/igblast/internal_data/mouse/mouse_gl_J.nhr"
+      },
+      {
+        "name": "mouse_gl_D",
+        "path": "mouse/mouse_gl_D.nhr",
+        "full_path": "data/igblast/internal_data/mouse/mouse_gl_D.nhr"
+      },
+      {
+        "name": "mouse_V",
+        "path": "mouse/mouse_V.nhr",
+        "full_path": "data/igblast/internal_data/mouse/mouse_V.nhr"
+      }
+    ],
+    "databases_to_remove": [
+      {
+        "name": "airr_c_DBA_2J.V",
+        "path": "airr_c_DBA_2J.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_DBA_2J.V.nhr"
+      },
+      {
+        "name": "airr_c_C57BL_6J.V",
+        "path": "airr_c_C57BL_6J.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_C57BL_6J.V.nhr"
+      },
+      {
+        "name": "human_D",
+        "path": "human/human_D.nhr",
+        "full_path": "data/igblast/internal_data/human/human_D.nhr"
+      },
+      {
+        "name": "human_J",
+        "path": "human/human_J.nhr",
+        "full_path": "data/igblast/internal_data/human/human_J.nhr"
+      },
+      {
+        "name": "human_V",
+        "path": "human/human_V.nhr",
+        "full_path": "data/igblast/internal_data/human/human_V.nhr"
+      },
+      {
+        "name": "mouse_J",
+        "path": "mouse/mouse_J.nhr",
+        "full_path": "data/igblast/internal_data/mouse/mouse_J.nhr"
+      },
+      {
+        "name": "mouse_D",
+        "path": "mouse/mouse_D.nhr",
+        "full_path": "data/igblast/internal_data/mouse/mouse_D.nhr"
+      },
+      {
+        "name": "mouse_gl_V",
+        "path": "mouse/mouse_gl_V.nhr",
+        "full_path": "data/igblast/internal_data/mouse/mouse_gl_V.nhr"
+      },
+      {
+        "name": "airr_c_MSM_MsJI.V",
+        "path": "airr_c_MSM_MsJI.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_MSM_MsJI.V.nhr"
+      },
+      {
+        "name": "airr_c_balbc.V",
+        "path": "airr_c_balbc.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_balbc.V.nhr"
+      },
+      {
+        "name": "airr_c_MRL_MpJ.V",
+        "path": "airr_c_MRL_MpJ.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_MRL_MpJ.V.nhr"
+      },
+      {
+        "name": "airr_c_NZB_BlNJ.V",
+        "path": "airr_c_NZB_BlNJ.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_NZB_BlNJ.V.nhr"
+      },
+      {
+        "name": "airr_c_PWD_PhJ.V",
+        "path": "airr_c_PWD_PhJ.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_PWD_PhJ.V.nhr"
+      },
+      {
+        "name": "airr_c_CBA_J.V",
+        "path": "airr_c_CBA_J.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_CBA_J.V.nhr"
+      },
+      {
+        "name": "airr_c_129S1_SvImJ.V",
+        "path": "airr_c_129S1_SvImJ.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_129S1_SvImJ.V.nhr"
+      },
+      {
+        "name": "airr_c_DBA_1J.V",
+        "path": "airr_c_DBA_1J.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_DBA_1J.V.nhr"
+      },
+      {
+        "name": "airr_c_DBA_2J.V",
+        "path": "airr_c_DBA_2J.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_DBA_2J.V.nhr"
+      },
+      {
+        "name": "airr_c_NOD_ShiLtJ.V",
+        "path": "airr_c_NOD_ShiLtJ.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_NOD_ShiLtJ.V.nhr"
+      },
+      {
+        "name": "airr_c_LEWES_EiJ.V",
+        "path": "airr_c_LEWES_EiJ.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_LEWES_EiJ.V.nhr"
+      },
+      {
+        "name": "airr_c_CAST_EiJ.V",
+        "path": "airr_c_CAST_EiJ.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_CAST_EiJ.V.nhr"
+      },
+      {
+        "name": "airr_c_C57BL_6.V",
+        "path": "airr_c_C57BL_6.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_C57BL_6.V.nhr"
+      },
+      {
+        "name": "airr_c_C57BL_6J.V",
+        "path": "airr_c_C57BL_6J.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_C57BL_6J.V.nhr"
+      },
+      {
+        "name": "airr_c_C3H_HeJ.V",
+        "path": "airr_c_C3H_HeJ.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_C3H_HeJ.V.nhr"
+      },
+      {
+        "name": "airr_c_SJL_J.V",
+        "path": "airr_c_SJL_J.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_SJL_J.V.nhr"
+      },
+      {
+        "name": "airr_c_AKR_J.V",
+        "path": "airr_c_AKR_J.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_AKR_J.V.nhr"
+      },
+      {
+        "name": "airr_c_A_J.V",
+        "path": "airr_c_A_J.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_A_J.V.nhr"
+      },
+      {
+        "name": "airr_c_NOR_LtJ.V",
+        "path": "airr_c_NOR_LtJ.V.nhr",
+        "full_path": "data/igblast/internal_data/airr_c_NOR_LtJ.V.nhr"
+      }
+    ],
+    "estimated_space_saved_mb": 0,
+    "reorganization_plan": []
+  }
+}

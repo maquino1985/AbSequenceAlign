@@ -51,10 +51,12 @@ services:
     restart: unless-stopped
     volumes:
       - ./data/blast:/blast/blastdb:ro
+      - ./data/blast/protein:/blast/blastdb/protein:ro
+      - ./data/blast/nucleotide:/blast/blastdb/nucleotide:ro
       - /tmp:/tmp
       - ./data/blast:/blast/blastdb_custom:ro
     environment:
-      - BLASTDB=/blast/blastdb:/blast/blastdb_custom
+      - BLASTDB=/blast/blastdb:/blast/blastdb/protein:/blast/blastdb/nucleotide:/blast/blastdb_custom
     networks:
       - app-network
     command: ["sleep", "infinity"]

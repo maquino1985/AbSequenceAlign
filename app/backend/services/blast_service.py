@@ -8,7 +8,8 @@ import logging
 import tempfile
 import os
 
-from backend.infrastructure.adapters import BlastAdapter, IgBlastAdapter
+from backend.infrastructure.adapters import BlastAdapter
+from backend.infrastructure.adapters.igblast_adapter_v3 import IgBlastAdapterV3
 from backend.infrastructure.repositories.blast_repository import (
     BlastRepository,
 )
@@ -47,10 +48,10 @@ class BlastService:
 
         if igblast_adapter is None:
             try:
-                self.igblast_adapter = IgBlastAdapter()
+                self.igblast_adapter = IgBlastAdapterV3()
             except Exception as e:
                 self._logger.warning(
-                    f"Could not initialize IgBlastAdapter: {e}"
+                    f"Could not initialize IgBlastAdapterV3: {e}"
                 )
                 self.igblast_adapter = None
         else:

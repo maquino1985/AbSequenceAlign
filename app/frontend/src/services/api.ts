@@ -11,6 +11,13 @@ import type {
   MSAAnnotationResultV2,
   MSAJobStatusV2
 } from '../types/apiV2';
+import type {
+  DatabaseDiscoveryResponse,
+  DatabaseValidationResponse,
+  DatabaseSuggestionResponse,
+  IgBlastRequest,
+  IgBlastResponse
+} from '../types/database';
 
 // Configure axios defaults
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -54,6 +61,37 @@ export const api = {
   // Health check
   health: async (): Promise<{ status: string }> => {
     const response = await apiClient.get('/health');
+    return response.data;
+  },
+
+  // Database Discovery Methods
+  getIgBlastDatabases: async (): Promise<DatabaseDiscoveryResponse> => {
+    const response = await apiClient.get('/database/databases/igblast');
+    return response.data;
+  },
+
+  getBlastDatabases: async (): Promise<APIResponse<any>> => {
+    const response = await apiClient.get('/database/databases/blast');
+    return response.data;
+  },
+
+  validateDatabasePath: async (dbPath: string): Promise<DatabaseValidationResponse> => {
+    const response = await apiClient.get('/database/databases/validate', {
+      params: { path: dbPath }
+    });
+    return response.data;
+  },
+
+  getDatabaseSuggestion: async (organism: string, geneType: string): Promise<DatabaseSuggestionResponse> => {
+    const response = await apiClient.get('/database/databases/suggestions', {
+      params: { organism, gene_type: geneType }
+    });
+    return response.data;
+  },
+
+  // IgBLAST Execution
+  executeIgBlast: async (request: IgBlastRequest): Promise<IgBlastResponse> => {
+    const response = await apiClient.post('/database/igblast/execute', request);
     return response.data;
   },
 
@@ -104,11 +142,6 @@ export const api = {
   },
 
   // BLAST Methods
-  getBlastDatabases: async (): Promise<APIResponse<{ databases: Record<string, unknown> }>> => {
-    const response = await apiClient.get('/blast/databases');
-    return response.data;
-  },
-
   searchPublicDatabases: async (request: Record<string, unknown>): Promise<APIResponse<Record<string, unknown>>> => {
     const response = await apiClient.post('/blast/search/public', request);
     return response.data;

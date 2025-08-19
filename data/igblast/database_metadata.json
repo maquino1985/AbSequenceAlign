@@ -1,0 +1,128 @@
+{
+  "igblast_databases": {
+    "human": {
+      "V": {
+        "name": "Human V Genes",
+        "path": "/data/databases/human/V/airr_c_human_ig.V",
+        "description": "Human immunoglobulin V gene database (AIRR format)",
+        "organism": "human",
+        "gene_type": "V"
+      },
+      "D": {
+        "name": "Human D Genes",
+        "path": "/data/databases/human/D/airr_c_human_igh.D",
+        "description": "Human immunoglobulin D gene database (AIRR format)",
+        "organism": "human",
+        "gene_type": "D"
+      },
+      "J": {
+        "name": "Human J Genes",
+        "path": "/data/databases/human/J/airr_c_human_ig.J",
+        "description": "Human immunoglobulin J gene database (AIRR format)",
+        "organism": "human",
+        "gene_type": "J"
+      },
+      "C": {
+        "name": "Human C Genes",
+        "path": "/data/databases/human/C/ncbi_human_c_genes",
+        "description": "Human immunoglobulin C gene database",
+        "organism": "human",
+        "gene_type": "C"
+      }
+    },
+    "mouse": {
+      "V": {
+        "name": "Mouse V Genes",
+        "path": "/data/databases/mouse/V/mouse_gl_V",
+        "description": "Mouse immunoglobulin V gene database",
+        "organism": "mouse",
+        "gene_type": "V"
+      },
+      "D": {
+        "name": "Mouse D Genes",
+        "path": "/data/databases/mouse/D/mouse_gl_D",
+        "description": "Mouse immunoglobulin D gene database",
+        "organism": "mouse",
+        "gene_type": "D"
+      },
+      "J": {
+        "name": "Mouse J Genes",
+        "path": "/data/databases/mouse/J/mouse_gl_J",
+        "description": "Mouse immunoglobulin J gene database",
+        "organism": "mouse",
+        "gene_type": "J"
+      },
+      "C": {
+        "name": "Mouse C Genes",
+        "path": "/data/databases/mouse/C/mouse_c_genes",
+        "description": "Mouse immunoglobulin C gene database",
+        "organism": "mouse",
+        "gene_type": "C"
+      }
+    },
+    "rhesus": {
+      "V": {
+        "name": "Rhesus V Genes",
+        "path": "/data/databases/rhesus/V/rhesus_monkey_V",
+        "description": "Rhesus monkey immunoglobulin V gene database",
+        "organism": "rhesus",
+        "gene_type": "V"
+      },
+      "J": {
+        "name": "Rhesus J Genes",
+        "path": "/data/databases/rhesus/J/rhesus_monkey_J",
+        "description": "Rhesus monkey immunoglobulin J gene database",
+        "organism": "rhesus",
+        "gene_type": "J"
+      }
+    }
+  },
+  "blast_databases": {
+    "protein": {
+      "swissprot": {
+        "name": "Swiss-Prot Protein Database",
+        "path": "swissprot",
+        "actual_db_name": "swissprot",
+        "description": "Curated protein sequence database",
+        "type": "protein"
+      },
+      "pdb": {
+        "name": "PDB Protein Database",
+        "path": "pdb",
+        "actual_db_name": "pdb",
+        "description": "Protein Data Bank sequences",
+        "type": "protein"
+      }
+    },
+    "nucleotide": {
+      "refseq_select_rna": {
+        "name": "RefSeq Select RNA",
+        "path": "refseq_select_rna",
+        "actual_db_name": "refseq_select_rna",
+        "description": "RefSeq Select RNA sequences",
+        "type": "nucleotide"
+      },
+      "16S_ribosomal_RNA": {
+        "name": "16S Ribosomal RNA",
+        "path": "16S_ribosomal_RNA",
+        "actual_db_name": "16S_ribosomal_RNA",
+        "description": "16S ribosomal RNA sequences",
+        "type": "nucleotide"
+      },
+      "human_genome": {
+        "name": "Human Genome",
+        "path": "human_genome",
+        "actual_db_name": "GCF_000001405.39_top_level",
+        "description": "Human reference genome (GRCh38/hg38)",
+        "type": "nucleotide"
+      },
+      "mouse_genome": {
+        "name": "Mouse Genome",
+        "path": "mouse_genome",
+        "actual_db_name": "GCF_000001635.27_top_level",
+        "description": "Mouse reference genome (GRCm39/mm39)",
+        "type": "nucleotide"
+      }
+    }
+  }
+}

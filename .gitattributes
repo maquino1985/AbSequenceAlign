@@ -101,3 +101,37 @@ data/blast/*.ptf filter=lfs diff=lfs merge=lfs -text
 data/blast/*.btd filter=lfs diff=lfs merge=lfs -text
 data/blast/*.bti filter=lfs diff=lfs merge=lfs -text
 data/blast/*.sqlite3 filter=lfs diff=lfs merge=lfs -text
+# Nucleotide database files in organized subdirectories
+data/blast/nucleotide/**/*.nab filter=lfs diff=lfs merge=lfs -text
+data/blast/nucleotide/**/*.nac filter=lfs diff=lfs merge=lfs -text
+data/blast/nucleotide/**/*.nal filter=lfs diff=lfs merge=lfs -text
+data/blast/nucleotide/**/*.ndb filter=lfs diff=lfs merge=lfs -text
+data/blast/nucleotide/**/*.nnd filter=lfs diff=lfs merge=lfs -text
+data/blast/nucleotide/**/*.nni filter=lfs diff=lfs merge=lfs -text
+data/blast/nucleotide/**/*.nog filter=lfs diff=lfs merge=lfs -text
+data/blast/nucleotide/**/*.nos filter=lfs diff=lfs merge=lfs -text
+data/blast/nucleotide/**/*.not filter=lfs diff=lfs merge=lfs -text
+data/blast/nucleotide/**/*.ntf filter=lfs diff=lfs merge=lfs -text
+data/blast/nucleotide/**/*.nto filter=lfs diff=lfs merge=lfs -text
+data/blast/nucleotide/**/*.tar.gz filter=lfs diff=lfs merge=lfs -text
+
+# Protein database files in organized subdirectories
+data/blast/protein/**/*.phr filter=lfs diff=lfs merge=lfs -text
+data/blast/protein/**/*.pin filter=lfs diff=lfs merge=lfs -text
+data/blast/protein/**/*.psq filter=lfs diff=lfs merge=lfs -text
+data/blast/protein/**/*.pdb filter=lfs diff=lfs merge=lfs -text
+data/blast/protein/**/*.pjs filter=lfs diff=lfs merge=lfs -text
+data/blast/protein/**/*.pos filter=lfs diff=lfs merge=lfs -text
+data/blast/protein/**/*.pot filter=lfs diff=lfs merge=lfs -text
+data/blast/protein/**/*.ppd filter=lfs diff=lfs merge=lfs -text
+data/blast/protein/**/*.ppi filter=lfs diff=lfs merge=lfs -text
+data/blast/protein/**/*.pto filter=lfs diff=lfs merge=lfs -text
+data/blast/protein/**/*.ptf filter=lfs diff=lfs merge=lfs -text
+data/blast/protein/**/*.pog filter=lfs diff=lfs merge=lfs -text
+data/blast/protein/**/*.psd filter=lfs diff=lfs merge=lfs -text
+data/blast/protein/**/*.psi filter=lfs diff=lfs merge=lfs -text
+data/blast/protein/**/*.tar.gz filter=lfs diff=lfs merge=lfs -text
+
+# IgBLAST database files in organized subdirectories
+data/igblast/databases/**/* filter=lfs diff=lfs merge=lfs -text
+data/blast/nucleotide/**/* filter=lfs diff=lfs merge=lfs -text
