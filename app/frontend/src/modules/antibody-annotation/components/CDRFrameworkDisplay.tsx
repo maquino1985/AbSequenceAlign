@@ -9,23 +9,23 @@ import {
   Box,
   Card,
   CardContent,
+  CardHeader,
   Typography,
   Paper,
+  Alert,
   Stack,
-  Chip,
   Tooltip,
   IconButton,
-  Collapse,
-  Divider,
+  Chip,
   Grid,
-  Alert,
 } from '@mui/material';
 import {
+  Biotech,
+  Visibility,
+  Science,
+  Info,
   ExpandMore,
   ExpandLess,
-  Info,
-  Science,
-  Biotech,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 
@@ -154,7 +154,7 @@ export const CDRFrameworkDisplay: React.FC<CDRFrameworkDisplayProps> = ({
   sequence,
   sequenceType = 'protein',
 }) => {
-  const [expanded, setExpanded] = useState<string | false>('overview');
+  const [expanded, setExpanded] = useState<string | false>(false);
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
 
   const handleAccordionChange = (panel: string) => (
@@ -174,207 +174,6 @@ export const CDRFrameworkDisplay: React.FC<CDRFrameworkDisplayProps> = ({
   ];
 
   const availableRegions = regions.filter(region => data[region.key as keyof CDRFrameworkData]);
-
-  const renderRegionOverview = () => (
-    <Box>
-      <Typography variant="h6" gutterBottom color="primary">
-        <Science sx={{ mr: 1, verticalAlign: 'middle' }} />
-        CDR/Framework Regions Overview
-      </Typography>
-      
-      {availableRegions.length > 0 ? (
-        <Grid container spacing={2}>
-          {availableRegions.map((region) => (
-            <Grid xs={12} sm={6} md={4} key={region.key}>
-              <Paper 
-                variant="outlined" 
-                sx={{ 
-                  p: 2, 
-                  height: '100%',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease-in-out',
-                  '&:hover': {
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                    transform: 'translateY(-2px)',
-                    borderColor: 'primary.main',
-                  },
-                }}
-                onClick={() => setExpanded('detailed')}
-                onMouseEnter={() => setHoveredRegion(region.name)}
-                onMouseLeave={() => setHoveredRegion(null)}
-              >
-                <Stack direction="row" alignItems="center" spacing={1} mb={1}>
-                  <RegionChip
-                    label={region.name}
-                    regionType={region.type}
-                    size="small"
-                  />
-                  <Tooltip title={`Click to view detailed analysis of ${region.label}`}>
-                    <IconButton size="small">
-                      <Info fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-                
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  {region.label}
-                </Typography>
-                
-                {data[region.key as keyof CDRFrameworkData] && (
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                      Nucleotide Sequence:
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      fontFamily="monospace"
-                      sx={{
-                        wordBreak: 'break-all',
-                        backgroundColor: '#f5f5f5',
-                        padding: 0.5,
-                        borderRadius: 0.5,
-                        fontSize: '10px',
-                        mb: 1,
-                      }}
-                    >
-                      {data[region.key as keyof CDRFrameworkData]}
-                    </Typography>
-                    
-                    {data[region.aaKey as keyof CDRFrameworkData] && (
-                      <>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                          Amino Acid Sequence:
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          fontFamily="monospace"
-                          sx={{
-                            wordBreak: 'break-all',
-                            backgroundColor: '#E8F5E8',
-                            padding: 0.5,
-                            borderRadius: 0.5,
-                            fontSize: '10px',
-                            color: '#2E7D32',
-                            fontWeight: 500,
-                          }}
-                        >
-                          {data[region.aaKey as keyof CDRFrameworkData]}
-                        </Typography>
-                      </>
-                    )}
-                  </Box>
-                )}
-                
-                {/* Special handling for CDR3 */}
-                {region.key === 'cdr3_sequence' && data.cdr3_start && data.cdr3_end && (
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                    Position: {data.cdr3_start} - {data.cdr3_end}
-                  </Typography>
-                )}
-                
-                <Typography variant="caption" color="primary" sx={{ mt: 1, display: 'block', fontStyle: 'italic' }}>
-                  Click for detailed analysis
-                </Typography>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-      ) : (
-        <Alert severity="info">
-          No CDR/framework region data available. This may be because:
-          <ul>
-            <li>The IgBLAST analysis didn't identify antibody regions</li>
-            <li>The sequence is not an antibody sequence</li>
-            <li>The analysis used protein IgBLAST (igblastp) which has limited region information</li>
-          </ul>
-        </Alert>
-      )}
-    </Box>
-  );
-
-  const renderDetailedView = () => (
-    <Box>
-      <Typography variant="h6" gutterBottom color="primary">
-        <Biotech sx={{ mr: 1, verticalAlign: 'middle' }} />
-        Detailed Region Analysis
-      </Typography>
-      
-      {availableRegions.map((region, index) => (
-        <Paper 
-          key={region.key} 
-          variant="outlined" 
-          sx={{ 
-            p: 2, 
-            mb: 2,
-            border: hoveredRegion === region.name ? '2px solid primary.main' : '1px solid',
-            backgroundColor: hoveredRegion === region.name ? 'rgba(25, 118, 210, 0.04)' : 'transparent',
-            transition: 'all 0.2s ease-in-out',
-          }}
-        >
-          <Stack direction="row" alignItems="center" spacing={1} mb={2}>
-            <RegionChip
-              label={region.name}
-              regionType={region.type}
-            />
-            <Typography variant="subtitle1" fontWeight="bold">
-              {region.label}
-            </Typography>
-          </Stack>
-          
-          <Grid container spacing={2}>
-            <Grid xs={12} md={6}>
-              <Typography variant="subtitle2" gutterBottom>
-                Nucleotide Sequence
-              </Typography>
-              <SequenceDisplay>
-                {data[region.key as keyof CDRFrameworkData] || 'Not available'}
-              </SequenceDisplay>
-              
-              {data[region.aaKey as keyof CDRFrameworkData] && (
-                <>
-                  <Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>
-                    Amino Acid Sequence
-                  </Typography>
-                  <SequenceDisplay sx={{ backgroundColor: '#E8F5E8', borderColor: '#4CAF50' }}>
-                    {data[region.aaKey as keyof CDRFrameworkData]}
-                  </SequenceDisplay>
-                </>
-              )}
-            </Grid>
-            
-            <Grid xs={12} md={6}>
-              <Typography variant="subtitle2" gutterBottom>
-                Region Information
-              </Typography>
-              <Stack spacing={1}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Region Type:
-                  </Typography>
-                  <Typography variant="body2">
-                    {region.name} ({region.label})
-                  </Typography>
-                </Box>
-                
-                {region.key === 'cdr3_sequence' && data.cdr3_start && data.cdr3_end && (
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Position:
-                    </Typography>
-                    <Typography variant="body2">
-                      {data.cdr3_start} - {data.cdr3_end} (length: {data.cdr3_end - data.cdr3_start + 1})
-                    </Typography>
-                  </Box>
-                )}
-                
-
-              </Stack>
-            </Grid>
-          </Grid>
-        </Paper>
-      ))}
-    </Box>
-  );
 
   const renderSequenceVisualization = () => {
     if (!sequence) {
@@ -455,202 +254,264 @@ export const CDRFrameworkDisplay: React.FC<CDRFrameworkDisplayProps> = ({
 
     return (
       <Box>
-        <Typography variant="h6" gutterBottom color="primary">
-          Sequence with Region Highlights
+        <Typography variant="subtitle2" gutterBottom>
+          Full Sequence ({sequenceType})
         </Typography>
         
-        <Paper variant="outlined" sx={{ p: 2 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Full Sequence ({sequenceType})
-          </Typography>
-          
-          <SequenceDisplay>
-            {sequence.split('').map((char, index) => {
-              const regionInfo = getRegionInfo(index);
-              return (
-                <Tooltip
-                  key={index}
-                  title={
-                    regionInfo ? (
-                      <Box>
-                        <Typography variant="subtitle2" fontWeight="bold">
-                          {regionInfo.name}
-                        </Typography>
-                        <Typography variant="body2">
-                          Position: {regionInfo.start} - {regionInfo.end}
-                        </Typography>
-                        <Typography variant="body2" fontFamily="monospace">
-                          Sequence: {regionInfo.sequence}
-                        </Typography>
-                      </Box>
-                    ) : (
-                      <Typography variant="body2">
-                        Position: {index + 1}
+        <SequenceDisplay>
+          {sequence.split('').map((char, index) => {
+            const regionInfo = getRegionInfo(index);
+            return (
+              <Tooltip
+                key={index}
+                title={
+                  regionInfo ? (
+                    <Box>
+                      <Typography variant="subtitle2" fontWeight="bold">
+                        {regionInfo.name}
                       </Typography>
-                    )
-                  }
-                  arrow
-                  placement="top"
+                      <Typography variant="body2">
+                        Position: {regionInfo.start} - {regionInfo.end}
+                      </Typography>
+                      <Typography variant="body2" fontFamily="monospace">
+                        Sequence: {regionInfo.sequence}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Typography variant="body2">
+                      Position: {index + 1}
+                    </Typography>
+                  )
+                }
+                arrow
+                placement="top"
+              >
+                <span 
+                  style={{ 
+                    position: 'relative', 
+                    zIndex: 2,
+                    cursor: regionInfo ? 'pointer' : 'default',
+                    backgroundColor: regionInfo ? 'rgba(255, 255, 0, 0.2)' : 'transparent',
+                    borderRadius: '2px',
+                    padding: '1px',
+                  }}
+                  onMouseEnter={() => regionInfo && setHoveredRegion(regionInfo.name)}
+                  onMouseLeave={() => setHoveredRegion(null)}
                 >
-                  <span 
-                    style={{ 
-                      position: 'relative', 
-                      zIndex: 2,
-                      cursor: regionInfo ? 'pointer' : 'default',
-                      backgroundColor: regionInfo ? 'rgba(255, 255, 0, 0.2)' : 'transparent',
-                      borderRadius: '2px',
-                      padding: '1px',
-                    }}
-                    onMouseEnter={() => regionInfo && setHoveredRegion(regionInfo.name)}
-                    onMouseLeave={() => setHoveredRegion(null)}
-                  >
-                    {char}
-                  </span>
-                </Tooltip>
-              );
-            })}
-            
-            {/* Add region highlights for all available regions */}
-            {/* Convert 1-based coordinates to 0-based for frontend positioning */}
-            {data.fwr1_start && data.fwr1_end && (
-              <RegionHighlight
-                regionType="FWR1"
-                start={data.fwr1_start - 1}
-                end={data.fwr1_end - 1}
-                sequenceLength={sequence.length}
-              />
-            )}
-            
-            {data.cdr1_start && data.cdr1_end && (
-              <RegionHighlight
-                regionType="CDR1"
-                start={data.cdr1_start - 1}
-                end={data.cdr1_end - 1}
-                sequenceLength={sequence.length}
-              />
-            )}
-            
-            {data.fwr2_start && data.fwr2_end && (
-              <RegionHighlight
-                regionType="FWR2"
-                start={data.fwr2_start - 1}
-                end={data.fwr2_end - 1}
-                sequenceLength={sequence.length}
-              />
-            )}
-            
-            {data.cdr2_start && data.cdr2_end && (
-              <RegionHighlight
-                regionType="CDR2"
-                start={data.cdr2_start - 1}
-                end={data.cdr2_end - 1}
-                sequenceLength={sequence.length}
-              />
-            )}
-            
-            {data.fwr3_start && data.fwr3_end && (
-              <RegionHighlight
-                regionType="FWR3"
-                start={data.fwr3_start - 1}
-                end={data.fwr3_end - 1}
-                sequenceLength={sequence.length}
-              />
-            )}
-            
-            {data.cdr3_start && data.cdr3_end && (
-              <RegionHighlight
-                regionType="CDR3"
-                start={data.cdr3_start - 1}
-                end={data.cdr3_end - 1}
-                sequenceLength={sequence.length}
-              />
-            )}
-          </SequenceDisplay>
+                  {char}
+                </span>
+              </Tooltip>
+            );
+          })}
           
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="caption" color="text.secondary">
-              Legend: Hover over highlighted regions to see detailed information. Click on regions for more details.
-            </Typography>
-          </Box>
-        </Paper>
+          {/* Add region highlights for all available regions */}
+          {/* Convert 1-based coordinates to 0-based for frontend positioning */}
+          {data.fwr1_start && data.fwr1_end && (
+            <RegionHighlight
+              regionType="FWR1"
+              start={data.fwr1_start - 1}
+              end={data.fwr1_end - 1}
+              sequenceLength={sequence.length}
+            />
+          )}
+          
+          {data.cdr1_start && data.cdr1_end && (
+            <RegionHighlight
+              regionType="CDR1"
+              start={data.cdr1_start - 1}
+              end={data.cdr1_end - 1}
+              sequenceLength={sequence.length}
+            />
+          )}
+          
+          {data.fwr2_start && data.fwr2_end && (
+            <RegionHighlight
+              regionType="FWR2"
+              start={data.fwr2_start - 1}
+              end={data.fwr2_end - 1}
+              sequenceLength={sequence.length}
+            />
+          )}
+          
+          {data.cdr2_start && data.cdr2_end && (
+            <RegionHighlight
+              regionType="CDR2"
+              start={data.cdr2_start - 1}
+              end={data.cdr2_end - 1}
+              sequenceLength={sequence.length}
+            />
+          )}
+          
+          {data.fwr3_start && data.fwr3_end && (
+            <RegionHighlight
+              regionType="FWR3"
+              start={data.fwr3_start - 1}
+              end={data.fwr3_end - 1}
+              sequenceLength={sequence.length}
+            />
+          )}
+          
+          {data.cdr3_start && data.cdr3_end && (
+            <RegionHighlight
+              regionType="CDR3"
+              start={data.cdr3_start - 1}
+              end={data.cdr3_end - 1}
+              sequenceLength={sequence.length}
+            />
+          )}
+        </SequenceDisplay>
+        
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="caption" color="text.secondary">
+            Legend: Hover over highlighted regions to see detailed information. Click on regions for more details.
+          </Typography>
+        </Box>
       </Box>
     );
   };
 
   return (
-    <StyledCard>
+    <Card>
+      <CardHeader
+        title="CDR/Framework Analysis"
+        subheader="Complementarity-Determining Regions (CDRs) and Framework Regions (FWRs) extracted from IgBLAST analysis results"
+        avatar={<Biotech color="primary" />}
+      />
       <CardContent>
-        <Typography variant="h5" gutterBottom>
-          CDR/Framework Analysis
-        </Typography>
-        
-        <Typography variant="body2" color="text.secondary" paragraph>
-          Complementarity-Determining Regions (CDRs) and Framework Regions (FWRs) 
-          extracted from IgBLAST analysis results.
-        </Typography>
-
-        {/* Overview Section */}
+        {/* Single Comprehensive View */}
         <Box sx={{ mb: 3 }}>
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
-            sx={{ cursor: 'pointer' }}
-            onClick={(e) => handleAccordionChange('overview')(e, expanded !== 'overview')}
-          >
-            <Typography variant="h6">Overview</Typography>
-            {expanded === 'overview' ? <ExpandLess /> : <ExpandMore />}
-          </Box>
-          <Collapse in={expanded === 'overview'}>
-            <Box sx={{ mt: 2 }}>
-              {renderRegionOverview()}
-            </Box>
-          </Collapse>
+          <Typography variant="h6" gutterBottom color="primary">
+            <Biotech sx={{ mr: 1, verticalAlign: 'middle' }} />
+            CDR/Framework Regions Analysis
+          </Typography>
+          
+          {availableRegions.length > 0 ? (
+            <Grid container spacing={2}>
+              {availableRegions.map((region) => (
+                <Grid key={region.key}>
+                  <Paper 
+                    variant="outlined" 
+                    sx={{ 
+                      p: 2,
+                      height: '100%',
+                      border: hoveredRegion === region.name ? '2px solid primary.main' : '1px solid',
+                      backgroundColor: hoveredRegion === region.name ? 'rgba(25, 118, 210, 0.04)' : 'transparent',
+                      transition: 'all 0.2s ease-in-out',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => setExpanded(expanded === region.key ? false : region.key)}
+                    onMouseEnter={() => setHoveredRegion(region.name)}
+                    onMouseLeave={() => setHoveredRegion(null)}
+                  >
+                    <Stack direction="row" alignItems="center" spacing={1} mb={1}>
+                      <RegionChip
+                        label={region.name}
+                        regionType={region.type}
+                        size="small"
+                      />
+                      <Typography variant="subtitle2" fontWeight="bold">
+                        {region.label}
+                      </Typography>
+                    </Stack>
+                    
+                    {data[region.key as keyof CDRFrameworkData] && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                          Nucleotide Sequence:
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          fontFamily="monospace"
+                          sx={{
+                            wordBreak: 'break-all',
+                            backgroundColor: '#f5f5f5',
+                            padding: 0.5,
+                            borderRadius: 0.5,
+                            fontSize: '10px',
+                            mb: 1,
+                          }}
+                        >
+                          {data[region.key as keyof CDRFrameworkData]}
+                        </Typography>
+                        
+                        {data[region.aaKey as keyof CDRFrameworkData] && (
+                          <>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                              Amino Acid Sequence:
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              fontFamily="monospace"
+                              sx={{
+                                wordBreak: 'break-all',
+                                backgroundColor: '#E8F5E8',
+                                padding: 0.5,
+                                borderRadius: 0.5,
+                                fontSize: '10px',
+                                color: '#2E7D32',
+                                fontWeight: 500,
+                              }}
+                            >
+                              {data[region.aaKey as keyof CDRFrameworkData]}
+                            </Typography>
+                          </>
+                        )}
+                      </Box>
+                    )}
+                    
+                    {/* Special handling for CDR3 */}
+                    {region.key === 'cdr3_sequence' && data.cdr3_start && data.cdr3_end && (
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                        Position: {data.cdr3_start} - {data.cdr3_end}
+                      </Typography>
+                    )}
+                    
+                    {/* Expandable detailed view */}
+                    {expanded === region.key && (
+                      <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #e0e0e0' }}>
+                        <Typography variant="caption" color="text.secondary" gutterBottom>
+                          Region Information:
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Type: {region.name} ({region.label})
+                        </Typography>
+                        {region.key === 'cdr3_sequence' && data.cdr3_start && data.cdr3_end && (
+                          <Typography variant="body2" color="text.secondary">
+                            Length: {data.cdr3_end - data.cdr3_start + 1} nucleotides
+                          </Typography>
+                        )}
+                      </Box>
+                    )}
+                    
+                    <Typography variant="caption" color="primary" sx={{ mt: 1, display: 'block', fontStyle: 'italic' }}>
+                      {expanded === region.key ? 'Click to collapse' : 'Click to expand'}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <Alert severity="info">
+              No CDR/framework region data available. This may be because:
+              <ul>
+                <li>The IgBLAST analysis didn't identify antibody regions</li>
+                <li>The sequence is not an antibody sequence</li>
+                <li>The analysis used protein IgBLAST (igblastp) which has limited region information</li>
+              </ul>
+            </Alert>
+          )}
         </Box>
-
-        <Divider sx={{ my: 2 }} />
-
-        {/* Detailed Analysis Section */}
-        <Box sx={{ mb: 3 }}>
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
-            sx={{ cursor: 'pointer' }}
-            onClick={(e) => handleAccordionChange('detailed')(e, expanded !== 'detailed')}
-          >
-            <Typography variant="h6">Detailed Analysis</Typography>
-            {expanded === 'detailed' ? <ExpandLess /> : <ExpandMore />}
-          </Box>
-          <Collapse in={expanded === 'detailed'}>
-            <Box sx={{ mt: 2 }}>
-              {renderDetailedView()}
-            </Box>
-          </Collapse>
-        </Box>
-
-        <Divider sx={{ my: 2 }} />
 
         {/* Sequence Visualization Section */}
         <Box>
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
-            sx={{ cursor: 'pointer' }}
-            onClick={(e) => handleAccordionChange('visualization')(e, expanded !== 'visualization')}
-          >
-            <Typography variant="h6">Sequence Visualization</Typography>
-            {expanded === 'visualization' ? <ExpandLess /> : <ExpandMore />}
-          </Box>
-          <Collapse in={expanded === 'visualization'}>
-            <Box sx={{ mt: 2 }}>
-              {renderSequenceVisualization()}
-            </Box>
-          </Collapse>
+          <Typography variant="h6" gutterBottom color="primary">
+            <Visibility sx={{ mr: 1, verticalAlign: 'middle' }} />
+            Sequence Visualization
+          </Typography>
+          {renderSequenceVisualization()}
         </Box>
       </CardContent>
-    </StyledCard>
+    </Card>
   );
 };
 
