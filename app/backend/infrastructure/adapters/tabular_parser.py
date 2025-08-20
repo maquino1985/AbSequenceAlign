@@ -45,6 +45,14 @@ class TabularParser(BaseIgBlastParser):
                     lines, idx
                 )
                 if framework_cdr_data:
+                    # Don't overwrite CDR3 data if it already exists from sub-region details
+                    if "cdr3_sequence" in result["analysis_summary"]:
+                        # Remove CDR3 data from framework_cdr_data to avoid overwriting
+                        framework_cdr_data = {
+                            k: v
+                            for k, v in framework_cdr_data.items()
+                            if not k.startswith("cdr3")
+                        }
                     result["analysis_summary"].update(framework_cdr_data)
 
                     # Extract actual sequence data if we have the query sequence
@@ -104,7 +112,7 @@ class TabularParser(BaseIgBlastParser):
                 if next_line and not next_line.startswith("#"):
                     parts = next_line.split("\t")
                     if len(parts) >= 8:
-                        result["analysis_summary"] = (
+                        result["analysis_summary"].update(
                             self._extract_summary_data(parts)
                         )
 
@@ -123,9 +131,8 @@ class TabularParser(BaseIgBlastParser):
 
         # If no analysis summary was found, try to extract from hits
         if not result["analysis_summary"].get("v_gene") and result["hits"]:
-            result["analysis_summary"] = self._extract_summary_from_hits(
-                result["hits"]
-            )
+            hit_summary = self._extract_summary_from_hits(result["hits"])
+            result["analysis_summary"].update(hit_summary)
 
         # Add CDR3 data to all hits if available
         if result["analysis_summary"].get("cdr3_sequence") and result["hits"]:

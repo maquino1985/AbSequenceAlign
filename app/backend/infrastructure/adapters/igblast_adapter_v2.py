@@ -173,16 +173,7 @@ class IgBlastAdapterV2(BaseExternalToolAdapter):
                     if len(parts) >= 3:
                         v_gene = parts[2]
                         # Determine chain type based on V gene family
-                        if v_gene.startswith("IGHV"):
-                            return "heavy"
-                        elif v_gene.startswith(("IGKV", "IGLV")):
-                            return "light"
-                        elif v_gene.startswith(
-                            ("TRAV", "TRBV", "TRGV", "TRDV")
-                        ):
-                            return "tcr"
-                        else:
-                            return "unknown"
+                        return ChainTypeUtils.extract_chain_type(v_gene)
 
             return "unknown"
 

@@ -453,9 +453,11 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
             self._logger.error(error_msg)
             raise ExternalToolError(error_msg, tool_name=self.tool_name)
 
-    def _parse_output(self, output: str, blast_type: str) -> Dict[str, Any]:
+    def _parse_output(
+        self, output: str, blast_type: str, query_sequence: str = None
+    ) -> Dict[str, Any]:
         """Parse IgBLAST output (delegates to specific parsers)."""
-        return self.tabular_parser.parse(output, blast_type)
+        return self.tabular_parser.parse(output, blast_type, query_sequence)
 
     def _get_subject_url(self, subject_id: str) -> str:
         """Generate URL for subject ID."""

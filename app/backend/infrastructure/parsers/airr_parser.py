@@ -69,9 +69,31 @@ class AIRRParser:
             f"Successfully parsed {len(rearrangements)} rearrangements"
         )
 
+        # Calculate productive sequences count
+        productive_count = sum(
+            1
+            for r in rearrangements
+            if r.productive == ProductivityStatus.PRODUCTIVE
+        )
+
+        # Extract unique genes
+        unique_v_genes = list(
+            set(r.v_call for r in rearrangements if r.v_call)
+        )
+        unique_j_genes = list(
+            set(r.j_call for r in rearrangements if r.j_call)
+        )
+        unique_d_genes = list(
+            set(r.d_call for r in rearrangements if r.d_call)
+        )
+
         return AIRRAnalysisResult(
             rearrangements=rearrangements,
             total_sequences=len(rearrangements),
+            productive_sequences=productive_count,
+            unique_v_genes=unique_v_genes,
+            unique_j_genes=unique_j_genes,
+            unique_d_genes=unique_d_genes,
             analysis_metadata={
                 "parser_version": "1.0",
                 "total_lines_processed": len(lines) - 1,

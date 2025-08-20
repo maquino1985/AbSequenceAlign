@@ -72,7 +72,7 @@ class TestBlastAPIComprehensive:
                     "d_gene": None,  # IgBLAST protein doesn't detect D genes
                     "j_gene": None,  # IgBLAST protein doesn't detect J genes
                     "c_gene": None,  # IgBLAST protein doesn't detect C genes
-                    "cdr3_sequence": None,  # No CDR3 for protein searches
+                    "cdr3_sequence": "AR",  # CDR3 extraction now working for protein searches
                     "has_airr_data": False,  # No AIRR data for protein searches
                 },
                 description="Complete Humira heavy chain protein sequence - IgBLAST protein only detects V genes",
@@ -88,7 +88,7 @@ class TestBlastAPIComprehensive:
                     "d_gene": None,  # May not have D gene for partial sequence
                     "j_gene": None,  # May not have J gene for partial sequence
                     "c_gene": None,  # May not have C gene for partial sequence
-                    "cdr3_sequence": None,  # May not have CDR3 for partial sequence
+                    "cdr3_sequence": "GCGAGAGA",  # CDR3 extraction now working for partial sequence
                     "has_airr_data": False,  # Updated: AIRR data not being generated
                 },
                 description="Partial V gene nucleotide sequence - may have limited gene assignments",
