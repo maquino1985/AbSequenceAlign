@@ -94,10 +94,7 @@ jobs:
           
           # Start IgBLAST container
           docker run -d --name absequencealign-igblast \
-            -v "$(pwd)/data/igblast:/blast/blastdb:ro" \
-            -v "$(pwd)/data/igblast/internal_data:/blast/internal_data:ro" \
-            -v "$(pwd)/data/igblast/optional_file:/blast/optional_file:ro" \
-            -e IGDATA=/blast \
+            -v "$(pwd)/data/igblast:/data:ro" \
             ncbi/igblast:latest sleep infinity
           
           # Wait for containers to be ready
@@ -118,6 +115,57 @@ jobs:
             fi
             sleep 1
           done
+
+      - name: Validate IgBLAST database availability
+        run: |
+          set -euo pipefail
+          echo "Validating IgBLAST database availability in CI environment..."
+          
+          # Test that key database files exist in the container
+          echo "Checking human V gene database..."
+          docker exec absequencealign-igblast test -f "/data/databases/human/V/airr_c_human_ig.V.nhr" || {
+            echo "❌ Human V gene database not found"
+            exit 1
+          }
+          echo "✅ Human V gene database found"
+          
+          echo "Checking human D gene database..."
+          docker exec absequencealign-igblast test -f "/data/databases/human/D/airr_c_human_igh.D.nhr" || {
+            echo "❌ Human D gene database not found"
+            exit 1
+          }
+          echo "✅ Human D gene database found"
+          
+          echo "Checking human J gene database..."
+          docker exec absequencealign-igblast test -f "/data/databases/human/J/airr_c_human_ig.J.nhr" || {
+            echo "❌ Human J gene database not found"
+            exit 1
+          }
+          echo "✅ Human J gene database found"
+          
+          echo "Checking mouse V gene database..."
+          docker exec absequencealign-igblast test -f "/data/databases/mouse/V/mouse_gl_V.nhr" || {
+            echo "❌ Mouse V gene database not found"
+            exit 1
+          }
+          echo "✅ Mouse V gene database found"
+          
+          echo "Checking database metadata file..."
+          docker exec absequencealign-igblast test -f "/data/database_metadata.json" || {
+            echo "❌ Database metadata file not found"
+            exit 1
+          }
+          echo "✅ Database metadata file found"
+          
+          echo "✅ All IgBLAST databases validated successfully"
+
+      - name: Run comprehensive database validation
+        shell: bash -l {0}
+        run: |
+          set -euo pipefail
+          conda activate "${BACKEND_CONDA_ENV}"
+          echo "Running comprehensive database validation..."
+          python scripts/validate_ci_databases.py
 
       - name: Backend unit tests + lint + format check
         shell: bash -l {0}

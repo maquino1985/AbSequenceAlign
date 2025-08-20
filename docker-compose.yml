@@ -73,12 +73,9 @@ services:
     container_name: absequencealign-igblast
     restart: unless-stopped
     volumes:
-      - ./data/igblast:/blast/blastdb:ro
-      - ./data/igblast/internal_data:/blast/internal_data:ro
-      - ./data/igblast/optional_file:/blast/optional_file:ro
+      - ./data/igblast:/data:ro
       - /tmp:/tmp
-    environment:
-      - IGDATA=/blast
+
     networks:
       - app-network
     command: ["sleep", "infinity"]

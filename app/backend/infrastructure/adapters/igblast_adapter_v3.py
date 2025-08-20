@@ -10,7 +10,7 @@ import json
 import logging
 import re
 import subprocess
-from functools import lru_cache
+
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -38,7 +38,6 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
         """Load database metadata from JSON file with caching."""
         return self._load_database_metadata_cached()
 
-    @lru_cache(maxsize=1)
     def _load_database_metadata_cached(self) -> Dict[str, Any]:
         """Cached version of database metadata loading."""
         # Try multiple possible paths for the metadata file

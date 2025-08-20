@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 import logging
 import tempfile
 import os
-from functools import lru_cache
+
 
 from backend.infrastructure.adapters import BlastAdapter
 from backend.infrastructure.adapters.igblast_adapter_v3 import IgBlastAdapterV3
@@ -222,7 +222,6 @@ class BlastService:
         """
         return self._get_public_databases_cached()
 
-    @lru_cache(maxsize=1)
     def _get_public_databases_cached(self) -> Dict[str, str]:
         """
         Cached version of database discovery. Cache is invalidated when called again.
