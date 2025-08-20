@@ -35,6 +35,17 @@ jobs:
         with:
           lfs: true
 
+      # ---------- Cache Database Files ----------
+      - name: Cache BLAST and IgBLAST databases
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/blast
+            data/igblast
+          key: ${{ runner.os }}-databases-${{ hashFiles('data/blast/**', 'data/igblast/**') }}
+          restore-keys: |
+            ${{ runner.os }}-databases-
+
       - name: Setup buildx
         uses: docker/setup-buildx-action@v3
 

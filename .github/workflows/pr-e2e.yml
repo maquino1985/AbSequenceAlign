@@ -20,7 +20,28 @@ jobs:
         with:
           lfs: true
 
+      # ---------- Cache Database Files ----------
+      - name: Cache BLAST and IgBLAST databases
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/blast
+            data/igblast
+          key: ${{ runner.os }}-databases-${{ hashFiles('data/blast/**', 'data/igblast/**') }}
+          restore-keys: |
+            ${{ runner.os }}-databases-
+
       # ---------- Backend: setup + unit/lint ----------
+      - name: Cache conda environment
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/conda_pkgs_dir
+            ${{ env.CONDA }}/envs/${{ env.BACKEND_CONDA_ENV }}
+          key: ${{ runner.os }}-conda-${{ hashFiles('environment.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-conda-
+
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
@@ -103,11 +124,26 @@ jobs:
           cache: 'npm'
           cache-dependency-path: app/frontend/package-lock.json
 
+      - name: Cache frontend dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            app/frontend/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-frontend-${{ hashFiles('app/frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-frontend-
+
       - name: Frontend install
         run: |
           set -euo pipefail
           cd app/frontend
-          npm ci
+          # Only run npm ci if node_modules doesn't exist (cache miss)
+          if [ ! -d "node_modules" ]; then
+            npm ci
+          else
+            echo "Using cached node_modules"
+          fi
 
       - name: Frontend lint + types + unit tests
         run: |
