@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -46,18 +46,50 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
   const [blastType, setBlastType] = useState('blastp');
   const [evalue, setEvalue] = useState('1e-10');
   const [maxTargetSeqs, setMaxTargetSeqs] = useState('10');
-  // BLASTN-specific parameters
+  
+  // BLASTN/MegaBLAST parameters
   const [wordSize, setWordSize] = useState('11');
   const [percIdentity, setPercIdentity] = useState('70');
   const [softMasking, setSoftMasking] = useState(true);
   const [dust, setDust] = useState(true);
-  // Removed searchType state - no longer needed
+  
+  // BLASTP/BLASTX/TBLASTN parameters
+  const [matrix, setMatrix] = useState('BLOSUM62');
+  const [gapOpen, setGapOpen] = useState('11');
+  const [gapExtend, setGapExtend] = useState('1');
 
   const [error, setError] = useState<string | null>(null);
+
+  // Update default values when BLAST type changes
+  useEffect(() => {
+    if (blastType === 'blastn') {
+      setWordSize('11');
+      setPercIdentity('90');
+    } else if (blastType === 'megablast') {
+      setWordSize('28');
+      setPercIdentity('90');
+    } else if (blastType === 'blastp') {
+      setWordSize('11');
+      setMatrix('BLOSUM62');
+      setGapOpen('11');
+      setGapExtend('1');
+    } else if (blastType === 'blastx') {
+      setWordSize('15');
+      setMatrix('BLOSUM62');
+      setGapOpen('11');
+      setGapExtend('1');
+    } else if (blastType === 'tblastn') {
+      setWordSize('11');
+      setMatrix('BLOSUM62');
+      setGapOpen('11');
+      setGapExtend('1');
+    }
+  }, [blastType]);
 
   const blastTypes = [
     { value: 'blastp', label: 'BLASTP (Protein vs Protein)' },
     { value: 'blastn', label: 'BLASTN (Nucleotide vs Nucleotide)' },
+    { value: 'megablast', label: 'MegaBLAST (Highly Similar Nucleotides)' },
     { value: 'blastx', label: 'BLASTX (Nucleotide vs Protein)' },
     { value: 'tblastn', label: 'TBLASTN (Protein vs Nucleotide)' },
   ];
@@ -97,12 +129,19 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
       blast_type: blastType,
       evalue: parseFloat(evalue),
       max_target_seqs: parseInt(maxTargetSeqs),
-      // Add BLASTN-specific parameters only for BLASTN
-      ...(blastType === 'blastn' && {
+      // BLASTN/MegaBLAST parameters
+      ...((['blastn', 'megablast'].includes(blastType)) && {
         word_size: parseInt(wordSize),
         perc_identity: parseFloat(percIdentity),
         soft_masking: softMasking,
         dust: dust,
+      }),
+      // BLASTP/BLASTX/TBLASTN parameters
+      ...((['blastp', 'blastx', 'tblastn'].includes(blastType)) && {
+        matrix: matrix,
+        gapopen: parseInt(gapOpen),
+        gapextend: parseInt(gapExtend),
+        soft_masking: softMasking,
       }),
     };
 
@@ -307,15 +346,16 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
           />
         </Box>
 
-        {/* BLASTN-specific Parameters */}
-        {blastType === 'blastn' && (
+        {/* Dynamic Parameters Based on BLAST Type */}
+        {/* BLASTN/MegaBLAST Parameters */}
+        {(['blastn', 'megablast'].includes(blastType)) && (
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <TextField
               sx={{ flex: 1, minWidth: 150 }}
               label="Word Size"
               value={wordSize}
               onChange={(e) => setWordSize(e.target.value)}
-              helperText="Word size for initial matches"
+              helperText={blastType === 'megablast' ? "Word size (default: 28)" : "Word size (default: 11)"}
               type="number"
             />
 
@@ -348,6 +388,67 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
                 value={dust ? 'true' : 'false'}
                 label="Dust Filter"
                 onChange={(e) => setDust(e.target.value === 'true')}
+              >
+                <MenuItem value="true">Enabled</MenuItem>
+                <MenuItem value="false">Disabled</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        )}
+
+        {/* BLASTP/BLASTX/TBLASTN Parameters */}
+        {(['blastp', 'blastx', 'tblastn'].includes(blastType)) && (
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <TextField
+              sx={{ flex: 1, minWidth: 150 }}
+              label="Word Size"
+              value={wordSize}
+              onChange={(e) => setWordSize(e.target.value)}
+              helperText={`Word size (${blastType === 'blastx' ? 'default: 15' : 'default: 11'})`}
+              type="number"
+            />
+
+            <FormControl sx={{ flex: 1, minWidth: 150 }}>
+              <InputLabel id="matrix-label">Substitution Matrix</InputLabel>
+              <Select
+                labelId="matrix-label"
+                value={matrix}
+                label="Substitution Matrix"
+                onChange={(e) => setMatrix(e.target.value)}
+              >
+                <MenuItem value="BLOSUM62">BLOSUM62</MenuItem>
+                <MenuItem value="BLOSUM45">BLOSUM45</MenuItem>
+                <MenuItem value="BLOSUM80">BLOSUM80</MenuItem>
+                <MenuItem value="PAM30">PAM30</MenuItem>
+                <MenuItem value="PAM70">PAM70</MenuItem>
+              </Select>
+            </FormControl>
+
+            <TextField
+              sx={{ flex: 1, minWidth: 150 }}
+              label="Gap Open Penalty"
+              value={gapOpen}
+              onChange={(e) => setGapOpen(e.target.value)}
+              helperText="Gap opening penalty (default: 11)"
+              type="number"
+            />
+
+            <TextField
+              sx={{ flex: 1, minWidth: 150 }}
+              label="Gap Extend Penalty"
+              value={gapExtend}
+              onChange={(e) => setGapExtend(e.target.value)}
+              helperText="Gap extension penalty (default: 1)"
+              type="number"
+            />
+
+            <FormControl sx={{ flex: 1, minWidth: 150 }}>
+              <InputLabel id="protein-soft-masking-label">Soft Masking</InputLabel>
+              <Select
+                labelId="protein-soft-masking-label"
+                value={softMasking ? 'true' : 'false'}
+                label="Soft Masking"
+                onChange={(e) => setSoftMasking(e.target.value === 'true')}
               >
                 <MenuItem value="true">Enabled</MenuItem>
                 <MenuItem value="false">Disabled</MenuItem>

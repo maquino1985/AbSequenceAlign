@@ -21,11 +21,20 @@ class BlastSearchRequest(BaseModel):
     blast_type: str = "blastp"
     evalue: float = 1e-10
     max_target_seqs: int = 10
+
     # BLASTN-specific parameters
     word_size: Optional[int] = None
     perc_identity: Optional[float] = None
     soft_masking: Optional[bool] = None
     dust: Optional[bool] = None
+
+    # BLASTP/BLASTX/TBLASTN-specific parameters
+    matrix: Optional[str] = None  # Substitution matrix (e.g., BLOSUM62)
+    gapopen: Optional[int] = None  # Gap opening penalty
+    gapextend: Optional[int] = None  # Gap extension penalty
+
+    # MegaBLAST-specific parameters (uses different defaults)
+    # Note: MegaBLAST uses same parameters as BLASTN but with different defaults
 
 
 class IgBlastSearchRequest(BaseModel):
@@ -93,10 +102,15 @@ async def search_public_databases(request: BlastSearchRequest):
             blast_type=request.blast_type,
             evalue=request.evalue,
             max_target_seqs=request.max_target_seqs,
+            # BLASTN/MegaBLAST parameters
             word_size=request.word_size,
             perc_identity=request.perc_identity,
             soft_masking=request.soft_masking,
             dust=request.dust,
+            # BLASTP/BLASTX/TBLASTN parameters
+            matrix=request.matrix,
+            gapopen=request.gapopen,
+            gapextend=request.gapextend,
         )
 
         return BlastSearchResponse(

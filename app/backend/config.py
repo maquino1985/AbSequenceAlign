@@ -25,6 +25,12 @@ ISOTYPE_HMM_DIR = os.getenv(
 # Environment
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
+# CI Environment Detection
+IS_CI = (
+    os.getenv("CI", "false").lower() == "true"
+    or os.getenv("GITHUB_ACTIONS", "false").lower() == "true"
+)
+
 # Database Configuration
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = int(os.getenv("DB_PORT", "5433"))

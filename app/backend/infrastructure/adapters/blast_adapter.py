@@ -22,6 +22,7 @@ class BlastAdapter(BaseExternalToolAdapter):
         self._supported_blast_types = [
             "blastp",
             "blastn",
+            "megablast",
             "blastx",
             "tblastn",
             "tblastx",
@@ -208,36 +209,60 @@ class BlastAdapter(BaseExternalToolAdapter):
             db_path = self._get_database_path(database)
             command.extend(["-db", db_path])
 
-        # Add BLASTN-specific parameters
+        # Add type-specific parameters with sensible defaults
         if blast_type == "blastn":
             command.extend(["-task", "blastn"])
-            # Use configurable parameters with defaults, only if not None
-            word_size = kwargs.get("word_size")
-            perc_identity = kwargs.get("perc_identity")
-            soft_masking = kwargs.get("soft_masking")
-            dust = kwargs.get("dust")
+            # BLASTN parameters
+            word_size = kwargs.get("word_size", 11)
+            perc_identity = kwargs.get("perc_identity", 90)
+            soft_masking = kwargs.get("soft_masking", True)
+            dust = kwargs.get("dust", True)
 
-            if word_size is not None:
-                command.extend(["-word_size", str(word_size)])
-            else:
-                command.extend(["-word_size", "11"])
+            command.extend(["-word_size", str(word_size)])
+            command.extend(["-perc_identity", str(perc_identity)])
+            command.extend(
+                ["-soft_masking", "true" if soft_masking else "false"]
+            )
+            command.extend(["-dust", "yes" if dust else "no"])
 
-            if perc_identity is not None:
-                command.extend(["-perc_identity", str(perc_identity)])
-            else:
-                command.extend(["-perc_identity", "70"])
+        elif blast_type == "megablast":
+            command.extend(["-task", "megablast"])
+            # MegaBLAST parameters (optimized for highly similar sequences)
+            word_size = kwargs.get("word_size", 28)
+            perc_identity = kwargs.get("perc_identity", 90)
+            soft_masking = kwargs.get("soft_masking", True)
+            dust = kwargs.get("dust", True)
 
-            if soft_masking is not None:
-                command.extend(
-                    ["-soft_masking", "true" if soft_masking else "false"]
-                )
-            else:
-                command.extend(["-soft_masking", "true"])
+            command.extend(["-word_size", str(word_size)])
+            command.extend(["-perc_identity", str(perc_identity)])
+            command.extend(
+                ["-soft_masking", "true" if soft_masking else "false"]
+            )
+            command.extend(["-dust", "yes" if dust else "no"])
 
-            if dust is not None:
-                command.extend(["-dust", "yes" if dust else "no"])
-            else:
-                command.extend(["-dust", "yes"])
+        elif blast_type in ["blastp", "blastx", "tblastn"]:
+            # Protein-based BLAST parameters
+            matrix = kwargs.get("matrix", "BLOSUM62")
+            gapopen = kwargs.get("gapopen", 11)
+            gapextend = kwargs.get("gapextend", 1)
+            soft_masking = kwargs.get("soft_masking", True)
+
+            command.extend(["-matrix", matrix])
+            command.extend(["-gapopen", str(gapopen)])
+            command.extend(["-gapextend", str(gapextend)])
+            command.extend(
+                ["-soft_masking", "true" if soft_masking else "false"]
+            )
+
+            # Add word_size for protein searches
+            if blast_type == "blastp":
+                word_size = kwargs.get("word_size", 11)
+            elif blast_type == "blastx":
+                word_size = kwargs.get("word_size", 15)
+            else:  # tblastn
+                word_size = kwargs.get("word_size", 11)
+
+            command.extend(["-word_size", str(word_size)])
 
         # Add optional parameters
         if "evalue" in kwargs:

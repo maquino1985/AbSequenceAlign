@@ -47,9 +47,6 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
             ),  # Relative to current directory
             Path(__file__).parent.parent.parent.parent.parent
             / "data/igblast/database_metadata.json",  # Relative to this file
-            Path(
-                "/Users/aquinmx3/repos/AbSequenceAlign/data/igblast/database_metadata.json"
-            ),  # Absolute path
         ]
 
         for metadata_path in possible_paths:

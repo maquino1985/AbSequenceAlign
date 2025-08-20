@@ -67,10 +67,15 @@ class BlastService:
         blast_type: str = "blastp",
         evalue: float = 1e-10,
         max_target_seqs: int = 10,
+        # BLASTN/MegaBLAST parameters
         word_size: Optional[int] = None,
         perc_identity: Optional[float] = None,
         soft_masking: Optional[bool] = None,
         dust: Optional[bool] = None,
+        # BLASTP/BLASTX/TBLASTN parameters
+        matrix: Optional[str] = None,
+        gapopen: Optional[int] = None,
+        gapextend: Optional[int] = None,
         **kwargs,
     ) -> Dict[str, Any]:
         """
@@ -102,10 +107,15 @@ class BlastService:
             blast_type=blast_type,
             evalue=evalue,
             max_target_seqs=max_target_seqs,
+            # BLASTN/MegaBLAST parameters
             word_size=word_size,
             perc_identity=perc_identity,
             soft_masking=soft_masking,
             dust=dust,
+            # BLASTP/BLASTX/TBLASTN parameters
+            matrix=matrix,
+            gapopen=gapopen,
+            gapextend=gapextend,
             **kwargs,
         )
 
