@@ -21,6 +21,7 @@ import {
   IconButton,
   Alert,
   LinearProgress,
+  Button,
 } from '@mui/material';
 import {
   Science,
@@ -36,6 +37,7 @@ import {
 import { styled } from '@mui/material/styles';
 import type { AIRRRearrangement, IgBlastSearchResponse } from '../../../types/apiV2';
 import SequenceAlignmentDisplay from './SequenceAlignmentDisplay';
+import CDRFrameworkDisplay from '../../antibody-annotation/components/CDRFrameworkDisplay';
 
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(2),
@@ -132,6 +134,43 @@ const AdvancedAIRRAnalysis: React.FC<AdvancedAIRRAnalysisProps> = ({
         <Typography variant="h6" gutterBottom color="primary">
           Query vs Germline Alignment
         </Typography>
+        
+        {/* CDR/Framework Region Legend */}
+        <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+            <Typography variant="subtitle2">
+              CDR/Framework Regions in Alignment:
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setActiveTab(3)} // Switch to Framework/CDR tab
+              startIcon={<Visibility />}
+            >
+              View Detailed Analysis
+            </Button>
+          </Box>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            {rearrangement.fwr1 && (
+              <Chip label="FWR1" size="small" color="primary" variant="outlined" />
+            )}
+            {rearrangement.cdr1 && (
+              <Chip label="CDR1" size="small" color="secondary" variant="outlined" />
+            )}
+            {rearrangement.fwr2 && (
+              <Chip label="FWR2" size="small" color="success" variant="outlined" />
+            )}
+            {rearrangement.cdr2 && (
+              <Chip label="CDR2" size="small" color="warning" variant="outlined" />
+            )}
+            {rearrangement.fwr3 && (
+              <Chip label="FWR3" size="small" color="info" variant="outlined" />
+            )}
+            {rearrangement.junction_region?.cdr3_aa && (
+              <Chip label="CDR3" size="small" color="error" variant="outlined" />
+            )}
+          </Stack>
+        </Box>
         
         {/* Nucleotide Alignment */}
         {rearrangement.sequence_alignment && rearrangement.germline_alignment && (
@@ -321,87 +360,58 @@ const AdvancedAIRRAnalysis: React.FC<AdvancedAIRRAnalysisProps> = ({
   };
 
   const renderFrameworkCDRRegions = () => {
-    const regions = [
-      { name: 'FWR1', data: rearrangement.fwr1 },
-      { name: 'CDR1', data: rearrangement.cdr1 },
-      { name: 'FWR2', data: rearrangement.fwr2 },
-      { name: 'CDR2', data: rearrangement.cdr2 },
-      { name: 'FWR3', data: rearrangement.fwr3 },
-      { name: 'FWR4', data: rearrangement.fwr4 },
-    ];
+    // Convert AIRR data structure to CDRFrameworkDisplay format
+    const cdrFrameworkData = {
+      fwr1_sequence: rearrangement.fwr1?.sequence_aa,
+      cdr1_sequence: rearrangement.cdr1?.sequence_aa,
+      fwr2_sequence: rearrangement.fwr2?.sequence_aa,
+      cdr2_sequence: rearrangement.cdr2?.sequence_aa,
+      fwr3_sequence: rearrangement.fwr3?.sequence_aa,
+      cdr3_sequence: rearrangement.junction_region?.cdr3_aa,
+      fwr4_sequence: rearrangement.fwr4?.sequence_aa,
+      // Add coordinate data for enhanced visualization
+      fr1_start: rearrangement.fwr1?.start,
+      fr1_end: rearrangement.fwr1?.end,
+      cdr1_start: rearrangement.cdr1?.start,
+      cdr1_end: rearrangement.cdr1?.end,
+      fr2_start: rearrangement.fwr2?.start,
+      fr2_end: rearrangement.fwr2?.end,
+      cdr2_start: rearrangement.cdr2?.start,
+      cdr2_end: rearrangement.cdr2?.end,
+      fr3_start: rearrangement.fwr3?.start,
+      fr3_end: rearrangement.fwr3?.end,
+      cdr3_start: rearrangement.junction_region?.cdr3_start,
+      cdr3_end: rearrangement.junction_region?.cdr3_end,
+      cdr3_aa: rearrangement.junction_region?.cdr3_aa,
+    };
+
+    // Determine sequence type based on available data
+    const sequenceType = rearrangement.sequence_aa ? 'protein' : 'nucleotide';
+    
+    // Get the query sequence for visualization
+    const sequence = rearrangement.sequence_aa || rearrangement.sequence;
 
     return (
       <Box>
-        <Typography variant="h6" gutterBottom color="primary">
-          Framework & CDR Regions
-        </Typography>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="h6" color="primary">
+            Framework & CDR Regions Analysis
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => setActiveTab(0)} // Switch to Sequence Alignment tab
+            startIcon={<Biotech />}
+          >
+            View Sequence Alignment
+          </Button>
+        </Box>
         
-        <Stack spacing={2}>
-          {regions.map((region) => {
-            if (!region.data) return null;
-            
-            return (
-              <Card key={region.name} elevation={1}>
-                <CardHeader
-                  title={
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <RegionChip regionType={region.name} label={region.name} size="small" />
-                      <Typography variant="subtitle1">{region.name}</Typography>
-                    </Box>
-                  }
-                />
-                <CardContent>
-                  <Stack spacing={1}>
-                    {region.data.sequence && (
-                      <Box>
-                        <Typography variant="body2" color="textSecondary" gutterBottom>
-                          Sequence:
-                        </Typography>
-                        <Typography 
-                          variant="body1" 
-                          fontFamily="monospace"
-                          sx={{ 
-                            bgcolor: 'grey.50', 
-                            p: 1, 
-                            borderRadius: 1,
-                            wordBreak: 'break-all'
-                          }}
-                        >
-                          {region.data.sequence}
-                        </Typography>
-                      </Box>
-                    )}
-                    {region.data.sequence_aa && (
-                      <Box>
-                        <Typography variant="body2" color="textSecondary" gutterBottom>
-                          Amino Acid Sequence:
-                        </Typography>
-                        <Typography 
-                          variant="body1" 
-                          fontFamily="monospace"
-                          sx={{ 
-                            bgcolor: 'grey.50', 
-                            p: 1, 
-                            borderRadius: 1,
-                            wordBreak: 'break-all'
-                          }}
-                        >
-                          {region.data.sequence_aa}
-                        </Typography>
-                      </Box>
-                    )}
-                    {region.data.start && region.data.end && (
-                      <Box display="flex" justifyContent="space-between">
-                        <Typography variant="body2" color="textSecondary">Position:</Typography>
-                        <Typography variant="body2">{region.data.start} - {region.data.end}</Typography>
-                      </Box>
-                    )}
-                  </Stack>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </Stack>
+        <CDRFrameworkDisplay
+          data={cdrFrameworkData}
+          sequence={sequence}
+          sequenceType={sequenceType}
+        />
       </Box>
     );
   };

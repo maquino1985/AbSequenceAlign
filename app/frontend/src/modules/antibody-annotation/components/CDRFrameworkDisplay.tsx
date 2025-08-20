@@ -75,7 +75,9 @@ const SequenceDisplay = styled(Box)(({ theme }) => ({
   position: 'relative',
 }));
 
-const RegionHighlight = styled(Box)<{ 
+const RegionHighlight = styled(Box, {
+  shouldForwardProp: (prop) => !['regionType', 'start', 'end', 'sequenceLength'].includes(prop as string),
+})<{ 
   regionType: string; 
   start: number; 
   end: number; 

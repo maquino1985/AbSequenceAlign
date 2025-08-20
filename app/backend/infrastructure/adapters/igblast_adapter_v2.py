@@ -13,6 +13,7 @@ from backend.core.exceptions import ExternalToolError
 from backend.infrastructure.adapters.base_adapter import (
     BaseExternalToolAdapter,
 )
+from backend.utils.chain_type_utils import ChainTypeUtils
 
 
 class IgBlastAdapterV2(BaseExternalToolAdapter):
@@ -420,7 +421,7 @@ class IgBlastAdapterV2(BaseExternalToolAdapter):
                     # Add gene information based on hit type
                     if hit_type == "V":
                         hit["v_gene"] = subject_id
-                        hit["chain_type"] = self._extract_chain_type(
+                        hit["chain_type"] = ChainTypeUtils.extract_chain_type(
                             subject_id
                         )
                     elif hit_type == "D":
@@ -612,17 +613,6 @@ class IgBlastAdapterV2(BaseExternalToolAdapter):
             }
 
         return result
-
-    def _extract_chain_type(self, gene_name: str) -> str:
-        """Extract chain type from gene name."""
-        if gene_name.startswith("IGH"):
-            return "heavy"
-        elif gene_name.startswith(("IGK", "IGL")):
-            return "light"
-        elif gene_name.startswith(("TRA", "TRB", "TRG", "TRD")):
-            return "tcr"
-        else:
-            return "unknown"
 
     def _get_subject_url(self, subject_id: str) -> str:
         """Generate URL for subject ID."""

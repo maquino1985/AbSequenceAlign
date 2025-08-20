@@ -6,6 +6,8 @@ and executing IgBLAST with user-selected databases.
 """
 
 import re
+import logging
+import subprocess
 from typing import Dict, Any
 
 from fastapi import APIRouter, HTTPException, Query
@@ -79,16 +81,65 @@ async def execute_igblast(request: IgBlastRequest):
                 status_code=400, detail="Query sequence cannot be empty"
             )
 
+        # Validate sequence length
+        if len(sequence) < 10:
+            raise HTTPException(
+                status_code=400,
+                detail="Query sequence is too short. Minimum length is 10 characters.",
+            )
+
+        if len(sequence) > 10000:
+            raise HTTPException(
+                status_code=400,
+                detail="Query sequence is too long. Maximum length is 10,000 characters.",
+            )
+
+        # Validate blast type
+        if request.blast_type not in ["igblastn", "igblastp"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid blast_type. Must be 'igblastn' or 'igblastp'.",
+            )
+
+        # Validate domain system for protein IgBLAST
+        if (
+            request.blast_type == "igblastp"
+            and hasattr(request, "domain_system")
+            and request.domain_system
+        ):
+            if request.domain_system not in ["imgt", "kabat"]:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid domain_system. Must be 'imgt' or 'kabat' for protein IgBLAST.",
+                )
+
         # Execute IgBLAST
-        result = adapter.execute(
-            query_sequence=sequence,
-            v_db=request.v_db,
-            d_db=request.d_db,
-            j_db=request.j_db,
-            c_db=request.c_db,
-            blast_type=request.blast_type,
-            use_airr_format=request.use_airr_format,
-        )
+        try:
+            result = adapter.execute(
+                query_sequence=sequence,
+                v_db=request.v_db,
+                d_db=request.d_db,
+                j_db=request.j_db,
+                c_db=request.c_db,
+                blast_type=request.blast_type,
+                use_airr_format=request.use_airr_format,
+            )
+        except ValueError as e:
+            # Handle validation errors from the adapter
+            if "Invalid V database path" in str(e):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid V database path: {request.v_db}. Please check that the database exists and is accessible.",
+                )
+            elif "Invalid" in str(e) and "database" in str(e).lower():
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Database validation error: {str(e)}. Please check that all database paths are correct.",
+                )
+            else:
+                raise HTTPException(
+                    status_code=400, detail=f"Validation error: {str(e)}"
+                )
 
         return IgBlastResponse(
             success=True,
@@ -98,16 +149,30 @@ async def execute_igblast(request: IgBlastRequest):
         )
 
     except ExternalToolError as e:
+        # Log the error for debugging
+        logging.error(f"IgBLAST ExternalToolError: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"IgBLAST execution failed: {str(e)}"
         )
     except ValueError as e:
+        # Log validation errors
+        logging.warning(f"IgBLAST validation error: {str(e)}")
         raise HTTPException(
             status_code=400, detail=f"Invalid request: {str(e)}"
         )
-    except Exception as e:
+    except subprocess.TimeoutExpired as e:
+        # Handle timeout errors specifically
+        logging.error(f"IgBLAST timeout error: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"Unexpected error: {str(e)}"
+            status_code=408,
+            detail=f"IgBLAST execution timed out. Please try with a shorter sequence or contact support if the issue persists.",
+        )
+    except Exception as e:
+        # Log unexpected errors
+        logging.error(f"IgBLAST unexpected error: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unexpected error during IgBLAST execution. Please check the logs for more details.",
         )
 
 

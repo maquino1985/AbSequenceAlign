@@ -9,6 +9,7 @@ import pytest
 
 from backend.core.exceptions import ExternalToolError
 from backend.infrastructure.adapters.igblast_adapter_v2 import IgBlastAdapterV2
+from backend.utils.chain_type_utils import ChainTypeUtils
 
 
 class TestIgBlastAdapterV2:
@@ -67,7 +68,7 @@ class TestIgBlastAdapterV2:
             chain_type = self.adapter._detect_chain_type(
                 self.test_sequence, "human"
             )
-            assert chain_type == "heavy"
+            assert chain_type == "IGH"
 
     def test_detect_chain_type_light(self):
         """Test chain type detection for light chain."""
@@ -82,7 +83,7 @@ class TestIgBlastAdapterV2:
             chain_type = self.adapter._detect_chain_type(
                 self.test_sequence, "human"
             )
-            assert chain_type == "light"
+            assert chain_type == "IGK"
 
     def test_detect_chain_type_tcr(self):
         """Test chain type detection for TCR."""
@@ -257,7 +258,7 @@ class TestIgBlastAdapterV2:
         )
 
         assert "detected_chain_type" in result
-        assert result["detected_chain_type"] == "heavy"
+        assert result["detected_chain_type"] == "IGH"
 
     @patch("subprocess.Popen")
     def test_execute_with_airr_format(self, mock_popen):
@@ -311,7 +312,7 @@ GAAAG\tT\tGAGCTA\tTCTGAGCACCGCGAGCAGCCTGGATTAT\tTGGGG"""
         v_hit = result["hits"][0]
         assert v_hit["hit_type"] == "V"
         assert v_hit["v_gene"] == "IGHV1-2*01"
-        assert v_hit["chain_type"] == "heavy"
+        assert v_hit["chain_type"] == "IGH"
 
         # Check analysis summary
         summary = result["analysis_summary"]
@@ -363,7 +364,7 @@ IGKV1-2*01\tN/A\tIGKJ2*01\tIGK\tNo\tIn-frame\tYes\t+\tNo"""
         assert result["total_hits"] == 2
         v_hit = result["hits"][0]
         assert v_hit["v_gene"] == "IGKV1-2*01"
-        assert v_hit["chain_type"] == "light"
+        assert v_hit["chain_type"] == "IGK"
 
     def test_parse_tabular_output_unproductive(self):
         """Test parsing tabular output for unproductive sequence."""
@@ -431,12 +432,12 @@ V\tquery\tIGHV1-2*01\t95.0\t300\t15\t0\t0\t1\t300\t1\t300\t1e-50\t200"""
 
     def test_extract_chain_type(self):
         """Test chain type extraction from gene names."""
-        assert self.adapter._extract_chain_type("IGHV1-2*01") == "heavy"
-        assert self.adapter._extract_chain_type("IGKV1-2*01") == "light"
-        assert self.adapter._extract_chain_type("IGLV1-2*01") == "light"
-        assert self.adapter._extract_chain_type("TRBV1-2*01") == "tcr"
-        assert self.adapter._extract_chain_type("TRAV1-2*01") == "tcr"
-        assert self.adapter._extract_chain_type("UNKNOWN") == "unknown"
+        assert ChainTypeUtils.extract_chain_type("IGHV1-2*01") == "IGH"
+        assert ChainTypeUtils.extract_chain_type("IGKV1-2*01") == "IGK"
+        assert ChainTypeUtils.extract_chain_type("IGLV1-2*01") == "IGL"
+        assert ChainTypeUtils.extract_chain_type("TRBV1-2*01") == "TCR"
+        assert ChainTypeUtils.extract_chain_type("TRAV1-2*01") == "TCR"
+        assert ChainTypeUtils.extract_chain_type("UNKNOWN") == "unknown"
 
     def test_get_subject_url_imgt(self):
         """Test IMGT URL generation for Ig genes."""

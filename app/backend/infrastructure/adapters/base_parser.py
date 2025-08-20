@@ -59,15 +59,3 @@ class BaseIgBlastParser(ABC):
             "https://www.imgt.org/IMGTrepertoire/index.php?section=LocusGenes"
             f"&repertoire=genetable&species={species}&group={group}&locus={base_gene}"
         )
-
-    def _extract_chain_type(self, gene_name: str) -> str:
-        """Infer chain type from a gene name (best-effort)."""
-        if not gene_name:
-            return "unknown"
-        if gene_name.startswith("IGH"):
-            return "heavy"
-        if gene_name.startswith(("IGK", "IGL")):
-            return "light"
-        if gene_name.startswith(("TRA", "TRB", "TRG", "TRD")):
-            return "tcr"
-        return "unknown"

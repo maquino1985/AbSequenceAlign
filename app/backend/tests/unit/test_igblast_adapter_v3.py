@@ -5,6 +5,7 @@ Unit tests for IgBlastAdapterV3 - Simplified User-Selectable Database Approach
 import pytest
 from unittest.mock import patch, MagicMock, mock_open
 from backend.infrastructure.adapters.igblast_adapter_v3 import IgBlastAdapterV3
+from backend.utils.chain_type_utils import ChainTypeUtils
 from backend.core.exceptions import ExternalToolError
 
 
@@ -372,7 +373,7 @@ IGHV1-2*01 N/A IGHJ1*01 IGH No In Yes +
         assert result["hits"][0]["hit_type"] == "V"
         assert result["hits"][0]["v_gene"] == "IGHV1-2*01"
         assert result["analysis_summary"]["v_gene"] == "IGHV1-2*01"
-        assert result["analysis_summary"]["chain_type"] == "heavy"
+        assert result["analysis_summary"]["chain_type"] == "IGH"
 
     def test_parse_airr_output_empty(self):
         """Test parsing empty AIRR output."""
@@ -397,11 +398,11 @@ query\tACGTACGT\tQVQLVQS\tIGH\tF\tT\tF\tT\tF\tF\tF\tIGHV1-2*01\tN/A\tIGHJ1*01"""
 
     def test_extract_chain_type(self):
         """Test chain type extraction."""
-        assert self.adapter._extract_chain_type("IGHV1-2*01") == "heavy"
-        assert self.adapter._extract_chain_type("IGKV1-2*01") == "light"
-        assert self.adapter._extract_chain_type("IGLV1-2*01") == "light"
-        assert self.adapter._extract_chain_type("TRAV1-2*01") == "tcr"
-        assert self.adapter._extract_chain_type("UNKNOWN") == "unknown"
+        assert ChainTypeUtils.extract_chain_type("IGHV1-2*01") == "IGH"
+        assert ChainTypeUtils.extract_chain_type("IGKV1-2*01") == "IGK"
+        assert ChainTypeUtils.extract_chain_type("IGLV1-2*01") == "IGL"
+        assert ChainTypeUtils.extract_chain_type("TRAV1-2*01") == "TCR"
+        assert ChainTypeUtils.extract_chain_type("UNKNOWN") == "unknown"
 
     def test_get_subject_url(self):
         """Test subject URL generation."""

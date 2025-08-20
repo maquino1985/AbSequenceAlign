@@ -62,7 +62,9 @@ const StyledCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-const RegionChip = styled(Chip)<{ regionType: string }>(({ theme, regionType }) => {
+const RegionChip = styled(Chip, {
+  shouldForwardProp: (prop) => prop !== 'regionType',
+})<{ regionType: string }>(({ theme, regionType }) => {
   const colors = {
     V: { bg: '#E1F5FE', border: '#0277BD', text: '#01579B' },
     D: { bg: '#FFF3E0', border: '#FB8C00', text: '#E65100' },
@@ -231,7 +233,7 @@ export const IgBlastResultsDisplay: React.FC<IgBlastResultsDisplayProps> = ({ re
         </Typography>
         
         <Grid container spacing={2} sx={{ mb: 2 }}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid xs={12} sm={6} md={3}>
             <Card variant="outlined">
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>
@@ -243,7 +245,7 @@ export const IgBlastResultsDisplay: React.FC<IgBlastResultsDisplayProps> = ({ re
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid xs={12} sm={6} md={3}>
             <Card variant="outlined">
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>
@@ -255,7 +257,7 @@ export const IgBlastResultsDisplay: React.FC<IgBlastResultsDisplayProps> = ({ re
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid xs={12} sm={6} md={3}>
             <Card variant="outlined">
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>
@@ -267,7 +269,7 @@ export const IgBlastResultsDisplay: React.FC<IgBlastResultsDisplayProps> = ({ re
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid xs={12} sm={6} md={3}>
             <Card variant="outlined">
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>
@@ -511,11 +513,23 @@ export const IgBlastResultsDisplay: React.FC<IgBlastResultsDisplayProps> = ({ re
     const sequence = results.result.query_sequence || results.result.airr_data?.sequence;
 
     return (
-      <CDRFrameworkDisplay
-        data={cdrFrameworkData}
-        sequence={sequence}
-        sequenceType={sequenceType}
-      />
+      <Box>
+        <CDRFrameworkDisplay
+          data={cdrFrameworkData}
+          sequence={sequence}
+          sequenceType={sequenceType}
+        />
+        
+        {/* Note about sequence alignment availability */}
+        {results.result.blast_type === 'igblastp' && (
+          <Alert severity="info" sx={{ mt: 2 }}>
+            <Typography variant="body2">
+              <strong>Note:</strong> Detailed sequence alignment visualization is only available for nucleotide IgBLAST (igblastn) with AIRR format output. 
+              For protein IgBLAST (igblastp), the CDR/framework analysis shows the extracted regions from the protein sequence.
+            </Typography>
+          </Alert>
+        )}
+      </Box>
     );
   };
 

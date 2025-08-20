@@ -10,6 +10,7 @@ import re
 from typing import Dict, Any, List
 
 from backend.infrastructure.adapters.base_parser import BaseIgBlastParser
+from backend.utils.chain_type_utils import ChainTypeUtils
 
 
 class TabularParser(BaseIgBlastParser):
@@ -121,7 +122,7 @@ class TabularParser(BaseIgBlastParser):
         result["total_hits"] = len(result["hits"])
 
         # If no analysis summary was found, try to extract from hits
-        if not result["analysis_summary"] and result["hits"]:
+        if not result["analysis_summary"].get("v_gene") and result["hits"]:
             result["analysis_summary"] = self._extract_summary_from_hits(
                 result["hits"]
             )
@@ -178,7 +179,7 @@ class TabularParser(BaseIgBlastParser):
         # Add gene information based on hit type
         if hit_type == "V":
             hit["v_gene"] = subject_id
-            hit["chain_type"] = self._extract_chain_type(subject_id)
+            hit["chain_type"] = ChainTypeUtils.extract_chain_type(subject_id)
         elif hit_type == "D":
             hit["d_gene"] = subject_id
         elif hit_type == "J":
@@ -188,15 +189,28 @@ class TabularParser(BaseIgBlastParser):
 
     def _extract_summary_data(self, parts: List[str]) -> Dict[str, Any]:
         """Extract summary data from rearrangement summary line."""
+        # The format is: V_gene, J_gene, chain_type, stop_codon, v_j_frame, productive, strand, v_frame_shift
+        # For light chains, there's no D gene, so the fields are shifted
+        v_gene = parts[0] if parts[0] != "N/A" else None
+        j_gene = parts[1] if parts[1] != "N/A" else None
+        chain_type = parts[2] if parts[2] != "N/A" else None
+        stop_codon = parts[3] if parts[3] != "N/A" else None
+        v_j_frame = parts[4] if parts[4] != "N/A" else None
+        productive = parts[5] if parts[5] != "N/A" else None
+        strand = parts[6] if parts[6] != "N/A" else None
+
+        # For light chains, there's no D gene
+        d_gene = None
+
         return {
-            "v_gene": parts[0] if parts[0] != "N/A" else None,
-            "d_gene": parts[1] if parts[1] != "N/A" else None,
-            "j_gene": parts[2] if parts[2] != "N/A" else None,
-            "chain_type": parts[3] if parts[3] != "N/A" else None,
-            "stop_codon": parts[4] if parts[4] != "N/A" else None,
-            "v_j_frame": parts[5] if parts[5] != "N/A" else None,
-            "productive": parts[6] if parts[6] != "N/A" else None,
-            "strand": parts[7] if parts[7] != "N/A" else None,
+            "v_gene": v_gene,
+            "d_gene": d_gene,
+            "j_gene": j_gene,
+            "chain_type": chain_type,
+            "stop_codon": stop_codon,
+            "v_j_frame": v_j_frame,
+            "productive": productive,
+            "strand": strand,
         }
 
     def _extract_cdr3_data(self, line: str) -> Dict[str, Any]:

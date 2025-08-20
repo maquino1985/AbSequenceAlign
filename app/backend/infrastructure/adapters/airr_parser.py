@@ -62,8 +62,10 @@ class AIRRParser(BaseIgBlastParser):
                 continue
 
             parts = line.strip().split("\t")
+
+            # Pad data with empty strings if shorter than header
             if len(parts) < len(headers):
-                continue
+                parts.extend([""] * (len(headers) - len(parts)))
 
             # Create a dictionary from headers and values
             airr_record = dict(zip(headers, parts))
@@ -133,11 +135,11 @@ class AIRRParser(BaseIgBlastParser):
             "fwr4": airr_record.get("fwr4"),
             "fwr4_aa": airr_record.get("fwr4_aa"),
             # Alignment information
-            "v_identity": float(airr_record.get("v_identity", 0.0)),
-            "j_identity": float(airr_record.get("j_identity", 0.0)),
-            "d_identity": float(airr_record.get("d_identity", 0.0)),
-            "v_score": float(airr_record.get("v_score", 0.0)),
-            "j_score": float(airr_record.get("j_score", 0.0)),
+            "v_identity": self._safe_float(airr_record.get("v_identity", 0.0)),
+            "j_identity": self._safe_float(airr_record.get("j_identity", 0.0)),
+            "d_identity": self._safe_float(airr_record.get("d_identity", 0.0)),
+            "v_score": self._safe_float(airr_record.get("v_score", 0.0)),
+            "j_score": self._safe_float(airr_record.get("j_score", 0.0)),
             # Sequence alignments
             "sequence_alignment": airr_record.get("sequence_alignment"),
             "germline_alignment": airr_record.get("germline_alignment"),
@@ -199,6 +201,15 @@ class AIRRParser(BaseIgBlastParser):
             "d_cigar": airr_record.get("d_cigar"),
             "j_cigar": airr_record.get("j_cigar"),
         }
+
+    def _safe_float(self, value: Any) -> float:
+        """Safely convert value to float, handling empty strings and None."""
+        if value is None or value == "":
+            return 0.0
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return 0.0
 
     def _extract_summary_data(self, hit: Dict[str, Any]) -> Dict[str, Any]:
         """Extract summary data from hit."""

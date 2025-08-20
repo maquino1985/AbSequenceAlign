@@ -17,6 +17,7 @@ from backend.core.exceptions import ExternalToolError
 from backend.infrastructure.adapters.base_adapter import (
     BaseExternalToolAdapter,
 )
+
 from backend.infrastructure.adapters.airr_parser import AIRRParser
 from backend.infrastructure.adapters.tabular_parser import TabularParser
 
@@ -200,15 +201,29 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
             )
 
         # Validate required V database
+        self._logger.info(f"Validating V database: {v_db}")
         if not self._validate_database_path(v_db):
+            self._logger.error(f"V database validation failed: {v_db}")
             raise ValueError(f"Invalid V database path: {v_db}")
+        self._logger.info(f"V database validation successful: {v_db}")
 
         # Extract organism from V database path
         organism = self._extract_organism_from_db_path(v_db)
+        self._logger.info(
+            f"Extracted organism from V database path: {organism}"
+        )
+
         # Propagate organism hint to parsers for proper IMGT URL species mapping
         self.airr_parser.organism = organism
         self.tabular_parser.organism = organism
         auxiliary_data_path = self._get_auxiliary_data_path(organism)
+
+        if auxiliary_data_path:
+            self._logger.info(f"Using auxiliary data: {auxiliary_data_path}")
+        else:
+            self._logger.warning(
+                f"No auxiliary data found for organism: {organism}"
+            )
 
         # Build base command
         command = [
@@ -234,11 +249,43 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
             )
         else:
             # Add optional databases for nucleotide IgBLAST
-            if d_db and self._validate_database_path(d_db):
+            # For human organism, always provide a D database to avoid IgBLAST default database issues
+            if organism == "human" and not d_db:
+                # Use default human D database if none provided
+                default_d_db = "/data/databases/human/D/airr_c_human_igh.D"
+                self._logger.info(
+                    f"No D database provided for human organism, checking default: {default_d_db}"
+                )
+                if self._validate_database_path(default_d_db):
+                    self._logger.info(
+                        f"Using default D database for human organism: {default_d_db}"
+                    )
+                    command.extend(["-germline_db_D", default_d_db])
+                else:
+                    self._logger.warning(
+                        f"Default D database {default_d_db} not found, IgBLAST may fail"
+                    )
+            elif d_db and self._validate_database_path(d_db):
+                self._logger.info(f"Using provided D database: {d_db}")
                 command.extend(["-germline_db_D", d_db])
+            elif d_db:
+                self._logger.warning(
+                    f"Provided D database validation failed: {d_db}"
+                )
+            else:
+                self._logger.info(
+                    f"No D database provided for organism: {organism}"
+                )
 
             if j_db and self._validate_database_path(j_db):
+                self._logger.info(f"Using provided J database: {j_db}")
                 command.extend(["-germline_db_J", j_db])
+            elif j_db:
+                self._logger.warning(
+                    f"Provided J database validation failed: {j_db}"
+                )
+            else:
+                self._logger.info("No J database provided")
 
             if c_db and self._validate_database_path(c_db):
                 # Check if C gene database files exist and are valid
@@ -246,11 +293,18 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
                 if (
                     c_db_path.exists() and c_db_path.stat().st_size > 1000
                 ):  # Basic size check
+                    self._logger.info(f"Using provided C database: {c_db}")
                     command.extend(["-c_region_db", c_db])
                 else:
                     self._logger.warning(
                         f"C gene database {c_db} is invalid or too small, skipping"
                     )
+            elif c_db:
+                self._logger.warning(
+                    f"Provided C database validation failed: {c_db}"
+                )
+            else:
+                self._logger.info("No C database provided")
 
         # Add domain system for protein IgBLAST
         if blast_type == "igblastp" and kwargs.get("domain_system"):
@@ -264,9 +318,14 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
         # Add output format (at the end)
         if use_airr_format:
             command.extend(["-outfmt", "19"])  # AIRR format
+            self._logger.info("Using AIRR format output (outfmt 19)")
         else:
             command.extend(["-outfmt", "7"])  # Tabular format
+            self._logger.info("Using tabular format output (outfmt 7)")
 
+        self._logger.info(
+            f"Final IgBLAST command constructed with {len(command)} arguments"
+        )
         return command
 
     def execute(
@@ -296,7 +355,13 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
                 **kwargs,
             )
 
-            self._logger.debug(f"Executing: {' '.join(command)}")
+            self._logger.info(
+                f"Executing IgBLAST command: {' '.join(command)}"
+            )
+            self._logger.info(f"Query sequence length: {len(clean_sequence)}")
+            self._logger.info(
+                f"Query sequence preview: {clean_sequence[:50]}..."
+            )
 
             # Execute with stdin piping
             process = subprocess.Popen(
@@ -315,18 +380,41 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
                 timeout=self._get_timeout(),
             )
 
-            self._logger.debug(f"Return code: {process.returncode}")
-            self._logger.debug(f"STDOUT length: {len(stdout)}")
-            self._logger.debug(f"STDERR: {stderr}")
-            self._logger.debug(f"STDOUT: {stdout}")
+            self._logger.info(f"IgBLAST return code: {process.returncode}")
+            self._logger.info(f"IgBLAST stdout length: {len(stdout)}")
+            self._logger.info(f"IgBLAST stderr: {stderr}")
+
+            if stdout:
+                self._logger.debug(
+                    f"IgBLAST stdout preview: {stdout[:200]}..."
+                )
+            else:
+                self._logger.warning("IgBLAST stdout is empty")
 
             if process.returncode != 0:
                 error_msg = f"IgBLAST execution failed with return code {process.returncode}"
                 if stderr:
                     error_msg += f": {stderr}"
+
+                # Add specific error handling for common issues
+                if (
+                    "No alias or index file found for nucleotide database"
+                    in stderr
+                ):
+                    error_msg += "\n\nThis error typically occurs when IgBLAST cannot find a required database. "
+                    error_msg += "Please check that all database paths are correct and the databases exist."
+                elif "BLAST Database error" in stderr:
+                    error_msg += "\n\nThis is a BLAST database error. Please verify that the database files are properly formatted and accessible."
+                elif "timeout" in stderr.lower():
+                    error_msg += "\n\nIgBLAST execution timed out. This may indicate a complex query or system resource issues."
+
+                self._logger.error(f"IgBLAST execution failed: {error_msg}")
                 raise ExternalToolError(error_msg, tool_name=self.tool_name)
 
             # Parse output based on format
+            self._logger.info(
+                f"Parsing IgBLAST output using {'AIRR' if use_airr_format else 'tabular'} parser"
+            )
             if use_airr_format:
                 parsed_result = self.airr_parser.parse(stdout, blast_type)
             else:
@@ -345,7 +433,14 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
             # Add query sequence to result for frontend visualization
             parsed_result["query_sequence"] = clean_sequence
 
-            self._logger.debug("IgBLAST execution completed successfully")
+            self._logger.info(
+                f"IgBLAST execution completed successfully. Total hits: {parsed_result.get('total_hits', 0)}"
+            )
+            if parsed_result.get("total_hits", 0) == 0:
+                self._logger.warning(
+                    "IgBLAST returned 0 hits - this may indicate a light chain sequence or no matches found"
+                )
+
             return parsed_result
 
         except subprocess.TimeoutExpired:
@@ -361,17 +456,6 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
     def _parse_output(self, output: str, blast_type: str) -> Dict[str, Any]:
         """Parse IgBLAST output (delegates to specific parsers)."""
         return self.tabular_parser.parse(output, blast_type)
-
-    def _extract_chain_type(self, gene_name: str) -> str:
-        """Extract chain type from gene name."""
-        if gene_name.startswith("IGH"):
-            return "heavy"
-        elif gene_name.startswith(("IGK", "IGL")):
-            return "light"
-        elif gene_name.startswith(("TRA", "TRB", "TRG", "TRD")):
-            return "tcr"
-        else:
-            return "unknown"
 
     def _get_subject_url(self, subject_id: str) -> str:
         """Generate URL for subject ID."""
