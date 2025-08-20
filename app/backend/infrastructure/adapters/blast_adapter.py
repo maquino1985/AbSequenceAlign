@@ -122,7 +122,38 @@ class BlastAdapter(BaseExternalToolAdapter):
 
             # Build the BLAST command with proper database path
             db_path = self._get_database_path(database)
-            blast_cmd = f"{blast_type} -query {temp_file} -db {db_path}"
+            blast_cmd = f'{blast_type} -query {temp_file} -db "{db_path}"'
+
+            # Add BLASTN-specific parameters
+            if blast_type == "blastn":
+                blast_cmd += " -task blastn"
+                # Use configurable parameters with defaults, only if not None
+                word_size = kwargs.get("word_size")
+                perc_identity = kwargs.get("perc_identity")
+                soft_masking = kwargs.get("soft_masking")
+                dust = kwargs.get("dust")
+
+                if word_size is not None:
+                    blast_cmd += f" -word_size {word_size}"
+                else:
+                    blast_cmd += " -word_size 11"
+
+                if perc_identity is not None:
+                    blast_cmd += f" -perc_identity {perc_identity}"
+                else:
+                    blast_cmd += " -perc_identity 70"
+
+                if soft_masking is not None:
+                    blast_cmd += (
+                        f" -soft_masking {'true' if soft_masking else 'false'}"
+                    )
+                else:
+                    blast_cmd += " -soft_masking true"
+
+                if dust is not None:
+                    blast_cmd += f" -dust {'yes' if dust else 'no'}"
+                else:
+                    blast_cmd += " -dust yes"
 
             # Add optional parameters
             if "evalue" in kwargs:
@@ -132,7 +163,11 @@ class BlastAdapter(BaseExternalToolAdapter):
             if "outfmt" in kwargs:
                 blast_cmd += f" -outfmt '{kwargs['outfmt']}'"
             else:
-                blast_cmd += " -outfmt '6 sseqid qseq sseq qcovs pident evalue bitscore'"
+                # Use the same output format as the manual command for BLASTN
+                if blast_type == "blastn":
+                    blast_cmd += " -outfmt '6 qseqid sacc pident length evalue bitscore stitle'"
+                else:
+                    blast_cmd += " -outfmt '6 sseqid qseq sseq qcovs pident evalue bitscore'"
 
             # Add additional parameters
             for key, value in kwargs.items():
@@ -143,6 +178,10 @@ class BlastAdapter(BaseExternalToolAdapter):
                     "evalue",
                     "max_target_seqs",
                     "outfmt",
+                    "word_size",
+                    "perc_identity",
+                    "soft_masking",
+                    "dust",
                 ]:
                     if isinstance(value, bool):
                         if value:
@@ -157,7 +196,7 @@ class BlastAdapter(BaseExternalToolAdapter):
                 "docker",
                 "exec",
                 "-e",
-                "BLASTDB=/blast/blastdb:/blast/blastdb/protein:/blast/blastdb/nucleotide:/blast/blastdb/nucleotide/human_genome:/blast/blastdb/nucleotide/mouse_genome:/blast/blastdb/nucleotide/refseq_select_rna:/blast/blastdb/nucleotide/16S_ribosomal_RNA:/blast/blastdb/euk_cdna:/blast/blastdb_custom",
+                "BLASTDB=/blast/blastdb:/blast/blastdb/protein:/blast/blastdb/nucleotide:/blast/blastdb/euk_cdna:/blast/blastdb_custom",
                 "absequencealign-blast",
                 "bash",
                 "-c",
@@ -169,6 +208,37 @@ class BlastAdapter(BaseExternalToolAdapter):
             db_path = self._get_database_path(database)
             command.extend(["-db", db_path])
 
+        # Add BLASTN-specific parameters
+        if blast_type == "blastn":
+            command.extend(["-task", "blastn"])
+            # Use configurable parameters with defaults, only if not None
+            word_size = kwargs.get("word_size")
+            perc_identity = kwargs.get("perc_identity")
+            soft_masking = kwargs.get("soft_masking")
+            dust = kwargs.get("dust")
+
+            if word_size is not None:
+                command.extend(["-word_size", str(word_size)])
+            else:
+                command.extend(["-word_size", "11"])
+
+            if perc_identity is not None:
+                command.extend(["-perc_identity", str(perc_identity)])
+            else:
+                command.extend(["-perc_identity", "70"])
+
+            if soft_masking is not None:
+                command.extend(
+                    ["-soft_masking", "true" if soft_masking else "false"]
+                )
+            else:
+                command.extend(["-soft_masking", "true"])
+
+            if dust is not None:
+                command.extend(["-dust", "yes" if dust else "no"])
+            else:
+                command.extend(["-dust", "yes"])
+
         # Add optional parameters
         if "evalue" in kwargs:
             command.extend(["-evalue", str(kwargs["evalue"])])
@@ -179,10 +249,22 @@ class BlastAdapter(BaseExternalToolAdapter):
         if "outfmt" in kwargs:
             command.extend(["-outfmt", str(kwargs["outfmt"])])
         else:
-            # Default to tabular format with all fields plus sequence alignments
-            command.extend(
-                ["-outfmt", "6 sseqid qseq sseq qcovs pident evalue bitscore"]
-            )
+            # Use the same output format as the manual command for BLASTN
+            if blast_type == "blastn":
+                command.extend(
+                    [
+                        "-outfmt",
+                        "6 qseqid sacc pident length evalue bitscore stitle",
+                    ]
+                )
+            else:
+                # Default to tabular format with all fields plus sequence alignments
+                command.extend(
+                    [
+                        "-outfmt",
+                        "6 sseqid qseq sseq qcovs pident evalue bitscore",
+                    ]
+                )
 
         # Add additional parameters
         for key, value in kwargs.items():
@@ -193,6 +275,10 @@ class BlastAdapter(BaseExternalToolAdapter):
                 "evalue",
                 "max_target_seqs",
                 "outfmt",
+                "word_size",
+                "perc_identity",
+                "soft_masking",
+                "dust",
             ]:
                 if isinstance(value, bool):
                     if value:
@@ -303,23 +389,88 @@ class BlastAdapter(BaseExternalToolAdapter):
 
                 hits.append(hit)
             elif len(fields) == 7:
-                # outfmt 6 sseqid qseq sseq qcovs pident evalue bitscore
-                hit = {
-                    "query_id": "query",
-                    "subject_id": fields[0],  # sseqid field
-                    "identity": float(fields[4]),  # pident field
-                    "alignment_length": len(fields[1]),
-                    "mismatches": 0,  # Not available in this format
-                    "gap_opens": 0,  # Not available in this format
-                    "query_start": 1,
-                    "query_end": len(fields[1]),
-                    "subject_start": 1,
-                    "subject_end": len(fields[2]),
-                    "evalue": float(fields[5]),  # evalue field
-                    "bit_score": float(fields[6]),  # bitscore field
-                    "query_alignment": fields[1],  # qseq field
-                    "subject_alignment": fields[2],  # sseq field
-                }
+                # Check if this is the new BLASTN format: qseqid sacc pident length evalue bitscore stitle
+                if (
+                    blast_type == "blastn" and fields[0] == "q"
+                ):  # qseqid is "q"
+                    hit = {
+                        "query_id": fields[0],  # qseqid field
+                        "subject_id": fields[1],  # sacc field
+                        "identity": float(fields[2]),  # pident field
+                        "alignment_length": int(fields[3]),  # length field
+                        "mismatches": 0,  # Not available in this format
+                        "gap_opens": 0,  # Not available in this format
+                        "query_start": 1,  # Not available in this format
+                        "query_end": int(
+                            fields[3]
+                        ),  # Use length as approximation
+                        "subject_start": 1,  # Not available in this format
+                        "subject_end": int(
+                            fields[3]
+                        ),  # Use length as approximation
+                        "evalue": float(fields[4]),  # evalue field
+                        "bit_score": float(fields[5]),  # bitscore field
+                        "subject_def": fields[6],  # stitle field
+                    }
+                elif blast_type == "blastn":
+                    # Handle BLASTN format with 7 fields but different structure
+                    # Try to parse as: qseqid sacc pident length evalue bitscore stitle
+                    try:
+                        hit = {
+                            "query_id": fields[0],  # qseqid field
+                            "subject_id": fields[1],  # sacc field
+                            "identity": float(fields[2]),  # pident field
+                            "alignment_length": int(fields[3]),  # length field
+                            "mismatches": 0,  # Not available in this format
+                            "gap_opens": 0,  # Not available in this format
+                            "query_start": 1,  # Not available in this format
+                            "query_end": int(
+                                fields[3]
+                            ),  # Use length as approximation
+                            "subject_start": 1,  # Not available in this format
+                            "subject_end": int(
+                                fields[3]
+                            ),  # Use length as approximation
+                            "evalue": float(fields[4]),  # evalue field
+                            "bit_score": float(fields[5]),  # bitscore field
+                            "subject_def": fields[6],  # stitle field
+                        }
+                    except (ValueError, IndexError):
+                        # Fallback to original format if parsing fails
+                        hit = {
+                            "query_id": "query",
+                            "subject_id": fields[0],  # sseqid field
+                            "identity": float(fields[4]),  # pident field
+                            "alignment_length": len(fields[1]),
+                            "mismatches": 0,  # Not available in this format
+                            "gap_opens": 0,  # Not available in this format
+                            "query_start": 1,
+                            "query_end": len(fields[1]),
+                            "subject_start": 1,
+                            "subject_end": len(fields[2]),
+                            "evalue": float(fields[5]),  # evalue field
+                            "bit_score": float(fields[6]),  # bitscore field
+                            "query_alignment": fields[1],  # qseq field
+                            "subject_alignment": fields[2],  # sseq field
+                        }
+                else:
+                    # Original format: sseqid qseq sseq qcovs pident evalue bitscore
+                    hit = {
+                        "query_id": "query",
+                        "subject_id": fields[0],  # sseqid field
+                        "identity": float(fields[4]),  # pident field
+                        "alignment_length": len(fields[1]),
+                        "mismatches": 0,  # Not available in this format
+                        "gap_opens": 0,  # Not available in this format
+                        "query_start": 1,
+                        "query_end": len(fields[1]),
+                        "subject_start": 1,
+                        "subject_end": len(fields[2]),
+                        "evalue": float(fields[5]),  # evalue field
+                        "bit_score": float(fields[6]),  # bitscore field
+                        "query_alignment": fields[1],  # qseq field
+                        "subject_alignment": fields[2],  # sseq field
+                    }
 
                 # Add source URL for the subject
                 hit["subject_url"] = self._get_subject_url(
