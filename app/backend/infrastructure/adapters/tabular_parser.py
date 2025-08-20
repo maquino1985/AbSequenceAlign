@@ -30,6 +30,7 @@ class TabularParser(BaseIgBlastParser):
             "query_info": {},
             "hits": [],
             "analysis_summary": {},
+            "rearrangement_summary": {},
             "total_hits": 0,
         }
 
@@ -112,7 +113,7 @@ class TabularParser(BaseIgBlastParser):
                 if next_line and not next_line.startswith("#"):
                     parts = next_line.split("\t")
                     if len(parts) >= 8:
-                        result["analysis_summary"].update(
+                        result["rearrangement_summary"].update(
                             self._extract_summary_data(parts)
                         )
 
@@ -129,10 +130,19 @@ class TabularParser(BaseIgBlastParser):
 
         result["total_hits"] = len(result["hits"])
 
-        # If no analysis summary was found, try to extract from hits
-        if not result["analysis_summary"].get("v_gene") and result["hits"]:
+        # If no rearrangement summary was found, try to extract from hits
+        if (
+            not result["rearrangement_summary"].get("v_gene")
+            and result["hits"]
+        ):
             hit_summary = self._extract_summary_from_hits(result["hits"])
-            result["analysis_summary"].update(hit_summary)
+            result["rearrangement_summary"].update(hit_summary)
+
+        # Merge rearrangement summary into analysis_summary for backward compatibility
+        # but only if the fields don't already exist in analysis_summary
+        for key, value in result["rearrangement_summary"].items():
+            if key not in result["analysis_summary"]:
+                result["analysis_summary"][key] = value
 
         # Add CDR3 data to all hits if available
         if result["analysis_summary"].get("cdr3_sequence") and result["hits"]:
