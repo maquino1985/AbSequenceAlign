@@ -64,14 +64,14 @@ const RegionChip = styled(Chip)<{ regionType: string }>(({ theme, regionType }) 
 
 const SequenceDisplay = styled(Box)(({ theme }) => ({
   fontFamily: 'Monaco, Consolas, "Courier New", monospace',
-  fontSize: '14px',
-  lineHeight: 1.6,
+  fontSize: '12px',
+  lineHeight: 1.4,
   backgroundColor: '#FAFAFA',
   border: '1px solid #E0E0E0',
-  borderRadius: theme.spacing(1),
-  padding: theme.spacing(2),
+  borderRadius: theme.spacing(0.5),
+  padding: theme.spacing(1),
   overflow: 'auto',
-  maxHeight: '200px',
+  maxHeight: '120px',
   position: 'relative',
 }));
 
@@ -114,15 +114,33 @@ const RegionHighlight = styled(Box, {
 
 interface CDRFrameworkData {
   fwr1_sequence?: string;
+  fwr1_aa?: string;
+  fwr1_start?: number;
+  fwr1_end?: number;
   cdr1_sequence?: string;
+  cdr1_aa?: string;
+  cdr1_start?: number;
+  cdr1_end?: number;
   fwr2_sequence?: string;
+  fwr2_aa?: string;
+  fwr2_start?: number;
+  fwr2_end?: number;
   cdr2_sequence?: string;
+  cdr2_aa?: string;
+  cdr2_start?: number;
+  cdr2_end?: number;
   fwr3_sequence?: string;
+  fwr3_aa?: string;
+  fwr3_start?: number;
+  fwr3_end?: number;
   cdr3_sequence?: string;
-  fwr4_sequence?: string;
+  cdr3_aa?: string;
   cdr3_start?: number;
   cdr3_end?: number;
-  cdr3_aa?: string;
+  fwr4_sequence?: string;
+  fwr4_aa?: string;
+  fwr4_start?: number;
+  fwr4_end?: number;
 }
 
 interface CDRFrameworkDisplayProps {
@@ -147,12 +165,12 @@ export const CDRFrameworkDisplay: React.FC<CDRFrameworkDisplayProps> = ({
   };
 
   const regions = [
-    { key: 'fwr1_sequence', name: 'FWR1', label: 'Framework Region 1', type: 'FWR1' },
-    { key: 'cdr1_sequence', name: 'CDR1', label: 'Complementarity-Determining Region 1', type: 'CDR1' },
-    { key: 'fwr2_sequence', name: 'FWR2', label: 'Framework Region 2', type: 'FWR2' },
-    { key: 'cdr2_sequence', name: 'CDR2', label: 'Complementarity-Determining Region 2', type: 'CDR2' },
-    { key: 'fwr3_sequence', name: 'FWR3', label: 'Framework Region 3', type: 'FWR3' },
-    { key: 'cdr3_sequence', name: 'CDR3', label: 'Complementarity-Determining Region 3', type: 'CDR3' },
+    { key: 'fwr1_sequence', aaKey: 'fwr1_aa', name: 'FWR1', label: 'Framework Region 1', type: 'FWR1' },
+    { key: 'cdr1_sequence', aaKey: 'cdr1_aa', name: 'CDR1', label: 'Complementarity-Determining Region 1', type: 'CDR1' },
+    { key: 'fwr2_sequence', aaKey: 'fwr2_aa', name: 'FWR2', label: 'Framework Region 2', type: 'FWR2' },
+    { key: 'cdr2_sequence', aaKey: 'cdr2_aa', name: 'CDR2', label: 'Complementarity-Determining Region 2', type: 'CDR2' },
+    { key: 'fwr3_sequence', aaKey: 'fwr3_aa', name: 'FWR3', label: 'Framework Region 3', type: 'FWR3' },
+    { key: 'cdr3_sequence', aaKey: 'cdr3_aa', name: 'CDR3', label: 'Complementarity-Determining Region 3', type: 'CDR3' },
   ];
 
   const availableRegions = regions.filter(region => data[region.key as keyof CDRFrameworkData]);
@@ -167,7 +185,7 @@ export const CDRFrameworkDisplay: React.FC<CDRFrameworkDisplayProps> = ({
       {availableRegions.length > 0 ? (
         <Grid container spacing={2}>
           {availableRegions.map((region) => (
-            <Grid item xs={12} sm={6} md={4} key={region.key}>
+            <Grid xs={12} sm={6} md={4} key={region.key}>
               <Paper 
                 variant="outlined" 
                 sx={{ 
@@ -203,19 +221,48 @@ export const CDRFrameworkDisplay: React.FC<CDRFrameworkDisplayProps> = ({
                 </Typography>
                 
                 {data[region.key as keyof CDRFrameworkData] && (
-                  <Typography
-                    variant="body2"
-                    fontFamily="monospace"
-                    sx={{
-                      wordBreak: 'break-all',
-                      backgroundColor: '#f5f5f5',
-                      padding: 1,
-                      borderRadius: 1,
-                      fontSize: '12px',
-                    }}
-                  >
-                    {data[region.key as keyof CDRFrameworkData]}
-                  </Typography>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                      Nucleotide Sequence:
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      fontFamily="monospace"
+                      sx={{
+                        wordBreak: 'break-all',
+                        backgroundColor: '#f5f5f5',
+                        padding: 0.5,
+                        borderRadius: 0.5,
+                        fontSize: '10px',
+                        mb: 1,
+                      }}
+                    >
+                      {data[region.key as keyof CDRFrameworkData]}
+                    </Typography>
+                    
+                    {data[region.aaKey as keyof CDRFrameworkData] && (
+                      <>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                          Amino Acid Sequence:
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          fontFamily="monospace"
+                          sx={{
+                            wordBreak: 'break-all',
+                            backgroundColor: '#E8F5E8',
+                            padding: 0.5,
+                            borderRadius: 0.5,
+                            fontSize: '10px',
+                            color: '#2E7D32',
+                            fontWeight: 500,
+                          }}
+                        >
+                          {data[region.aaKey as keyof CDRFrameworkData]}
+                        </Typography>
+                      </>
+                    )}
+                  </Box>
                 )}
                 
                 {/* Special handling for CDR3 */}
@@ -275,16 +322,27 @@ export const CDRFrameworkDisplay: React.FC<CDRFrameworkDisplayProps> = ({
           </Stack>
           
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
+            <Grid xs={12} md={6}>
               <Typography variant="subtitle2" gutterBottom>
-                Sequence ({sequenceType})
+                Nucleotide Sequence
               </Typography>
               <SequenceDisplay>
                 {data[region.key as keyof CDRFrameworkData] || 'Not available'}
               </SequenceDisplay>
+              
+              {data[region.aaKey as keyof CDRFrameworkData] && (
+                <>
+                  <Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>
+                    Amino Acid Sequence
+                  </Typography>
+                  <SequenceDisplay sx={{ backgroundColor: '#E8F5E8', borderColor: '#4CAF50' }}>
+                    {data[region.aaKey as keyof CDRFrameworkData]}
+                  </SequenceDisplay>
+                </>
+              )}
             </Grid>
             
-            <Grid item xs={12} md={6}>
+            <Grid xs={12} md={6}>
               <Typography variant="subtitle2" gutterBottom>
                 Region Information
               </Typography>
@@ -299,32 +357,17 @@ export const CDRFrameworkDisplay: React.FC<CDRFrameworkDisplayProps> = ({
                 </Box>
                 
                 {region.key === 'cdr3_sequence' && data.cdr3_start && data.cdr3_end && (
-                  <>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        Position:
-                      </Typography>
-                      <Typography variant="body2">
-                        {data.cdr3_start} - {data.cdr3_end} (length: {data.cdr3_end - data.cdr3_start + 1})
-                      </Typography>
-                    </Box>
-                    
-                    {data.cdr3_aa && (
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
-                          Amino Acid Sequence:
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          fontFamily="monospace"
-                          sx={{ backgroundColor: '#f5f5f5', padding: 1, borderRadius: 1 }}
-                        >
-                          {data.cdr3_aa}
-                        </Typography>
-                      </Box>
-                    )}
-                  </>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Position:
+                    </Typography>
+                    <Typography variant="body2">
+                      {data.cdr3_start} - {data.cdr3_end} (length: {data.cdr3_end - data.cdr3_start + 1})
+                    </Typography>
+                  </Box>
                 )}
+                
+
               </Stack>
             </Grid>
           </Grid>
@@ -346,15 +389,15 @@ export const CDRFrameworkDisplay: React.FC<CDRFrameworkDisplayProps> = ({
     const isPositionInRegion = (position: number, regionType: string) => {
       switch (regionType) {
         case 'FWR1':
-          return data.fr1_start && data.fr1_end && position >= data.fr1_start - 1 && position <= data.fr1_end - 1;
+          return data.fwr1_start && data.fwr1_end && position >= data.fwr1_start - 1 && position <= data.fwr1_end - 1;
         case 'CDR1':
           return data.cdr1_start && data.cdr1_end && position >= data.cdr1_start - 1 && position <= data.cdr1_end - 1;
         case 'FWR2':
-          return data.fr2_start && data.fr2_end && position >= data.fr2_start - 1 && position <= data.fr2_end - 1;
+          return data.fwr2_start && data.fwr2_end && position >= data.fwr2_start - 1 && position <= data.fwr2_end - 1;
         case 'CDR2':
           return data.cdr2_start && data.cdr2_end && position >= data.cdr2_start - 1 && position <= data.cdr2_end - 1;
         case 'FWR3':
-          return data.fr3_start && data.fr3_end && position >= data.fr3_start - 1 && position <= data.fr3_end - 1;
+          return data.fwr3_start && data.fwr3_end && position >= data.fwr3_start - 1 && position <= data.fwr3_end - 1;
         case 'CDR3':
           return data.cdr3_start && data.cdr3_end && position >= data.cdr3_start - 1 && position <= data.cdr3_end - 1;
         default:
@@ -368,8 +411,8 @@ export const CDRFrameworkDisplay: React.FC<CDRFrameworkDisplayProps> = ({
         return {
           name: 'Framework Region 1',
           sequence: data.fwr1_sequence,
-          start: data.fr1_start,
-          end: data.fr1_end,
+          start: data.fwr1_start,
+          end: data.fwr1_end,
         };
       } else if (isPositionInRegion(position, 'CDR1')) {
         return {
@@ -382,8 +425,8 @@ export const CDRFrameworkDisplay: React.FC<CDRFrameworkDisplayProps> = ({
         return {
           name: 'Framework Region 2',
           sequence: data.fwr2_sequence,
-          start: data.fr2_start,
-          end: data.fr2_end,
+          start: data.fwr2_start,
+          end: data.fwr2_end,
         };
       } else if (isPositionInRegion(position, 'CDR2')) {
         return {
@@ -396,8 +439,8 @@ export const CDRFrameworkDisplay: React.FC<CDRFrameworkDisplayProps> = ({
         return {
           name: 'Framework Region 3',
           sequence: data.fwr3_sequence,
-          start: data.fr3_start,
-          end: data.fr3_end,
+          start: data.fwr3_start,
+          end: data.fwr3_end,
         };
       } else if (isPositionInRegion(position, 'CDR3')) {
         return {
@@ -469,11 +512,11 @@ export const CDRFrameworkDisplay: React.FC<CDRFrameworkDisplayProps> = ({
             
             {/* Add region highlights for all available regions */}
             {/* Convert 1-based coordinates to 0-based for frontend positioning */}
-            {data.fr1_start && data.fr1_end && (
+            {data.fwr1_start && data.fwr1_end && (
               <RegionHighlight
                 regionType="FWR1"
-                start={data.fr1_start - 1}
-                end={data.fr1_end - 1}
+                start={data.fwr1_start - 1}
+                end={data.fwr1_end - 1}
                 sequenceLength={sequence.length}
               />
             )}
@@ -487,11 +530,11 @@ export const CDRFrameworkDisplay: React.FC<CDRFrameworkDisplayProps> = ({
               />
             )}
             
-            {data.fr2_start && data.fr2_end && (
+            {data.fwr2_start && data.fwr2_end && (
               <RegionHighlight
                 regionType="FWR2"
-                start={data.fr2_start - 1}
-                end={data.fr2_end - 1}
+                start={data.fwr2_start - 1}
+                end={data.fwr2_end - 1}
                 sequenceLength={sequence.length}
               />
             )}
@@ -505,11 +548,11 @@ export const CDRFrameworkDisplay: React.FC<CDRFrameworkDisplayProps> = ({
               />
             )}
             
-            {data.fr3_start && data.fr3_end && (
+            {data.fwr3_start && data.fwr3_end && (
               <RegionHighlight
                 regionType="FWR3"
-                start={data.fr3_start - 1}
-                end={data.fr3_end - 1}
+                start={data.fwr3_start - 1}
+                end={data.fwr3_end - 1}
                 sequenceLength={sequence.length}
               />
             )}

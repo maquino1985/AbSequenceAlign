@@ -9,6 +9,7 @@ import logging
 import re
 from typing import Dict, Any, List
 
+from Bio.Seq import Seq
 from backend.infrastructure.adapters.base_parser import BaseIgBlastParser
 from backend.utils.chain_type_utils import ChainTypeUtils
 
@@ -361,6 +362,25 @@ class TabularParser(BaseIgBlastParser):
 
         return framework_cdr_data
 
+    def _translate_nucleotide_to_amino_acid(
+        self, nucleotide_sequence: str
+    ) -> str:
+        """Translate nucleotide sequence to amino acid sequence using Biopython."""
+        try:
+            # Convert to uppercase and replace N with A (common convention)
+            sequence = nucleotide_sequence.upper().replace("N", "A")
+
+            # Use Biopython's Seq object for translation
+            seq = Seq(sequence)
+            translated = seq.translate()
+
+            return str(translated)
+        except Exception as e:
+            self._logger.warning(
+                f"Failed to translate nucleotide sequence: {e}"
+            )
+            return ""
+
     def _extract_sequence_regions(
         self, query_sequence: str, framework_cdr_data: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -393,13 +413,24 @@ class TabularParser(BaseIgBlastParser):
                         sequence = query_sequence[start_idx:end_idx]
                         sequence_data[f"{region}_sequence"] = sequence
 
-                        # For protein sequences, also store the amino acid sequence
+                        # For nucleotide sequences, translate to amino acid sequence
                         if len(sequence) > 0 and all(
+                            c in "ACGTN" for c in sequence.upper()
+                        ):
+                            # Translate nucleotide sequence to amino acid
+                            aa_sequence = (
+                                self._translate_nucleotide_to_amino_acid(
+                                    sequence
+                                )
+                            )
+                            sequence_data[f"{region}_aa"] = aa_sequence
+                        # For protein sequences, the sequence is already amino acid
+                        elif len(sequence) > 0 and all(
                             c in "ACDEFGHIKLMNPQRSTVWY" for c in sequence
                         ):
                             sequence_data[f"{region}_aa"] = sequence
                         else:
-                            # For nucleotide sequences, we could translate here if needed
+                            # For other cases, set amino acid to None
                             sequence_data[f"{region}_aa"] = None
 
         return sequence_data

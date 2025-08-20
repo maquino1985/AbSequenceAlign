@@ -362,34 +362,42 @@ const AdvancedAIRRAnalysis: React.FC<AdvancedAIRRAnalysisProps> = ({
   const renderFrameworkCDRRegions = () => {
     // Convert AIRR data structure to CDRFrameworkDisplay format
     const cdrFrameworkData = {
-      fwr1_sequence: rearrangement.fwr1?.sequence_aa,
-      cdr1_sequence: rearrangement.cdr1?.sequence_aa,
-      fwr2_sequence: rearrangement.fwr2?.sequence_aa,
-      cdr2_sequence: rearrangement.cdr2?.sequence_aa,
-      fwr3_sequence: rearrangement.fwr3?.sequence_aa,
-      cdr3_sequence: rearrangement.junction_region?.cdr3_aa,
-      fwr4_sequence: rearrangement.fwr4?.sequence_aa,
+      // Nucleotide sequences
+      fwr1_sequence: rearrangement.fwr1?.sequence,
+      cdr1_sequence: rearrangement.cdr1?.sequence,
+      fwr2_sequence: rearrangement.fwr2?.sequence,
+      cdr2_sequence: rearrangement.cdr2?.sequence,
+      fwr3_sequence: rearrangement.fwr3?.sequence,
+      cdr3_sequence: rearrangement.junction_region?.cdr3,
+      fwr4_sequence: rearrangement.fwr4?.sequence,
+      // Amino acid sequences
+      fwr1_aa: rearrangement.fwr1?.sequence_aa,
+      cdr1_aa: rearrangement.cdr1?.sequence_aa,
+      fwr2_aa: rearrangement.fwr2?.sequence_aa,
+      cdr2_aa: rearrangement.cdr2?.sequence_aa,
+      fwr3_aa: rearrangement.fwr3?.sequence_aa,
+      cdr3_aa: rearrangement.junction_region?.cdr3_aa,
+      fwr4_aa: rearrangement.fwr4?.sequence_aa,
       // Add coordinate data for enhanced visualization
-      fr1_start: rearrangement.fwr1?.start,
-      fr1_end: rearrangement.fwr1?.end,
+      fwr1_start: rearrangement.fwr1?.start,
+      fwr1_end: rearrangement.fwr1?.end,
       cdr1_start: rearrangement.cdr1?.start,
       cdr1_end: rearrangement.cdr1?.end,
-      fr2_start: rearrangement.fwr2?.start,
-      fr2_end: rearrangement.fwr2?.end,
+      fwr2_start: rearrangement.fwr2?.start,
+      fwr2_end: rearrangement.fwr2?.end,
       cdr2_start: rearrangement.cdr2?.start,
       cdr2_end: rearrangement.cdr2?.end,
-      fr3_start: rearrangement.fwr3?.start,
-      fr3_end: rearrangement.fwr3?.end,
+      fwr3_start: rearrangement.fwr3?.start,
+      fwr3_end: rearrangement.fwr3?.end,
       cdr3_start: rearrangement.junction_region?.cdr3_start,
       cdr3_end: rearrangement.junction_region?.cdr3_end,
-      cdr3_aa: rearrangement.junction_region?.cdr3_aa,
     };
 
-    // Determine sequence type based on available data
-    const sequenceType = rearrangement.sequence_aa ? 'protein' : 'nucleotide';
+    // For AIRR format, we always work with nucleotide sequences and coordinates
+    const sequenceType = 'nucleotide';
     
-    // Get the query sequence for visualization
-    const sequence = rearrangement.sequence_aa || rearrangement.sequence;
+    // Get the nucleotide sequence for visualization (coordinates are based on nucleotide positions)
+    const sequence = rearrangement.sequence;
 
     return (
       <Box>
