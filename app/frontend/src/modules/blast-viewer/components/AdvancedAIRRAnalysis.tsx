@@ -129,6 +129,73 @@ const AdvancedAIRRAnalysis: React.FC<AdvancedAIRRAnalysisProps> = ({
       );
     }
 
+    // Extract region boundaries from AIRR data for sequence alignment visualization
+    const regionBoundaries = [];
+    
+    // Add framework and CDR regions if available
+    if (rearrangement.fwr1?.start && rearrangement.fwr1?.end) {
+      regionBoundaries.push({
+        type: 'FWR1',
+        start: rearrangement.fwr1.start,
+        end: rearrangement.fwr1.end,
+        label: 'Framework Region 1'
+      });
+    }
+    
+    if (rearrangement.cdr1?.start && rearrangement.cdr1?.end) {
+      regionBoundaries.push({
+        type: 'CDR1',
+        start: rearrangement.cdr1.start,
+        end: rearrangement.cdr1.end,
+        label: 'Complementarity-Determining Region 1'
+      });
+    }
+    
+    if (rearrangement.fwr2?.start && rearrangement.fwr2?.end) {
+      regionBoundaries.push({
+        type: 'FWR2',
+        start: rearrangement.fwr2.start,
+        end: rearrangement.fwr2.end,
+        label: 'Framework Region 2'
+      });
+    }
+    
+    if (rearrangement.cdr2?.start && rearrangement.cdr2?.end) {
+      regionBoundaries.push({
+        type: 'CDR2',
+        start: rearrangement.cdr2.start,
+        end: rearrangement.cdr2.end,
+        label: 'Complementarity-Determining Region 2'
+      });
+    }
+    
+    if (rearrangement.fwr3?.start && rearrangement.fwr3?.end) {
+      regionBoundaries.push({
+        type: 'FWR3',
+        start: rearrangement.fwr3.start,
+        end: rearrangement.fwr3.end,
+        label: 'Framework Region 3'
+      });
+    }
+    
+    if (rearrangement.junction_region?.cdr3_start && rearrangement.junction_region?.cdr3_end) {
+      regionBoundaries.push({
+        type: 'CDR3',
+        start: rearrangement.junction_region.cdr3_start,
+        end: rearrangement.junction_region.cdr3_end,
+        label: 'Complementarity-Determining Region 3'
+      });
+    }
+    
+    if (rearrangement.fwr4?.start && rearrangement.fwr4?.end) {
+      regionBoundaries.push({
+        type: 'FWR4',
+        start: rearrangement.fwr4.start,
+        end: rearrangement.fwr4.end,
+        label: 'Framework Region 4'
+      });
+    }
+
     return (
       <Box>
         <Typography variant="h6" gutterBottom color="primary">
@@ -182,6 +249,7 @@ const AdvancedAIRRAnalysis: React.FC<AdvancedAIRRAnalysisProps> = ({
               subjectStart={rearrangement.v_germline_start || 1}
               isAminoAcid={false}
               title="Nucleotide Alignment"
+              regionBoundaries={regionBoundaries}
             />
           </Box>
         )}
@@ -196,6 +264,7 @@ const AdvancedAIRRAnalysis: React.FC<AdvancedAIRRAnalysisProps> = ({
               subjectStart={rearrangement.v_germline_start || 1}
               isAminoAcid={true}
               title="Amino Acid Alignment"
+              regionBoundaries={regionBoundaries}
             />
           </Box>
         )}

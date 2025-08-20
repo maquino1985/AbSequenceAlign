@@ -168,12 +168,12 @@ export const BlastViewerTool: React.FC = () => {
               {useEnhancedView ? (
                 <SimpleEnhancedBlastResults 
                   results={results} 
-                  searchType="blast"
+                  searchType="standard"
                 />
               ) : (
                 <BlastResults 
                   results={results} 
-                  searchType="blast"
+                  searchType="standard"
                 />
               )}
             </>

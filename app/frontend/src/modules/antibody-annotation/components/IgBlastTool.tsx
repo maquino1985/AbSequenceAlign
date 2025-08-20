@@ -155,7 +155,7 @@ export const IgBlastTool: React.FC<IgBlastToolProps> = ({ onResults }) => {
 
       <Grid container spacing={3}>
         {/* Left Column - Input */}
-        <Grid xs={12} md={6}>
+        <Grid>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -261,7 +261,7 @@ export const IgBlastTool: React.FC<IgBlastToolProps> = ({ onResults }) => {
         </Grid>
 
         {/* Right Column - Database Selection */}
-        <Grid xs={12} md={6}>
+        <Grid>
           <Card>
             <CardContent>
               <DatabaseSelector

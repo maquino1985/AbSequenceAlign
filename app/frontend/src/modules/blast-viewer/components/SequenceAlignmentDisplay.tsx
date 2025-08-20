@@ -9,6 +9,7 @@ import {
   Card,
   CardContent,
   CardHeader,
+  Tooltip,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
@@ -22,6 +23,7 @@ const AlignmentContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(1),
   overflow: 'auto',
   maxHeight: '300px',
+  position: 'relative',
 }));
 
 const SequenceLine = styled(Box)({
@@ -43,6 +45,7 @@ const SequenceContent = styled(Box)({
   display: 'flex',
   flexWrap: 'wrap',
   gap: '1px',
+  position: 'relative',
 });
 
 const PositionLabel = styled(Typography)(({ theme }) => ({
@@ -60,6 +63,97 @@ const PositionContent = styled(Box)({
   gap: '1px',
   fontSize: '10px',
   color: '#666',
+});
+
+// New styled component for region boundary indicators
+const RegionBoundaryIndicator = styled(Box, {
+  shouldForwardProp: (prop) => !['regionType', 'start', 'end', 'sequenceLength', 'isStart'].includes(prop as string),
+})<{ 
+  regionType: string; 
+  start: number; 
+  end: number; 
+  sequenceLength: number;
+  isStart: boolean;
+}>(({ theme, regionType, start, end, sequenceLength, isStart }) => {
+  const colors = {
+    FWR1: '#E3F2FD',
+    CDR1: '#FFE0B2',
+    FWR2: '#E8F5E8',
+    CDR2: '#FCE4EC',
+    FWR3: '#F3E5F5',
+    CDR3: '#FFEBEE',
+    FWR4: '#E0F2F1',
+  };
+  
+  const color = colors[regionType as keyof typeof colors] || '#E3F2FD';
+  const position = isStart ? start : end;
+  const left = (position / sequenceLength) * 100;
+  
+  return {
+    position: 'absolute',
+    top: isStart ? '-8px' : 'auto',
+    bottom: isStart ? 'auto' : '-8px',
+    left: `${left}%`,
+    width: '2px',
+    height: '16px',
+    backgroundColor: color,
+    border: `1px solid ${color.replace('0.3', '0.8')}`,
+    borderRadius: '1px',
+    zIndex: 2,
+    transform: 'translateX(-50%)',
+    '&::after': {
+      content: `"${regionType}"`,
+      position: 'absolute',
+      left: '50%',
+      top: isStart ? '-20px' : '16px',
+      transform: 'translateX(-50%)',
+      fontSize: '8px',
+      fontWeight: 'bold',
+      color: color.replace('0.3', '0.8'),
+      whiteSpace: 'nowrap',
+      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      padding: '1px 2px',
+      borderRadius: '2px',
+      border: `1px solid ${color}`,
+    },
+  };
+});
+
+// New styled component for region span indicators
+const RegionSpanIndicator = styled(Box, {
+  shouldForwardProp: (prop) => !['regionType', 'start', 'end', 'sequenceLength'].includes(prop as string),
+})<{ 
+  regionType: string; 
+  start: number; 
+  end: number; 
+  sequenceLength: number;
+}>(({ theme, regionType, start, end, sequenceLength }) => {
+  const colors = {
+    FWR1: '#E3F2FD',
+    CDR1: '#FFE0B2',
+    FWR2: '#E8F5E8',
+    CDR2: '#FCE4EC',
+    FWR3: '#F3E5F5',
+    CDR3: '#FFEBEE',
+    FWR4: '#E0F2F1',
+  };
+  
+  const color = colors[regionType as keyof typeof colors] || '#E3F2FD';
+  const width = ((end - start + 1) / sequenceLength) * 100;
+  const left = (start / sequenceLength) * 100;
+  
+  return {
+    position: 'absolute',
+    top: '-4px',
+    left: `${left}%`,
+    width: `${width}%`,
+    height: '8px',
+    backgroundColor: color,
+    opacity: 0.6,
+    border: `1px solid ${color.replace('0.3', '0.8')}`,
+    borderRadius: '2px',
+    zIndex: 1,
+  };
 });
 
 const AminoAcid = styled(Box)<{ 
@@ -158,6 +252,14 @@ const Nucleotide = styled(Box)<{
   }
 });
 
+// Interface for region boundary data
+interface RegionBoundary {
+  type: string;
+  start: number;
+  end: number;
+  label: string;
+}
+
 interface SequenceAlignmentDisplayProps {
   querySequence: string;
   subjectSequence: string;
@@ -165,6 +267,7 @@ interface SequenceAlignmentDisplayProps {
   subjectStart: number;
   isAminoAcid?: boolean;
   title?: string;
+  regionBoundaries?: RegionBoundary[];
 }
 
 const SequenceAlignmentDisplay: React.FC<SequenceAlignmentDisplayProps> = ({
@@ -174,6 +277,7 @@ const SequenceAlignmentDisplay: React.FC<SequenceAlignmentDisplayProps> = ({
   subjectStart,
   isAminoAcid = false,
   title = 'Sequence Alignment',
+  regionBoundaries = [],
 }) => {
   const LINE_LENGTH = 60; // Characters per line
   const charWidth = isAminoAcid ? 12 : 10;
@@ -221,6 +325,62 @@ const SequenceAlignmentDisplay: React.FC<SequenceAlignmentDisplayProps> = ({
 
   const AminoAcidComponent = isAminoAcid ? AminoAcid : Nucleotide;
 
+  // Helper function to render region boundary indicators for a line
+  const renderRegionBoundaries = (lineStart: number, lineEnd: number, sequenceLength: number) => {
+    const relevantBoundaries = regionBoundaries.filter(boundary => 
+      (boundary.start >= lineStart && boundary.start <= lineEnd) ||
+      (boundary.end >= lineStart && boundary.end <= lineEnd) ||
+      (boundary.start <= lineStart && boundary.end >= lineEnd)
+    );
+
+    return relevantBoundaries.map((boundary, index) => {
+      const adjustedStart = Math.max(boundary.start, lineStart);
+      const adjustedEnd = Math.min(boundary.end, lineEnd);
+      
+      return (
+        <React.Fragment key={`${boundary.type}-${index}`}>
+          {/* Start boundary indicator */}
+          {boundary.start >= lineStart && boundary.start <= lineEnd && (
+            <Tooltip title={`${boundary.label} Start (Position ${boundary.start})`}>
+              <RegionBoundaryIndicator
+                regionType={boundary.type}
+                start={boundary.start - lineStart + 1}
+                end={boundary.end - lineStart + 1}
+                sequenceLength={sequenceLength}
+                isStart={true}
+              />
+            </Tooltip>
+          )}
+          
+          {/* End boundary indicator */}
+          {boundary.end >= lineStart && boundary.end <= lineEnd && (
+            <Tooltip title={`${boundary.label} End (Position ${boundary.end})`}>
+              <RegionBoundaryIndicator
+                regionType={boundary.type}
+                start={boundary.start - lineStart + 1}
+                end={boundary.end - lineStart + 1}
+                sequenceLength={sequenceLength}
+                isStart={false}
+              />
+            </Tooltip>
+          )}
+          
+          {/* Region span indicator */}
+          {adjustedStart <= adjustedEnd && (
+            <Tooltip title={`${boundary.label} (Positions ${boundary.start}-${boundary.end})`}>
+              <RegionSpanIndicator
+                regionType={boundary.type}
+                start={adjustedStart - lineStart + 1}
+                end={adjustedEnd - lineStart + 1}
+                sequenceLength={sequenceLength}
+              />
+            </Tooltip>
+          )}
+        </React.Fragment>
+      );
+    });
+  };
+
   return (
     <Card elevation={1}>
       <CardHeader 
@@ -234,9 +394,10 @@ const SequenceAlignmentDisplay: React.FC<SequenceAlignmentDisplayProps> = ({
             if (!subjectLine) return null;
 
             const queryAlignment = compareSequences(queryLine.sequence, subjectLine.sequence);
+            const sequenceLength = queryLine.sequence.length;
             
             return (
-              <Box key={lineIndex} sx={{ mb: 1 }}>
+              <Box key={lineIndex} sx={{ mb: 1, position: 'relative' }}>
                 {/* Position indicator */}
                 <Box display="flex" alignItems="center" mb={0.5}>
                   <PositionLabel>Pos:</PositionLabel>
@@ -245,7 +406,7 @@ const SequenceAlignmentDisplay: React.FC<SequenceAlignmentDisplayProps> = ({
                   </Typography>
                 </Box>
                 
-                {/* Query sequence line */}
+                {/* Query sequence line with region boundaries */}
                 <SequenceLine>
                   <SequenceLabel>Query:</SequenceLabel>
                   <SequenceContent>
@@ -258,6 +419,8 @@ const SequenceAlignmentDisplay: React.FC<SequenceAlignmentDisplayProps> = ({
                         {item.query}
                       </AminoAcidComponent>
                     ))}
+                    {/* Region boundary indicators */}
+                    {renderRegionBoundaries(queryLine.start, queryLine.end, sequenceLength)}
                   </SequenceContent>
                 </SequenceLine>
                 
@@ -291,7 +454,7 @@ const SequenceAlignmentDisplay: React.FC<SequenceAlignmentDisplayProps> = ({
           })}
         </AlignmentContainer>
         
-        {/* Compact Legend */}
+        {/* Enhanced Legend with Region Boundaries */}
         <Box sx={{ mt: 1 }}>
           <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
             <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Legend:</Typography>
@@ -307,6 +470,41 @@ const SequenceAlignmentDisplay: React.FC<SequenceAlignmentDisplayProps> = ({
               <AminoAcidComponent type="gap" />
               <Typography variant="caption">Gap</Typography>
             </Box>
+            
+            {/* Region boundary legend */}
+            {regionBoundaries.length > 0 && (
+              <>
+                <Divider orientation="vertical" flexItem />
+                <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Regions:</Typography>
+                {Array.from(new Set(regionBoundaries.map(b => b.type))).map(regionType => {
+                  const colors = {
+                    FWR1: '#E3F2FD',
+                    CDR1: '#FFE0B2',
+                    FWR2: '#E8F5E8',
+                    CDR2: '#FCE4EC',
+                    FWR3: '#F3E5F5',
+                    CDR3: '#FFEBEE',
+                    FWR4: '#E0F2F1',
+                  };
+                  const color = colors[regionType as keyof typeof colors] || '#E3F2FD';
+                  
+                  return (
+                    <Box key={regionType} display="flex" alignItems="center" gap={0.5}>
+                      <Box
+                        sx={{
+                          width: '12px',
+                          height: '8px',
+                          backgroundColor: color,
+                          border: `1px solid ${color.replace('0.3', '0.8')}`,
+                          borderRadius: '1px',
+                        }}
+                      />
+                      <Typography variant="caption">{regionType}</Typography>
+                    </Box>
+                  );
+                })}
+              </>
+            )}
           </Stack>
         </Box>
       </CardContent>

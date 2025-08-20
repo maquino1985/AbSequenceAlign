@@ -233,7 +233,7 @@ export const IgBlastResultsDisplay: React.FC<IgBlastResultsDisplayProps> = ({ re
         </Typography>
         
         <Grid container spacing={2} sx={{ mb: 2 }}>
-          <Grid xs={12} sm={6} md={3}>
+          <Grid>
             <Card variant="outlined">
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>
@@ -245,7 +245,7 @@ export const IgBlastResultsDisplay: React.FC<IgBlastResultsDisplayProps> = ({ re
               </CardContent>
             </Card>
           </Grid>
-          <Grid xs={12} sm={6} md={3}>
+          <Grid>
             <Card variant="outlined">
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>
@@ -257,7 +257,7 @@ export const IgBlastResultsDisplay: React.FC<IgBlastResultsDisplayProps> = ({ re
               </CardContent>
             </Card>
           </Grid>
-          <Grid xs={12} sm={6} md={3}>
+          <Grid>
             <Card variant="outlined">
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>
@@ -269,7 +269,7 @@ export const IgBlastResultsDisplay: React.FC<IgBlastResultsDisplayProps> = ({ re
               </CardContent>
             </Card>
           </Grid>
-          <Grid xs={12} sm={6} md={3}>
+          <Grid>
             <Card variant="outlined">
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>
@@ -364,7 +364,7 @@ export const IgBlastResultsDisplay: React.FC<IgBlastResultsDisplayProps> = ({ re
                 </TableRow>
               </TableHead>
               <TableBody>
-                {results.result.hits.map((hit, index) => (
+                {results.result.hits.map((hit: any, index: number) => (
                   <TableRow key={index}>
                     <TableCell>
                       <RegionChip
