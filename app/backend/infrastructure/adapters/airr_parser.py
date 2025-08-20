@@ -9,6 +9,7 @@ and quality metrics.
 import logging
 from typing import Dict, Any
 
+from Bio.Seq import Seq
 from backend.infrastructure.adapters.base_parser import BaseIgBlastParser
 
 
@@ -213,7 +214,7 @@ class AIRRParser(BaseIgBlastParser):
 
     def _extract_summary_data(self, hit: Dict[str, Any]) -> Dict[str, Any]:
         """Extract summary data from hit."""
-        return {
+        summary = {
             "v_gene": hit["v_call"],
             "d_gene": hit["d_call"],
             "j_gene": hit["j_call"],
@@ -231,3 +232,53 @@ class AIRRParser(BaseIgBlastParser):
             "vj_in_frame": hit["vj_in_frame"],
             "complete_vdj": hit["complete_vdj"],
         }
+
+        # Add all framework and CDR regions with both nucleotide and amino acid sequences
+        # Framework regions
+        if hit.get("fwr1"):
+            summary["fr1_sequence"] = hit["fwr1"]
+            summary["fr1_aa"] = hit.get("fwr1_aa")
+            summary["fr1_start"] = hit.get("fwr1_start")
+            summary["fr1_end"] = hit.get("fwr1_end")
+
+        if hit.get("fwr2"):
+            summary["fr2_sequence"] = hit["fwr2"]
+            summary["fr2_aa"] = hit.get("fwr2_aa")
+            summary["fr2_start"] = hit.get("fwr2_start")
+            summary["fr2_end"] = hit.get("fwr2_end")
+
+        if hit.get("fwr3"):
+            summary["fr3_sequence"] = hit["fwr3"]
+            summary["fr3_aa"] = hit.get("fwr3_aa")
+            summary["fr3_start"] = hit.get("fwr3_start")
+            summary["fr3_end"] = hit.get("fwr3_end")
+
+        if hit.get("fwr4"):
+            summary["fr4_sequence"] = hit["fwr4"]
+            summary["fr4_aa"] = hit.get("fwr4_aa")
+            summary["fr4_start"] = hit.get("fwr4_start")
+            summary["fr4_end"] = hit.get("fwr4_end")
+
+        # CDR regions
+        if hit.get("cdr1"):
+            summary["cdr1_sequence"] = hit["cdr1"]
+            summary["cdr1_aa"] = hit.get("cdr1_aa")
+            summary["cdr1_start"] = hit.get("cdr1_start")
+            summary["cdr1_end"] = hit.get("cdr1_end")
+
+        if hit.get("cdr2"):
+            summary["cdr2_sequence"] = hit["cdr2"]
+            summary["cdr2_aa"] = hit.get("cdr2_aa")
+            summary["cdr2_start"] = hit.get("cdr2_start")
+            summary["cdr2_end"] = hit.get("cdr2_end")
+
+        # CDR3 is already included above, but add amino acid if available
+        if hit.get("cdr3_aa"):
+            summary["cdr3_aa"] = hit["cdr3_aa"]
+        else:
+            # Derive CDR3 amino acid sequence from nucleotide sequence if not provided
+            if hit.get("cdr3"):
+                cdr3_seq = Seq(hit["cdr3"])
+                summary["cdr3_aa"] = str(cdr3_seq.translate())
+
+        return summary
