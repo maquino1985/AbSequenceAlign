@@ -114,7 +114,6 @@ data/blast/nucleotide/**/*.not filter=lfs diff=lfs merge=lfs -text
 data/blast/nucleotide/**/*.ntf filter=lfs diff=lfs merge=lfs -text
 data/blast/nucleotide/**/*.nto filter=lfs diff=lfs merge=lfs -text
 data/blast/nucleotide/**/*.tar.gz filter=lfs diff=lfs merge=lfs -text
-
 # Protein database files in organized subdirectories
 data/blast/protein/**/*.phr filter=lfs diff=lfs merge=lfs -text
 data/blast/protein/**/*.pin filter=lfs diff=lfs merge=lfs -text
@@ -131,7 +130,10 @@ data/blast/protein/**/*.pog filter=lfs diff=lfs merge=lfs -text
 data/blast/protein/**/*.psd filter=lfs diff=lfs merge=lfs -text
 data/blast/protein/**/*.psi filter=lfs diff=lfs merge=lfs -text
 data/blast/protein/**/*.tar.gz filter=lfs diff=lfs merge=lfs -text
-
 # IgBLAST database files in organized subdirectories
 data/igblast/databases/**/* filter=lfs diff=lfs merge=lfs -text
 data/blast/nucleotide/**/* filter=lfs diff=lfs merge=lfs -text
+data/blast/euk_cdna/*.nsq filter=lfs diff=lfs merge=lfs -text
+data/blast/euk_cdna/*.ndb filter=lfs diff=lfs merge=lfs -text
+data/blast/euk_cdna/*.nhr filter=lfs diff=lfs merge=lfs -text
+data/blast/euk_cdna/*.nin filter=lfs diff=lfs merge=lfs -text
