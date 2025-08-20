@@ -2,7 +2,6 @@
 Unit tests for TabularParser - Framework and CDR data extraction
 """
 
-import pytest
 from backend.infrastructure.adapters.tabular_parser import TabularParser
 
 
