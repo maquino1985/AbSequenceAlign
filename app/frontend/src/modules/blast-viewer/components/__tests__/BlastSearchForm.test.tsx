@@ -25,15 +25,10 @@ describe('BlastSearchForm', () => {
       const mockDatabases = {
         public: {
           swissprot: 'Swiss-Prot protein database',
-          pdbaa: 'Protein Data Bank',
-          '16S_ribosomal_RNA': '16S ribosomal RNA database'
+          pdbaa: 'Protein Data Bank'
         },
-        custom: {
-          custom_db: 'Custom database'
-        },
-        internal: {
-          internal_protein: 'Internal protein sequences'
-        }
+        custom: {},
+        internal: {}
       };
 
       render(
@@ -50,12 +45,9 @@ describe('BlastSearchForm', () => {
       const databaseSelect = screen.getByLabelText('Database');
       fireEvent.mouseDown(databaseSelect);
 
-      // Check that database options are rendered
+      // Check that database options are rendered (only protein databases for blastp)
       expect(screen.getByText('swissprot - Swiss-Prot protein database')).toBeInTheDocument();
       expect(screen.getByText('pdbaa - Protein Data Bank')).toBeInTheDocument();
-      expect(screen.getByText('16S_ribosomal_RNA - 16S ribosomal RNA database')).toBeInTheDocument();
-      expect(screen.getByText('Custom: custom_db - Custom database')).toBeInTheDocument();
-      expect(screen.getByText('Internal: internal_protein - Internal protein sequences')).toBeInTheDocument();
     });
 
     it('should show loading state when databases are null', () => {
@@ -195,8 +187,7 @@ describe('BlastSearchForm', () => {
           databases: ['swissprot'],
           blast_type: 'blastp',
           evalue: 1e-10,
-          max_target_seqs: 10,
-          searchType: 'public'
+          max_target_seqs: 10
         });
       });
     });
@@ -223,32 +214,23 @@ describe('BlastSearchForm', () => {
       );
     });
 
-    it('should show database selector only for public searches', () => {
-      // Initially on public search type
+    it('should always show database selector', () => {
+      // Database selector should always be visible after removing search type distinction
       expect(screen.getByLabelText('Database')).toBeInTheDocument();
-
-      // Switch to internal search type
-      const searchTypeSelect = screen.getByLabelText('Search Type');
-      fireEvent.mouseDown(searchTypeSelect);
-      const internalOption = screen.getByText('Internal Database');
-      fireEvent.click(internalOption);
-
-      // Database selector should not be visible for internal searches
-      expect(screen.queryByLabelText('Database')).not.toBeInTheDocument();
     });
 
-    it('should call onSearch with correct search type', async () => {
-      // Switch to internal search type
-      const searchTypeSelect = screen.getByLabelText('Search Type');
-      fireEvent.mouseDown(searchTypeSelect);
-      const internalOption = screen.getByText('Internal Database');
-      fireEvent.click(internalOption);
-
+    it('should call onSearch without search type', async () => {
       // Fill in sequence
       const sequenceInput = screen.getByPlaceholderText(/enter your sequence/i);
       fireEvent.change(sequenceInput, {
         target: { value: 'DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK' }
       });
+
+      // Select a database
+      const databaseSelect = screen.getByLabelText('Database');
+      fireEvent.mouseDown(databaseSelect);
+      const swissprotOption = screen.getByText('swissprot - Swiss-Prot protein database');
+      fireEvent.click(swissprotOption);
 
       // Submit search
       const searchButton = screen.getByRole('button', { name: /search/i });
@@ -257,11 +239,10 @@ describe('BlastSearchForm', () => {
       await waitFor(() => {
         expect(mockOnSearch).toHaveBeenCalledWith({
           query_sequence: 'DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK',
-          databases: [''],
+          databases: ['swissprot'],
           blast_type: 'blastp',
           evalue: 1e-10,
-          max_target_seqs: 10,
-          searchType: 'internal'
+          max_target_seqs: 10
         });
       });
     });
@@ -300,7 +281,7 @@ describe('BlastSearchForm', () => {
       expect(mockOnSearch).not.toHaveBeenCalled();
     });
 
-    it('should validate database selection for public searches', async () => {
+    it('should validate database selection', async () => {
       // Fill in sequence but don't select database
       const sequenceInput = screen.getByPlaceholderText(/enter your sequence/i);
       fireEvent.change(sequenceInput, {

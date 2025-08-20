@@ -35,7 +35,7 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
   const [blastType, setBlastType] = useState('blastp');
   const [evalue, setEvalue] = useState('1e-10');
   const [maxTargetSeqs, setMaxTargetSeqs] = useState('10');
-  const [searchType, setSearchType] = useState('public');
+  // Removed searchType state - no longer needed
 
   const [error, setError] = useState<string | null>(null);
 
@@ -46,10 +46,7 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
     { value: 'tblastn', label: 'TBLASTN (Protein vs Nucleotide)' },
   ];
 
-  const searchTypes = [
-    { value: 'public', label: 'Public Database' },
-    { value: 'internal', label: 'Internal Database' },
-  ];
+  // Removed searchTypes - no longer needed as we're simplifying to single database selection
 
   const handleDatabaseChange = (event: any) => {
     const value = event.target.value as string;
@@ -71,7 +68,7 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
       return;
     }
 
-    if (searchType === 'public' && !selectedDatabase) {
+    if (!selectedDatabase) {
       setError('Please select a database');
       return;
     }
@@ -84,7 +81,6 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
       blast_type: blastType,
       evalue: parseFloat(evalue),
       max_target_seqs: parseInt(maxTargetSeqs),
-      searchType: searchType,
     };
 
     onSearch(searchData);
@@ -142,6 +138,7 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
     }
 
     // Handle legacy database structure: { public: {...}, custom: {...}, internal: {...} }
+    // Now showing all databases without distinction
     if (databases.public) {
       Object.entries(databases.public as Record<string, any>).forEach(([key, value]) => {
         if (typeof value === 'string') {
@@ -158,7 +155,7 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
         if (typeof value === 'string') {
           options.push({ 
             value: key, 
-            label: `Custom: ${key} - ${value}` 
+            label: `${key} - ${value}` 
           });
         }
       });
@@ -169,27 +166,25 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
         if (typeof value === 'string') {
           options.push({ 
             value: key, 
-            label: `Internal: ${key} - ${value}` 
+            label: `${key} - ${value}` 
           });
         }
       });
     }
 
-    // Filter databases based on BLAST type (only for new structure)
+    // Filter databases based on BLAST type for legacy structure
     const sequenceType = getSequenceTypeFromBlastType(blastType);
-    if (sequenceType === 'protein' && databases.protein) {
+    if (sequenceType === 'protein') {
       // For protein BLAST types, only show protein databases
       return options.filter(option => {
-        return Object.values(databases.protein as Record<string, any>).some(
-          (dbInfo: any) => dbInfo.path === option.value
-        );
+        const proteinDbs = ['swissprot', 'pdbaa', 'pdb'];
+        return proteinDbs.includes(option.value);
       });
-    } else if (sequenceType === 'nucleotide' && databases.nucleotide) {
+    } else if (sequenceType === 'nucleotide') {
       // For nucleotide BLAST types, only show nucleotide databases
       return options.filter(option => {
-        return Object.values(databases.nucleotide as Record<string, any>).some(
-          (dbInfo: any) => dbInfo.path === option.value
-        );
+        const nucleotideDbs = ['refseq_select_rna', 'GCF_000001635.27_top_level', 'GCF_000001405.39_top_level', '16S_ribosomal_RNA', 'euk_cdna'];
+        return nucleotideDbs.includes(option.value);
       });
     }
 
@@ -209,22 +204,7 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
       )}
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {/* Search Type */}
-        <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel id="search-type-label">Search Type</InputLabel>
-          <Select
-            labelId="search-type-label"
-            value={searchType}
-            label="Search Type"
-            onChange={(e) => setSearchType(e.target.value)}
-          >
-            {searchTypes.map((type) => (
-              <MenuItem key={type.value} value={type.value}>
-                {type.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        {/* Search Type selector removed - simplified to single database selection */}
 
         {/* BLAST Type */}
         <FormControl sx={{ minWidth: 200 }}>
@@ -244,7 +224,6 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
         </FormControl>
 
         {/* Database Selection */}
-        {searchType === 'public' && (
           <FormControl fullWidth>
             <InputLabel id="database-label">Database</InputLabel>
             {databases ? (
@@ -279,7 +258,6 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
               }
             </FormHelperText>
           </FormControl>
-        )}
 
         {/* Parameters */}
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
