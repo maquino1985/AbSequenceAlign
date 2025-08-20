@@ -38,6 +38,45 @@ jobs:
           pip install asyncpg==0.29.0 psycopg2-binary==2.9.9
           pip install git+https://github.com/oxpig/ANARCI.git
 
+      # ---------- Start Docker Services for Backend Tests ----------
+      - name: Start BLAST and IgBLAST Docker containers
+        run: |
+          set -euo pipefail
+          # Start BLAST container
+          docker run -d --name absequencealign-blast \
+            -v "$(pwd)/data/blast:/blast/blastdb:ro" \
+            -v "$(pwd)/data/blast/protein:/blast/blastdb/protein:ro" \
+            -v "$(pwd)/data/blast/nucleotide:/blast/blastdb/nucleotide:ro" \
+            -e BLASTDB=/blast/blastdb:/blast/blastdb/protein:/blast/blastdb/nucleotide \
+            ncbi/blast:latest sleep infinity
+          
+          # Start IgBLAST container
+          docker run -d --name absequencealign-igblast \
+            -v "$(pwd)/data/igblast:/blast/blastdb:ro" \
+            -v "$(pwd)/data/igblast/internal_data:/blast/internal_data:ro" \
+            -v "$(pwd)/data/igblast/optional_file:/blast/optional_file:ro" \
+            -e IGDATA=/blast \
+            ncbi/igblast:latest sleep infinity
+          
+          # Wait for containers to be ready
+          echo "Waiting for BLAST container to be ready..."
+          for i in {1..30}; do
+            if docker exec absequencealign-blast blastp -help >/dev/null 2>&1; then
+              echo "BLAST container is ready"
+              break
+            fi
+            sleep 1
+          done
+          
+          echo "Waiting for IgBLAST container to be ready..."
+          for i in {1..30}; do
+            if docker exec absequencealign-igblast igblastn -help >/dev/null 2>&1; then
+              echo "IgBLAST container is ready"
+              break
+            fi
+            sleep 1
+          done
+
       - name: Backend unit tests + lint + format check
         shell: bash -l {0}
         run: |
@@ -126,7 +165,9 @@ jobs:
           wait-on: 'http://localhost:5679'
           wait-on-timeout: 120
 
-      - name: Cleanup nginx
+      - name: Cleanup containers
         if: always()
         run: |
           docker rm -f frontend-nginx || true
+          docker rm -f absequencealign-blast || true
+          docker rm -f absequencealign-igblast || true

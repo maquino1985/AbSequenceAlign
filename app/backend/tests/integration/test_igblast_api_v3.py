@@ -4,11 +4,13 @@ Tests the actual API endpoints and identifies parsing issues
 """
 
 import json
+import os
 
 import requests
 
-# Test configuration
-API_BASE_URL = "http://192.168.0.17:8000"
+# Test configuration - use environment variables or fallback to localhost
+# In CI, the backend runs on localhost:8000, not in a container
+API_BASE_URL = os.environ.get("TEST_API_BASE_URL", "http://localhost:8000")
 API_PREFIX = "/api/v2/database"
 
 
