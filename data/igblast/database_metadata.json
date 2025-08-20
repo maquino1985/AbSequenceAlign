@@ -3,28 +3,28 @@
     "human": {
       "V": {
         "name": "Human V Genes",
-        "path": "/data/databases/human/V/airr_c_human_ig.V",
+        "path": "/blast/blastdb/databases/human/V/airr_c_human_ig.V",
         "description": "Human immunoglobulin V gene database (AIRR format)",
         "organism": "human",
         "gene_type": "V"
       },
       "D": {
         "name": "Human D Genes",
-        "path": "/data/databases/human/D/airr_c_human_igh.D",
+        "path": "/blast/blastdb/databases/human/D/airr_c_human_igh.D",
         "description": "Human immunoglobulin D gene database (AIRR format)",
         "organism": "human",
         "gene_type": "D"
       },
       "J": {
         "name": "Human J Genes",
-        "path": "/data/databases/human/J/airr_c_human_ig.J",
+        "path": "/blast/blastdb/databases/human/J/airr_c_human_ig.J",
         "description": "Human immunoglobulin J gene database (AIRR format)",
         "organism": "human",
         "gene_type": "J"
       },
       "C": {
         "name": "Human C Genes",
-        "path": "/data/databases/human/C/ncbi_human_c_genes",
+        "path": "/blast/blastdb/databases/human/C/ncbi_human_c_genes",
         "description": "Human immunoglobulin C gene database",
         "organism": "human",
         "gene_type": "C"
@@ -33,28 +33,28 @@
     "mouse": {
       "V": {
         "name": "Mouse V Genes",
-        "path": "/data/databases/mouse/V/mouse_gl_V",
+        "path": "/blast/blastdb/databases/mouse/V/mouse_gl_V",
         "description": "Mouse immunoglobulin V gene database",
         "organism": "mouse",
         "gene_type": "V"
       },
       "D": {
         "name": "Mouse D Genes",
-        "path": "/data/databases/mouse/D/mouse_gl_D",
+        "path": "/blast/blastdb/databases/mouse/D/mouse_gl_D",
         "description": "Mouse immunoglobulin D gene database",
         "organism": "mouse",
         "gene_type": "D"
       },
       "J": {
         "name": "Mouse J Genes",
-        "path": "/data/databases/mouse/J/mouse_gl_J",
+        "path": "/blast/blastdb/databases/mouse/J/mouse_gl_J",
         "description": "Mouse immunoglobulin J gene database",
         "organism": "mouse",
         "gene_type": "J"
       },
       "C": {
         "name": "Mouse C Genes",
-        "path": "/data/databases/mouse/C/mouse_c_genes",
+        "path": "/blast/blastdb/databases/mouse/C/mouse_c_genes",
         "description": "Mouse immunoglobulin C gene database",
         "organism": "mouse",
         "gene_type": "C"
@@ -63,14 +63,14 @@
     "rhesus": {
       "V": {
         "name": "Rhesus V Genes",
-        "path": "/data/databases/rhesus/V/rhesus_monkey_V",
+        "path": "/blast/blastdb/databases/rhesus/V/rhesus_monkey_V",
         "description": "Rhesus monkey immunoglobulin V gene database",
         "organism": "rhesus",
         "gene_type": "V"
       },
       "J": {
         "name": "Rhesus J Genes",
-        "path": "/data/databases/rhesus/J/rhesus_monkey_J",
+        "path": "/blast/blastdb/databases/rhesus/J/rhesus_monkey_J",
         "description": "Rhesus monkey immunoglobulin J gene database",
         "organism": "rhesus",
         "gene_type": "J"

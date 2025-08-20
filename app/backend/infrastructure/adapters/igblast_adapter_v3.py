@@ -170,6 +170,28 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
 
         return None
 
+    def _get_default_database_path(
+        self, organism: str, gene_type: str
+    ) -> Optional[str]:
+        """Get default database path for the organism and gene type from configuration."""
+        if not organism or not gene_type:
+            return None
+
+        try:
+            igblast_databases = self.database_metadata.get(
+                "igblast_databases", {}
+            )
+            organism_databases = igblast_databases.get(organism, {})
+            gene_databases = organism_databases.get(gene_type, {})
+
+            # Return the path if it exists
+            return gene_databases.get("path")
+        except Exception as e:
+            self._logger.error(
+                f"Error getting default database path for {organism}/{gene_type}: {e}"
+            )
+            return None
+
     def _get_auxiliary_data_path(self, organism: str) -> Optional[str]:
         """Get auxiliary data path for the organism."""
         if not organism:
@@ -262,19 +284,24 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
             # Add optional databases for nucleotide IgBLAST
             # For human organism, always provide a D database to avoid IgBLAST default database issues
             if organism == "human" and not d_db:
-                # Use default human D database if none provided
-                default_d_db = "/data/databases/human/D/airr_c_human_igh.D"
-                self._logger.info(
-                    f"No D database provided for human organism, checking default: {default_d_db}"
-                )
-                if self._validate_database_path(default_d_db):
+                # Use default human D database from configuration if none provided
+                default_d_db = self._get_default_database_path(organism, "D")
+                if default_d_db:
                     self._logger.info(
-                        f"Using default D database for human organism: {default_d_db}"
+                        f"No D database provided for human organism, checking default: {default_d_db}"
                     )
-                    command.extend(["-germline_db_D", default_d_db])
+                    if self._validate_database_path(default_d_db):
+                        self._logger.info(
+                            f"Using default D database for human organism: {default_d_db}"
+                        )
+                        command.extend(["-germline_db_D", default_d_db])
+                    else:
+                        self._logger.warning(
+                            f"Default D database {default_d_db} not found, IgBLAST may fail"
+                        )
                 else:
                     self._logger.warning(
-                        f"Default D database {default_d_db} not found, IgBLAST may fail"
+                        f"No default D database configured for organism: {organism}"
                     )
             elif d_db and self._validate_database_path(d_db):
                 self._logger.info(f"Using provided D database: {d_db}")
