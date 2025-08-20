@@ -30,6 +30,17 @@ import { IgBlastResultsDisplay } from './IgBlastResultsDisplay';
 import { api } from '../../../services/api';
 import type { DatabaseSelection, IgBlastRequest, IgBlastResponse } from '../../../types/database';
 
+// Example sequences for IgBLAST
+const EXAMPLE_SEQUENCES = {
+  'Nucleotide Heavy Chain': `gaagtgcagctggtggaaagcggcggcggcctggtgcagccgggccgcagcctgcgcctgagctgcgcggcgagcggctttacctttgatgattatgcgatgcattgggtgcgccaggcgccgggcaaaggcctggaatgggtgagcgcgattacctggaacagcggccatattgattatgcggatagcgtggaaggccgctttaccattagccgcgataacgcgaaaaacagcctgtatctgcagatgaacagcctgcgcgcggaagataccgcggtgtattattgcgcgaaagtgagctatctgagcaccgcgagcagcctggattattggggccagggcaccctggtgaccgtgagcagcgcgagcaccaaaggcccgagcgtgtttccgctggcgccgagcagcaaaagcaccagcggcggcaccgcggcgctgggctgcctggtgaaagattattttccggaaccggtgaccgtgagctggaacagcggcgcgctgaccagcggcgtgcatacctttccggcggtgctgcagagcagcggcctgtatagcctgagcagcgtggtgaccgtgccgagcagcagcctgggcacccagacctatatttgcaacgtgaaccataaaccgagcaacaccaaagtggataaaaaagtggaaccgaaaagctgcgataaaacccatacctgcccgccgtgcccggcgccggaactgctgggcggcccgagcgtgtttctgtttccgccgaaaccgaaagataccctgatgattagccgcaccccggaagtgacctgcgtggtggtggatgtgagccatgaagatccggaagtgaaatttaactggtatgtggatggcgtggaagtgcataacgcgaaaaccaaaccgcgcgaagaacagtat`,
+  
+  'Nucleotide Light Chain': `gatattcagatgacccagagcccgagcagcctgagcgcgagcgtgggcgatcgcgtgaccattacctgccgcgcgagccagggcattcgcaactatctggcgtggtatcagcagaaaccgggcaaagcgccgaaactgctgatttatgcggcgagcagcctgcagagcggcgtgccgagccgctttagcggcagcggcagcggcaccgattttaccctgaccattagcagcctgcagccggaagatgtggcgacctattattgccagcgctataaccgcgcgccgtatacctttggccagggcaccaaagtggaaattaaacgcaccgtggcggcgccgagcgtgtttatttttccgccgagcgatgaacagctgaaaagcggcaccgcgagcgtggtgtgcctgctgaacaacttttatccgcgcgaagcgaaagtgcagtggaaagtgaacgcgctgcagagcggcaacagccaggaaagcgtgaccgaacaggatagcaaagatagcacctatagcctgagcagcaccctgaccctgagcaaagcggattatgaaaaacataaagtgtatgcgtgcgaagtgacccatcagggcctgagcagcccggtgaccaaaagctttaaccgcggcgaatgc`,
+  
+  'Protein Heavy Chain': `EVQLVESGGGLVQPGRSLRLSCAASGFTFDDYAMHWVRQAPGKGLEWVSAITWNSGHIDYADSVEGRFTISRDNAKNSLYLQMNSLRAEDTAVYYCAKVSYLSTASSLDYWGQGTLVTVSSASTKGPSVFPLAPSSKSTSGGTAALGCLVKDYFPEPVTVSWNSGALTSGVHTFPAVLQSSGLYSLSSVVTVPSSSLGTQTYICNVNHKPSNTKVDKKVEPKSCDKTHTCPPCPAPELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVKFNWYVDGVEVHNAKTKPREEQYNSTYRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTISKAKGQPREPQVYTLPPSRDELTKNQVSLTCLVKGFYPSDIAVEWESNGQPENNYKTTPPVLDSDGSFFLYSKLTVDKSRWQQGNVFSCSVMHEALHNHYTQKSLSLSPGK`,
+  
+  'Protein Light Chain': `DIQMTQSPSSLSASVGDRVTITCRASQGIRNYLAWYQQKPGKAPKLLIYAASSLQSGVPSRFSGSGSGTDFTLTISSLQPEDVATYYCQRYNRAPYTFGQGTKVEIKRTVAAPSVFIFPPSDEQLKSGTASVVCLLNNFYPREAKVQWKVNALQSGNSQESVTEQDSKDSTYSLSSTLTLSKADYEKHKVYACEVTHQGLSSPVTKSFNRGEC`
+};
+
 interface IgBlastToolProps {
   onResults?: (results: IgBlastResponse) => void;
 }
@@ -137,6 +148,11 @@ export const IgBlastTool: React.FC<IgBlastToolProps> = ({ onResults }) => {
     setError(null);
   }, []);
 
+  const handleLoadExample = useCallback((exampleKey: keyof typeof EXAMPLE_SEQUENCES) => {
+    setSequence(EXAMPLE_SEQUENCES[exampleKey]);
+    setError(null);
+  }, []);
+
   const canExecute = useMemo(() => 
     sequence.trim() && databaseSelection.v_db && 
     (blastType === 'igblastn' ? databaseSelection.j_db : true) && !loading,
@@ -180,6 +196,54 @@ export const IgBlastTool: React.FC<IgBlastToolProps> = ({ onResults }) => {
                     : 'Enter protein sequence (amino acids)'
                 }
               />
+
+              {/* Example Sequences */}
+              <Box sx={{ mt: 2, mb: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Example Sequences:
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {blastType === 'igblastn' ? (
+                    <>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleLoadExample('Nucleotide Heavy Chain')}
+                        disabled={loading}
+                      >
+                        Nucleotide Heavy
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleLoadExample('Nucleotide Light Chain')}
+                        disabled={loading}
+                      >
+                        Nucleotide Light
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleLoadExample('Protein Heavy Chain')}
+                        disabled={loading}
+                      >
+                        Protein Heavy
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleLoadExample('Protein Light Chain')}
+                        disabled={loading}
+                      >
+                        Protein Light
+                      </Button>
+                    </>
+                  )}
+                </Box>
+              </Box>
 
               {/* BLAST Type Selection */}
               <FormControl fullWidth margin="normal" disabled={loading}>

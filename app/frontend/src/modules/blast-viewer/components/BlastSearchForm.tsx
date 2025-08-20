@@ -19,6 +19,17 @@ import { Search, Upload } from '@mui/icons-material';
 import api from '../../../services/api';
 import { validateSequence, getSequenceTypeFromBlastType } from '../../../utils/fastaParser';
 
+// Example sequences for BLAST
+const EXAMPLE_SEQUENCES = {
+  'Nucleotide Heavy Chain': `gaagtgcagctggtggaaagcggcggcggcctggtgcagccgggccgcagcctgcgcctgagctgcgcggcgagcggctttacctttgatgattatgcgatgcattgggtgcgccaggcgccgggcaaaggcctggaatgggtgagcgcgattacctggaacagcggccatattgattatgcggatagcgtggaaggccgctttaccattagccgcgataacgcgaaaaacagcctgtatctgcagatgaacagcctgcgcgcggaagataccgcggtgtattattgcgcgaaagtgagctatctgagcaccgcgagcagcctggattattggggccagggcaccctggtgaccgtgagcagcgcgagcaccaaaggcccgagcgtgtttccgctggcgccgagcagcaaaagcaccagcggcggcaccgcggcgctgggctgcctggtgaaagattattttccggaaccggtgaccgtgagctggaacagcggcgcgctgaccagcggcgtgcatacctttccggcggtgctgcagagcagcggcctgtatagcctgagcagcgtggtgaccgtgccgagcagcagcctgggcacccagacctatatttgcaacgtgaaccataaaccgagcaacaccaaagtggataaaaaagtggaaccgaaaagctgcgataaaacccatacctgcccgccgtgcccggcgccggaactgctgggcggcccgagcgtgtttctgtttccgccgaaaccgaaagataccctgatgattagccgcaccccggaagtgacctgcgtggtggtggatgtgagccatgaagatccggaagtgaaatttaactggtatgtggatggcgtggaagtgcataacgcgaaaaccaaaccgcgcgaagaacagtat`,
+  
+  'Nucleotide Light Chain': `gatattcagatgacccagagcccgagcagcctgagcgcgagcgtgggcgatcgcgtgaccattacctgccgcgcgagccagggcattcgcaactatctggcgtggtatcagcagaaaccgggcaaagcgccgaaactgctgatttatgcggcgagcagcctgcagagcggcgtgccgagccgctttagcggcagcggcagcggcaccgattttaccctgaccattagcagcctgcagccggaagatgtggcgacctattattgccagcgctataaccgcgcgccgtatacctttggccagggcaccaaagtggaaattaaacgcaccgtggcggcgccgagcgtgtttatttttccgccgagcgatgaacagctgaaaagcggcaccgcgagcgtggtgtgcctgctgaacaacttttatccgcgcgaagcgaaagtgcagtggaaagtgaacgcgctgcagagcggcaacagccaggaaagcgtgaccgaacaggatagcaaagatagcacctatagcctgagcagcaccctgaccctgagcaaagcggattatgaaaaacataaagtgtatgcgtgcgaagtgacccatcagggcctgagcagcccggtgaccaaaagctttaaccgcggcgaatgc`,
+  
+  'Protein Heavy Chain': `EVQLVESGGGLVQPGRSLRLSCAASGFTFDDYAMHWVRQAPGKGLEWVSAITWNSGHIDYADSVEGRFTISRDNAKNSLYLQMNSLRAEDTAVYYCAKVSYLSTASSLDYWGQGTLVTVSSASTKGPSVFPLAPSSKSTSGGTAALGCLVKDYFPEPVTVSWNSGALTSGVHTFPAVLQSSGLYSLSSVVTVPSSSLGTQTYICNVNHKPSNTKVDKKVEPKSCDKTHTCPPCPAPELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVKFNWYVDGVEVHNAKTKPREEQYNSTYRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTISKAKGQPREPQVYTLPPSRDELTKNQVSLTCLVKGFYPSDIAVEWESNGQPENNYKTTPPVLDSDGSFFLYSKLTVDKSRWQQGNVFSCSVMHEALHNHYTQKSLSLSPGK`,
+  
+  'Protein Light Chain': `DIQMTQSPSSLSASVGDRVTITCRASQGIRNYLAWYQQKPGKAPKLLIYAASSLQSGVPSRFSGSGSGTDFTLTISSLQPEDVATYYCQRYNRAPYTFGQGTKVEIKRTVAAPSVFIFPPSDEQLKSGTASVVCLLNNFYPREAKVQWKVNALQSGNSQESVTEQDSKDSTYSLSSTLTLSKADYEKHKVYACEVTHQGLSSPVTKSFNRGEC`
+};
+
 interface BlastSearchFormProps {
   databases: Record<string, unknown> | null;
   onSearch: (searchData: Record<string, unknown>) => void;
@@ -119,6 +130,11 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
     } catch (err: unknown) {
       setError(`Upload failed: ${(err as Error).message}`);
     }
+  };
+
+  const handleLoadExample = (exampleKey: keyof typeof EXAMPLE_SEQUENCES) => {
+    setSequence(EXAMPLE_SEQUENCES[exampleKey]);
+    setError(null);
   };
 
   const renderDatabaseOptions = () => {
@@ -364,6 +380,54 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
             <Typography variant="caption" color="text.secondary">
               Or paste your sequence below
             </Typography>
+          </Box>
+
+          {/* Example Sequences */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Example Sequences:
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {blastType === 'blastn' || blastType === 'blastx' ? (
+                <>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => handleLoadExample('Nucleotide Heavy Chain')}
+                    disabled={loading}
+                  >
+                    Nucleotide Heavy
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => handleLoadExample('Nucleotide Light Chain')}
+                    disabled={loading}
+                  >
+                    Nucleotide Light
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => handleLoadExample('Protein Heavy Chain')}
+                    disabled={loading}
+                  >
+                    Protein Heavy
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => handleLoadExample('Protein Light Chain')}
+                    disabled={loading}
+                  >
+                    Protein Light
+                  </Button>
+                </>
+              )}
+            </Box>
           </Box>
 
           <TextField
