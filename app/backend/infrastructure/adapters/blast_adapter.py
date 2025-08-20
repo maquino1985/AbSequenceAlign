@@ -184,6 +184,9 @@ class BlastAdapter(BaseExternalToolAdapter):
                     "soft_masking",
                     "dust",
                 ]:
+                    # Skip None values to avoid BLAST command errors
+                    if value is None:
+                        continue
                     if isinstance(value, bool):
                         if value:
                             blast_cmd += f" -{key}"

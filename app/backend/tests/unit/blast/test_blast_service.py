@@ -3,6 +3,7 @@ Unit tests for BLAST service functionality.
 Following TDD principles - tests are written before implementation.
 """
 
+import os
 from unittest.mock import Mock, patch
 
 import pytest
@@ -727,6 +728,10 @@ class TestIgBlastService:
 class TestBlastServiceReal:
     """Real service tests using actual sequences and adapters."""
 
+    @pytest.mark.skipif(
+        os.getenv("CI", "false").lower() == "true",
+        reason="Skip real BLAST service test in CI environment",
+    )
     def test_blast_service_swissprot_search_real(self):
         """Test real BLAST search against Swiss-Prot database."""
         service = BlastService()
@@ -757,6 +762,10 @@ class TestBlastServiceReal:
         assert isinstance(hit["identity"], float)
         assert hit["identity"] > 0
 
+    @pytest.mark.skipif(
+        os.getenv("CI", "false").lower() == "true",
+        reason="Skip real IgBLAST service test in CI environment",
+    )
     def test_igblast_service_protein_search_real(self):
         """Test real IgBLAST protein search."""
         service = IgBlastService()
@@ -793,6 +802,10 @@ class TestBlastServiceReal:
         assert "IGHV3-9" in hit["v_gene"]  # Should match IGHV3-9 family
         assert hit["percent_identity"] > 90.0  # Should have high identity
 
+    @pytest.mark.skipif(
+        os.getenv("CI", "false").lower() == "true",
+        reason="Skip real IgBLAST service test in CI environment",
+    )
     def test_igblast_service_nucleotide_search_real(self):
         """Test real IgBLAST nucleotide search."""
         service = IgBlastService()
@@ -846,6 +859,10 @@ class TestBlastServiceReal:
                 len(hit["cdr3_sequence"]) > 10
             )  # CDR3 should be substantial length
 
+    @pytest.mark.skipif(
+        os.getenv("CI", "false").lower() == "true",
+        reason="Skip real IgBLAST service test in CI environment",
+    )
     def test_igblast_service_reverse_translated_sequence_real(self):
         """Test IgBLAST with reverse-translated sequence."""
         service = IgBlastService()
@@ -877,6 +894,10 @@ class TestBlastServiceReal:
         # Should have reasonable identity (reverse-translated sequences may have lower identity)
         assert hit["percent_identity"] > 70.0
 
+    @pytest.mark.skipif(
+        os.getenv("CI", "false").lower() == "true",
+        reason="Skip real IgBLAST service test in CI environment",
+    )
     def test_igblast_service_enhanced_gene_assignments_real(self):
         """Test enhanced gene assignments with full Humira sequence that has complete V, D, J, CDR3 data."""
         service = IgBlastService()
@@ -934,6 +955,10 @@ class TestBlastServiceReal:
         print(f"J hit: {j_hit.get('j_gene') if j_hit else 'None'}")
         print(f"CDR3 found: {cdr3_found}")
 
+    @pytest.mark.skipif(
+        os.getenv("CI", "false").lower() == "true",
+        reason="Skip real IgBLAST service test in CI environment",
+    )
     def test_igblast_service_mouse_organism_real(self):
         """Test IgBLAST with mouse organism."""
         service = IgBlastService()
@@ -1094,6 +1119,10 @@ class TestBlastServiceReal:
             is True
         )
 
+    @pytest.mark.skipif(
+        os.getenv("CI", "false").lower() == "true",
+        reason="Skip real IgBLAST service test in CI environment",
+    )
     def test_igblast_service_with_custom_format_for_gene_assignments_real(
         self,
     ):
@@ -1150,6 +1179,10 @@ class TestBlastServiceReal:
                 assert "hits" in results
                 assert len(results["hits"]) > 0
 
+    @pytest.mark.skipif(
+        os.getenv("CI", "false").lower() == "true",
+        reason="Skip real IgBLAST service test in CI environment",
+    )
     def test_igblast_service_full_antibody_sequence_real(self):
         """Test IgBLAST with a full antibody sequence that might yield gene assignments."""
         service = IgBlastService()
