@@ -65,7 +65,7 @@ export const BlastViewerTool: React.FC = () => {
       
       console.log('BLAST Database Response:', dbResponse);
       
-      setDatabases(dbResponse.databases || {});
+      setDatabases(dbResponse.data?.databases || {});
       setOrganisms([]); // TODO: Add organisms endpoint
     } catch (err: unknown) {
       setError(`Failed to load initial data: ${(err as Error).message}`);

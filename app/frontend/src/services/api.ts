@@ -71,7 +71,7 @@ export const api = {
   },
 
   getBlastDatabases: async (): Promise<APIResponse<any>> => {
-    const response = await apiClient.get('/database/databases/blast');
+    const response = await apiClient.get('/blast/databases');
     return response.data;
   },
 

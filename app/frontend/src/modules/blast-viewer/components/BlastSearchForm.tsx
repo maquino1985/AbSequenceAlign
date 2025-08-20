@@ -35,6 +35,11 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
   const [blastType, setBlastType] = useState('blastp');
   const [evalue, setEvalue] = useState('1e-10');
   const [maxTargetSeqs, setMaxTargetSeqs] = useState('10');
+  // BLASTN-specific parameters
+  const [wordSize, setWordSize] = useState('11');
+  const [percIdentity, setPercIdentity] = useState('70');
+  const [softMasking, setSoftMasking] = useState(true);
+  const [dust, setDust] = useState(true);
   // Removed searchType state - no longer needed
 
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +86,13 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
       blast_type: blastType,
       evalue: parseFloat(evalue),
       max_target_seqs: parseInt(maxTargetSeqs),
+      // Add BLASTN-specific parameters only for BLASTN
+      ...(blastType === 'blastn' && {
+        word_size: parseInt(wordSize),
+        perc_identity: parseFloat(percIdentity),
+        soft_masking: softMasking,
+        dust: dust,
+      }),
     };
 
     onSearch(searchData);
@@ -174,6 +186,7 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
 
     // Filter databases based on BLAST type for legacy structure
     const sequenceType = getSequenceTypeFromBlastType(blastType);
+    
     if (sequenceType === 'protein') {
       // For protein BLAST types, only show protein databases
       return options.filter(option => {
@@ -277,6 +290,55 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
             helperText="Maximum number of hits to return"
           />
         </Box>
+
+        {/* BLASTN-specific Parameters */}
+        {blastType === 'blastn' && (
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <TextField
+              sx={{ flex: 1, minWidth: 150 }}
+              label="Word Size"
+              value={wordSize}
+              onChange={(e) => setWordSize(e.target.value)}
+              helperText="Word size for initial matches"
+              type="number"
+            />
+
+            <TextField
+              sx={{ flex: 1, minWidth: 150 }}
+              label="Percent Identity"
+              value={percIdentity}
+              onChange={(e) => setPercIdentity(e.target.value)}
+              helperText="Minimum percent identity threshold"
+              type="number"
+            />
+
+            <FormControl sx={{ flex: 1, minWidth: 150 }}>
+              <InputLabel id="soft-masking-label">Soft Masking</InputLabel>
+              <Select
+                labelId="soft-masking-label"
+                value={softMasking ? 'true' : 'false'}
+                label="Soft Masking"
+                onChange={(e) => setSoftMasking(e.target.value === 'true')}
+              >
+                <MenuItem value="true">Enabled</MenuItem>
+                <MenuItem value="false">Disabled</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl sx={{ flex: 1, minWidth: 150 }}>
+              <InputLabel id="dust-label">Dust Filter</InputLabel>
+              <Select
+                labelId="dust-label"
+                value={dust ? 'true' : 'false'}
+                label="Dust Filter"
+                onChange={(e) => setDust(e.target.value === 'true')}
+              >
+                <MenuItem value="true">Enabled</MenuItem>
+                <MenuItem value="false">Disabled</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        )}
 
         {/* Sequence Input */}
         <Box>
