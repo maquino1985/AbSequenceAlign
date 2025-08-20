@@ -98,7 +98,7 @@ class TestIgBlastAdapterV2:
             chain_type = self.adapter._detect_chain_type(
                 self.test_sequence, "human"
             )
-            assert chain_type == "tcr"
+            assert chain_type == "TCR"
 
     def test_detect_chain_type_unknown(self):
         """Test chain type detection for unknown gene."""

@@ -10,6 +10,9 @@ dependencies:
   - mafft
   - hmmer
   - anarci
+  - clustalo
+  - blast
+  - igblast
   # Python packages
   - biopython
   - scipy
@@ -36,6 +39,10 @@ dependencies:
   - curl
   # Additional production dependencies
   - gunicorn
+  # Database dependencies
+  - sqlalchemy
+  - alembic
+  - greenlet
   # Pip packages (not available in conda)
   - pip
   - pip:
@@ -43,3 +50,4 @@ dependencies:
       - asyncpg==0.29.0
       - psycopg2-binary==2.9.9
       - click>=8.0.0
+      - docker>=6.0.0
