@@ -22,25 +22,46 @@ jobs:
 
       # ---------- Cache Database Files ----------
       - name: Cache BLAST and IgBLAST databases
+        id: cache-databases
         uses: actions/cache@v4
         with:
           path: |
             data/blast
             data/igblast
-          key: ${{ runner.os }}-databases-${{ hashFiles('data/blast/**', 'data/igblast/**') }}
+          key: ${{ runner.os }}-databases-${{ hashFiles('data/blast/**', 'data/igblast/**') }}-${{ hashFiles('app/backend/infrastructure/adapters/blast_adapter.py', 'app/backend/config.py') }}-${{ contains(github.event.head_commit.message, '[cache-bust]') && 'bust' || 'normal' }}
           restore-keys: |
+            ${{ runner.os }}-databases-${{ hashFiles('data/blast/**', 'data/igblast/**') }}-
             ${{ runner.os }}-databases-
+
+      - name: Log database cache status
+        run: |
+          if [ "${{ steps.cache-databases.outputs.cache-hit }}" == "true" ]; then
+            echo "✅ Database cache HIT - using cached BLAST/IgBLAST databases"
+          else
+            echo "❌ Database cache MISS - downloading fresh databases"
+          fi
 
       # ---------- Backend: setup + unit/lint ----------
       - name: Cache conda environment
+        id: cache-conda
         uses: actions/cache@v4
         with:
           path: |
             ~/conda_pkgs_dir
             ${{ env.CONDA }}/envs/${{ env.BACKEND_CONDA_ENV }}
-          key: ${{ runner.os }}-conda-${{ hashFiles('environment.yml') }}
+          key: ${{ runner.os }}-conda-${{ hashFiles('environment.yml') }}-${{ hashFiles('app/backend/**/*.py') }}-${{ github.sha }}-${{ contains(github.event.head_commit.message, '[cache-bust]') && 'bust' || 'normal' }}
           restore-keys: |
+            ${{ runner.os }}-conda-${{ hashFiles('environment.yml') }}-${{ hashFiles('app/backend/**/*.py') }}-
+            ${{ runner.os }}-conda-${{ hashFiles('environment.yml') }}-
             ${{ runner.os }}-conda-
+
+      - name: Log conda cache status
+        run: |
+          if [ "${{ steps.cache-conda.outputs.cache-hit }}" == "true" ]; then
+            echo "✅ Conda cache HIT - using cached environment"
+          else
+            echo "❌ Conda cache MISS - creating fresh environment"
+          fi
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v3
@@ -125,14 +146,25 @@ jobs:
           cache-dependency-path: app/frontend/package-lock.json
 
       - name: Cache frontend dependencies
+        id: cache-frontend
         uses: actions/cache@v4
         with:
           path: |
             app/frontend/node_modules
             ~/.npm
-          key: ${{ runner.os }}-frontend-${{ hashFiles('app/frontend/package-lock.json') }}
+          key: ${{ runner.os }}-frontend-${{ hashFiles('app/frontend/package-lock.json') }}-${{ hashFiles('app/frontend/src/**/*.ts', 'app/frontend/src/**/*.tsx', 'app/frontend/src/**/*.js', 'app/frontend/src/**/*.jsx') }}-${{ github.sha }}-${{ contains(github.event.head_commit.message, '[cache-bust]') && 'bust' || 'normal' }}
           restore-keys: |
+            ${{ runner.os }}-frontend-${{ hashFiles('app/frontend/package-lock.json') }}-${{ hashFiles('app/frontend/src/**/*.ts', 'app/frontend/src/**/*.tsx', 'app/frontend/src/**/*.js', 'app/frontend/src/**/*.jsx') }}-
+            ${{ runner.os }}-frontend-${{ hashFiles('app/frontend/package-lock.json') }}-
             ${{ runner.os }}-frontend-
+
+      - name: Log frontend cache status
+        run: |
+          if [ "${{ steps.cache-frontend.outputs.cache-hit }}" == "true" ]; then
+            echo "✅ Frontend cache HIT - using cached dependencies"
+          else
+            echo "❌ Frontend cache MISS - installing fresh dependencies"
+          fi
 
       - name: Frontend install
         run: |

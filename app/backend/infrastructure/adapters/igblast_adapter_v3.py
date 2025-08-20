@@ -10,6 +10,7 @@ import json
 import logging
 import re
 import subprocess
+from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -34,7 +35,12 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
         self.tabular_parser = TabularParser()
 
     def _load_database_metadata(self) -> Dict[str, Any]:
-        """Load database metadata from JSON file."""
+        """Load database metadata from JSON file with caching."""
+        return self._load_database_metadata_cached()
+
+    @lru_cache(maxsize=1)
+    def _load_database_metadata_cached(self) -> Dict[str, Any]:
+        """Cached version of database metadata loading."""
         # Try multiple possible paths for the metadata file
         possible_paths = [
             Path(
@@ -65,6 +71,11 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
             f"Database metadata not found in any of the expected locations: {[str(p) for p in possible_paths]}"
         )
         return {"igblast_databases": {}, "blast_databases": {}}
+
+    def clear_metadata_cache(self) -> None:
+        """Clear the database metadata cache."""
+        self._load_database_metadata_cached.cache_clear()
+        self._logger.info("Database metadata cache cleared")
 
     def get_available_databases(self) -> Dict[str, Any]:
         """Return available databases organized by organism and gene type."""

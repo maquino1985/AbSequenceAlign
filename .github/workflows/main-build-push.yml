@@ -37,14 +37,24 @@ jobs:
 
       # ---------- Cache Database Files ----------
       - name: Cache BLAST and IgBLAST databases
+        id: cache-databases
         uses: actions/cache@v4
         with:
           path: |
             data/blast
             data/igblast
-          key: ${{ runner.os }}-databases-${{ hashFiles('data/blast/**', 'data/igblast/**') }}
+          key: ${{ runner.os }}-databases-${{ hashFiles('data/blast/**', 'data/igblast/**') }}-${{ hashFiles('app/backend/infrastructure/adapters/blast_adapter.py', 'app/backend/config.py') }}-${{ contains(github.event.head_commit.message, '[cache-bust]') && 'bust' || 'normal' }}
           restore-keys: |
+            ${{ runner.os }}-databases-${{ hashFiles('data/blast/**', 'data/igblast/**') }}-
             ${{ runner.os }}-databases-
+
+      - name: Log database cache status
+        run: |
+          if [ "${{ steps.cache-databases.outputs.cache-hit }}" == "true" ]; then
+            echo "✅ Database cache HIT - using cached BLAST/IgBLAST databases"
+          else
+            echo "❌ Database cache MISS - downloading fresh databases"
+          fi
 
       - name: Setup buildx
         uses: docker/setup-buildx-action@v3

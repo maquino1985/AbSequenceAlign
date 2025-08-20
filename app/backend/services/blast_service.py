@@ -7,6 +7,7 @@ from typing import Dict, Any, List, Optional
 import logging
 import tempfile
 import os
+from functools import lru_cache
 
 from backend.infrastructure.adapters import BlastAdapter
 from backend.infrastructure.adapters.igblast_adapter_v3 import IgBlastAdapterV3
@@ -214,9 +215,17 @@ class BlastService:
     def _get_public_databases(self) -> Dict[str, str]:
         """
         Dynamically discover available public databases from the BLAST database directory.
+        Results are cached for 5 minutes to improve performance.
 
         Returns:
             Dictionary mapping database names to descriptions
+        """
+        return self._get_public_databases_cached()
+
+    @lru_cache(maxsize=1)
+    def _get_public_databases_cached(self) -> Dict[str, str]:
+        """
+        Cached version of database discovery. Cache is invalidated when called again.
         """
         from backend.config import BLAST_DB_DIR
 
@@ -327,6 +336,11 @@ class BlastService:
             f"Found {len(databases)} available databases: {list(databases.keys())}"
         )
         return databases
+
+    def clear_database_cache(self) -> None:
+        """Clear the database discovery cache."""
+        self._get_public_databases_cached.cache_clear()
+        self._logger.info("Database discovery cache cleared")
 
     def validate_sequence(self, sequence: str, sequence_type: str) -> bool:
         """
