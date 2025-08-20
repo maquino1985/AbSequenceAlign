@@ -25,6 +25,7 @@ export interface IgBlastRequest {
   c_db?: string;
   blast_type: 'igblastn' | 'igblastp';
   use_airr_format: boolean;
+  domain_system?: 'imgt' | 'kabat'; // Numbering system for protein IgBLAST
 }
 
 export interface IgBlastResponse {

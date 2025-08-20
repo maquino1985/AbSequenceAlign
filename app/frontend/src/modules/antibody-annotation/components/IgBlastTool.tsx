@@ -38,6 +38,7 @@ export const IgBlastTool: React.FC<IgBlastToolProps> = ({ onResults }) => {
   const [sequence, setSequence] = useState('');
   const [blastType, setBlastType] = useState<'igblastn' | 'igblastp'>('igblastn');
   const [useAirrFormat, setUseAirrFormat] = useState(false);
+  const [domainSystem, setDomainSystem] = useState<'imgt' | 'kabat'>('imgt');
   const [databaseSelection, setDatabaseSelection] = useState<DatabaseSelection>({
     v_db: '',
     d_db: '',
@@ -112,7 +113,8 @@ export const IgBlastTool: React.FC<IgBlastToolProps> = ({ onResults }) => {
         j_db: blastType === 'igblastn' ? databaseSelection.j_db : undefined,
         c_db: blastType === 'igblastn' ? (databaseSelection.c_db || undefined) : undefined,
         blast_type: blastType,
-        use_airr_format: useAirrFormat
+        use_airr_format: useAirrFormat,
+        domain_system: blastType === 'igblastp' ? domainSystem : undefined
       };
 
       const response = await api.executeIgBlast(request);
@@ -198,6 +200,21 @@ export const IgBlastTool: React.FC<IgBlastToolProps> = ({ onResults }) => {
                   <MenuItem value="igblastp">IgBLAST Protein (igblastp)</MenuItem>
                 </Select>
               </FormControl>
+
+              {/* Numbering System Selection - Only for Protein IgBLAST */}
+              {blastType === 'igblastp' && (
+                <FormControl fullWidth margin="normal" disabled={loading}>
+                  <InputLabel>Numbering System</InputLabel>
+                  <Select
+                    value={domainSystem}
+                    onChange={(e) => setDomainSystem(e.target.value as 'imgt' | 'kabat')}
+                    label="Numbering System"
+                  >
+                    <MenuItem value="imgt">IMGT Numbering</MenuItem>
+                    <MenuItem value="kabat">Kabat Numbering</MenuItem>
+                  </Select>
+                </FormControl>
+              )}
 
               {/* AIRR Format Toggle - Only available for nucleotide IgBLAST */}
               <FormControlLabel

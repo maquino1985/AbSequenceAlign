@@ -66,6 +66,10 @@ class BlastService:
         blast_type: str = "blastp",
         evalue: float = 1e-10,
         max_target_seqs: int = 10,
+        word_size: Optional[int] = None,
+        perc_identity: Optional[float] = None,
+        soft_masking: Optional[bool] = None,
+        dust: Optional[bool] = None,
         **kwargs,
     ) -> Dict[str, Any]:
         """
@@ -97,6 +101,10 @@ class BlastService:
             blast_type=blast_type,
             evalue=evalue,
             max_target_seqs=max_target_seqs,
+            word_size=word_size,
+            perc_identity=perc_identity,
+            soft_masking=soft_masking,
+            dust=dust,
             **kwargs,
         )
 

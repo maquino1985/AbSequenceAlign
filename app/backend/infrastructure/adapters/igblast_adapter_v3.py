@@ -330,7 +330,9 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
             if use_airr_format:
                 parsed_result = self.airr_parser.parse(stdout, blast_type)
             else:
-                parsed_result = self.tabular_parser.parse(stdout, blast_type)
+                parsed_result = self.tabular_parser.parse(
+                    stdout, blast_type, clean_sequence
+                )
 
             # Add database information to result
             parsed_result["databases_used"] = {
@@ -339,6 +341,9 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
                 "J": j_db,
                 "C": c_db,
             }
+
+            # Add query sequence to result for frontend visualization
+            parsed_result["query_sequence"] = clean_sequence
 
             self._logger.debug("IgBLAST execution completed successfully")
             return parsed_result

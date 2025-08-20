@@ -20,7 +20,9 @@ class TabularParser(BaseIgBlastParser):
         super().__init__()
         self._logger = logging.getLogger(__name__)
 
-    def parse(self, output: str, blast_type: str) -> Dict[str, Any]:
+    def parse(
+        self, output: str, blast_type: str, query_sequence: str = None
+    ) -> Dict[str, Any]:
         """Parse IgBLAST tabular output (outfmt 7)."""
         result = {
             "blast_type": blast_type,
@@ -43,9 +45,19 @@ class TabularParser(BaseIgBlastParser):
                 )
                 if framework_cdr_data:
                     result["analysis_summary"].update(framework_cdr_data)
+
+                    # Extract actual sequence data if we have the query sequence
+                    if query_sequence:
+                        sequence_data = self._extract_sequence_regions(
+                            query_sequence, framework_cdr_data
+                        )
+                        result["analysis_summary"].update(sequence_data)
+
                     # Also add framework/CDR info to all hits
                     for hit in result["hits"]:
                         hit.update(framework_cdr_data)
+                        if query_sequence:
+                            hit.update(sequence_data)
 
             if line.startswith("#"):
                 # Parse header information
@@ -256,6 +268,12 @@ class TabularParser(BaseIgBlastParser):
         """Extract framework and CDR data from alignment summary section."""
         framework_cdr_data = {}
 
+        # Regex pattern to match region lines
+        # Matches: "FR1-IMGT        2       27      26      26      0       0       100"
+        #          "CDR3-IMGT (germline)    90      96      7       5       2       0       71.4"
+        #          "FR1     2       24      23      23      0       0       100"
+        pattern = r"^([A-Z]+[0-9]*(?:-[A-Z]+)?(?:\s*\([^)]+\))?)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+([\d.]+)$"
+
         # Look for region lines in the next few lines after the header
         for i in range(start_idx + 1, min(start_idx + 10, len(lines))):
             line = lines[i].strip()
@@ -268,24 +286,28 @@ class TabularParser(BaseIgBlastParser):
             if line.startswith("Total"):
                 continue
 
-            # Parse region lines like "FR1-IMGT        1       25      25      25      0       0       100"
-            # or "FR1     1       30      30      30      0       0       100"
-            parts = line.split()
-            if len(parts) >= 8:
-                region_name = parts[0]  # e.g., "FR1-IMGT" or "FR1"
+            # Try to match the regex pattern
+            match = re.match(pattern, line)
+            if match:
                 try:
-                    start_pos = int(parts[1])
-                    end_pos = int(parts[2])
-                    length = int(parts[3])
-                    matches = int(parts[4])
-                    mismatches = int(parts[5])
-                    gaps = int(parts[6])
-                    percent_identity = float(parts[7])
+                    region_name = match.group(
+                        1
+                    )  # e.g., "FR1-IMGT" or "CDR3-IMGT (germline)"
+                    start_pos = int(match.group(2))
+                    end_pos = int(match.group(3))
+                    length = int(match.group(4))
+                    matches = int(match.group(5))
+                    mismatches = int(match.group(6))
+                    gaps = int(match.group(7))
+                    percent_identity = float(match.group(8))
 
-                    # Clean region name (remove numbering system suffix)
+                    # Clean region name (remove numbering system suffix and any additional text in parentheses)
                     clean_region = region_name.split("-")[
                         0
                     ]  # "FR1-IMGT" -> "FR1"
+                    clean_region = clean_region.split("(")[
+                        0
+                    ].strip()  # "CDR3 (germline)" -> "CDR3"
 
                     # Store data for this region
                     region_data = {
@@ -300,10 +322,55 @@ class TabularParser(BaseIgBlastParser):
 
                     framework_cdr_data.update(region_data)
 
-                except (ValueError, IndexError):
-                    # Skip lines that don't match the expected format
+                except (ValueError, IndexError) as e:
+                    self._logger.warning(
+                        f"Failed to parse region line: {line}, error: {e}"
+                    )
                     continue
 
         return framework_cdr_data
+
+    def _extract_sequence_regions(
+        self, query_sequence: str, framework_cdr_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Extract actual sequence data for each framework/CDR region."""
+        sequence_data = {}
+
+        # Define the regions we're looking for
+        regions = ["fr1", "cdr1", "fr2", "cdr2", "fr3", "cdr3"]
+
+        for region in regions:
+            start_key = f"{region}_start"
+            end_key = f"{region}_end"
+
+            if (
+                start_key in framework_cdr_data
+                and end_key in framework_cdr_data
+            ):
+                start_pos = framework_cdr_data[start_key]
+                end_pos = framework_cdr_data[end_key]
+
+                # Extract sequence (IgBLAST uses 1-based coordinates)
+                if start_pos and end_pos and start_pos <= end_pos:
+                    # Convert to 0-based indexing for Python string slicing
+                    start_idx = start_pos - 1
+                    end_idx = end_pos
+
+                    if start_idx < len(query_sequence) and end_idx <= len(
+                        query_sequence
+                    ):
+                        sequence = query_sequence[start_idx:end_idx]
+                        sequence_data[f"{region}_sequence"] = sequence
+
+                        # For protein sequences, also store the amino acid sequence
+                        if len(sequence) > 0 and all(
+                            c in "ACDEFGHIKLMNPQRSTVWY" for c in sequence
+                        ):
+                            sequence_data[f"{region}_aa"] = sequence
+                        else:
+                            # For nucleotide sequences, we could translate here if needed
+                            sequence_data[f"{region}_aa"] = None
+
+        return sequence_data
 
     # Chain type extraction and subject URL utilities are in BaseIgBlastParser

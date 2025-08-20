@@ -49,6 +49,7 @@ import type { IgBlastResponse } from '../../../types/database';
 import AdvancedAIRRAnalysis from '../../blast-viewer/components/AdvancedAIRRAnalysis';
 import type { AIRRRearrangement } from '../../../types/apiV2';
 import { Link } from '@mui/material';
+import CDRFrameworkDisplay from './CDRFrameworkDisplay';
 
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(2),
@@ -477,6 +478,47 @@ export const IgBlastResultsDisplay: React.FC<IgBlastResultsDisplayProps> = ({ re
     </StyledCard>
   );
 
+  const renderCDRFramework = () => {
+    // Extract CDR and framework data from the results
+    const cdrFrameworkData = {
+      fwr1_sequence: results.result.analysis_summary?.fr1_sequence,
+      cdr1_sequence: results.result.analysis_summary?.cdr1_sequence,
+      fwr2_sequence: results.result.analysis_summary?.fr2_sequence,
+      cdr2_sequence: results.result.analysis_summary?.cdr2_sequence,
+      fwr3_sequence: results.result.analysis_summary?.fr3_sequence,
+      cdr3_sequence: results.result.analysis_summary?.cdr3_sequence,
+      fwr4_sequence: results.result.analysis_summary?.fr4_sequence,
+      cdr3_start: results.result.analysis_summary?.cdr3_start,
+      cdr3_end: results.result.analysis_summary?.cdr3_end,
+      cdr3_aa: results.result.analysis_summary?.cdr3_aa,
+      // Add additional data for enhanced display
+      fr1_start: results.result.analysis_summary?.fr1_start,
+      fr1_end: results.result.analysis_summary?.fr1_end,
+      cdr1_start: results.result.analysis_summary?.cdr1_start,
+      cdr1_end: results.result.analysis_summary?.cdr1_end,
+      fr2_start: results.result.analysis_summary?.fr2_start,
+      fr2_end: results.result.analysis_summary?.fr2_end,
+      cdr2_start: results.result.analysis_summary?.cdr2_start,
+      cdr2_end: results.result.analysis_summary?.cdr2_end,
+      fr3_start: results.result.analysis_summary?.fr3_start,
+      fr3_end: results.result.analysis_summary?.fr3_end,
+    };
+
+    // Determine sequence type based on BLAST type
+    const sequenceType = results.result.blast_type === 'igblastp' ? 'protein' : 'nucleotide';
+    
+    // Get the query sequence if available
+    const sequence = results.result.query_sequence || results.result.airr_data?.sequence;
+
+    return (
+      <CDRFrameworkDisplay
+        data={cdrFrameworkData}
+        sequence={sequence}
+        sequenceType={sequenceType}
+      />
+    );
+  };
+
   const renderDatabases = () => (
     <StyledCard>
       <CardContent>
@@ -511,13 +553,15 @@ export const IgBlastResultsDisplay: React.FC<IgBlastResultsDisplayProps> = ({ re
         <Tab label="Summary" />
         <Tab label="Hits" />
         <Tab label="AIRR Data" />
+        <Tab label="CDR/Framework" />
         <Tab label="Databases" />
       </Tabs>
 
       {activeTab === 0 && renderSummary()}
       {activeTab === 1 && renderHitsTable()}
       {activeTab === 2 && renderAIRRData()}
-      {activeTab === 3 && renderDatabases()}
+      {activeTab === 3 && renderCDRFramework()}
+      {activeTab === 4 && renderDatabases()}
     </Box>
   );
 };

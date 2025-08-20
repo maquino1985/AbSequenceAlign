@@ -5,7 +5,7 @@ in AIRR format (outfmt 19) with advanced immunological annotations.
 """
 
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from enum import Enum
 
 
@@ -144,13 +144,14 @@ class SomaticMutationAnalysis(BaseModel):
         None, description="R/S ratio"
     )
 
-    @validator("replacement_to_silent_ratio", pre=True)
-    def calculate_rs_ratio(cls, v, values):
+    @field_validator("replacement_to_silent_ratio", mode="before")
+    @classmethod
+    def calculate_rs_ratio(cls, v, info):
         """Calculate R/S ratio if not provided"""
         if v is not None:
             return v
-        silent = values.get("silent_mutations", 0)
-        replacement = values.get("replacement_mutations", 0)
+        silent = info.data.get("silent_mutations", 0)
+        replacement = info.data.get("replacement_mutations", 0)
         if silent > 0:
             return replacement / silent
         return None
@@ -289,7 +290,8 @@ class AIRRRearrangement(BaseModel):
         None, description="Full amino acid germline alignment"
     )
 
-    @validator("productive", pre=True)
+    @field_validator("productive", mode="before")
+    @classmethod
     def parse_productive(cls, v):
         """Parse productivity status from various formats"""
         if v in ["T", "True", True, "productive"]:
@@ -298,7 +300,8 @@ class AIRRRearrangement(BaseModel):
             return ProductivityStatus.UNPRODUCTIVE
         return ProductivityStatus.UNKNOWN
 
-    @validator("locus", pre=True)
+    @field_validator("locus", mode="before")
+    @classmethod
     def parse_locus(cls, v):
         """Parse locus from string"""
         if isinstance(v, str):
@@ -335,20 +338,22 @@ class AIRRAnalysisResult(BaseModel):
         default_factory=list, description="Unique D genes identified"
     )
 
-    @validator("productive_sequences", always=True)
-    def count_productive(cls, v, values):
+    @field_validator("productive_sequences", mode="after")
+    @classmethod
+    def count_productive(cls, v, info):
         """Count productive sequences"""
-        rearrangements = values.get("rearrangements", [])
+        rearrangements = info.data.get("rearrangements", [])
         return sum(
             1
             for r in rearrangements
             if r.productive == ProductivityStatus.PRODUCTIVE
         )
 
-    @validator("unique_v_genes", always=True)
-    def extract_v_genes(cls, v, values):
+    @field_validator("unique_v_genes", mode="after")
+    @classmethod
+    def extract_v_genes(cls, v, info):
         """Extract unique V genes"""
-        rearrangements = values.get("rearrangements", [])
+        rearrangements = info.data.get("rearrangements", [])
         v_genes = set()
         for r in rearrangements:
             if r.v_call:
@@ -357,10 +362,11 @@ class AIRRAnalysisResult(BaseModel):
                 v_genes.update(genes)
         return sorted(list(v_genes))
 
-    @validator("unique_j_genes", always=True)
-    def extract_j_genes(cls, v, values):
+    @field_validator("unique_j_genes", mode="after")
+    @classmethod
+    def extract_j_genes(cls, v, info):
         """Extract unique J genes"""
-        rearrangements = values.get("rearrangements", [])
+        rearrangements = info.data.get("rearrangements", [])
         j_genes = set()
         for r in rearrangements:
             if r.j_call:
@@ -368,10 +374,11 @@ class AIRRAnalysisResult(BaseModel):
                 j_genes.update(genes)
         return sorted(list(j_genes))
 
-    @validator("unique_d_genes", always=True)
-    def extract_d_genes(cls, v, values):
+    @field_validator("unique_d_genes", mode="after")
+    @classmethod
+    def extract_d_genes(cls, v, info):
         """Extract unique D genes"""
-        rearrangements = values.get("rearrangements", [])
+        rearrangements = info.data.get("rearrangements", [])
         d_genes = set()
         for r in rearrangements:
             if r.d_call:

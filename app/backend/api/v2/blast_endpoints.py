@@ -21,6 +21,11 @@ class BlastSearchRequest(BaseModel):
     blast_type: str = "blastp"
     evalue: float = 1e-10
     max_target_seqs: int = 10
+    # BLASTN-specific parameters
+    word_size: Optional[int] = None
+    perc_identity: Optional[float] = None
+    soft_masking: Optional[bool] = None
+    dust: Optional[bool] = None
 
 
 class IgBlastSearchRequest(BaseModel):
@@ -88,6 +93,10 @@ async def search_public_databases(request: BlastSearchRequest):
             blast_type=request.blast_type,
             evalue=request.evalue,
             max_target_seqs=request.max_target_seqs,
+            word_size=request.word_size,
+            perc_identity=request.perc_identity,
+            soft_masking=request.soft_masking,
+            dust=request.dust,
         )
 
         return BlastSearchResponse(
