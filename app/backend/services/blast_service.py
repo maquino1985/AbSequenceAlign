@@ -221,7 +221,8 @@ class BlastService:
             return databases
 
         # Look for protein databases (.phr, .pin, .psq files)
-        for file_path in BLAST_DB_DIR.glob("*.phr"):
+        # Scan both root directory and subdirectories for .phr files
+        for file_path in BLAST_DB_DIR.rglob("*.phr"):
             db_name = file_path.stem  # Remove .phr extension
 
             # Check if corresponding .pin and .psq files exist
@@ -246,7 +247,8 @@ class BlastService:
         # First, collect all database base names (without .00, .01 suffixes)
         nucleotide_dbs = {}
 
-        for file_path in BLAST_DB_DIR.glob("*.nhr"):
+        # Scan both root directory and subdirectories for .nhr files
+        for file_path in BLAST_DB_DIR.rglob("*.nhr"):
             db_name = file_path.stem  # Remove .nhr extension
 
             # Skip IgBLAST-specific databases
@@ -305,6 +307,7 @@ class BlastService:
                 "refseq_select_rna": "RefSeq Select RNA database",
                 "GCF_000001405.39_top_level": "Human genome (GRCh38.p13)",
                 "GCF_000001635.27_top_level": "Mouse genome (GRCm39)",
+                "euk_cdna": "Human+Mouse+Rabbit+Cyno cDNA database",
             }
 
             description = descriptions.get(

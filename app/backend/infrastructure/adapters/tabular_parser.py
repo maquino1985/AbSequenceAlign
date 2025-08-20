@@ -36,6 +36,17 @@ class TabularParser(BaseIgBlastParser):
         lines = output.strip().split("\n")
 
         for idx, line in enumerate(lines):
+            # Check for alignment summary first (before comment handling)
+            if "Alignment summary" in line:
+                framework_cdr_data = self._extract_framework_cdr_data(
+                    lines, idx
+                )
+                if framework_cdr_data:
+                    result["analysis_summary"].update(framework_cdr_data)
+                    # Also add framework/CDR info to all hits
+                    for hit in result["hits"]:
+                        hit.update(framework_cdr_data)
+
             if line.startswith("#"):
                 # Parse header information
                 if "Query:" in line:
@@ -238,5 +249,61 @@ class TabularParser(BaseIgBlastParser):
             "productive": None,
             "strand": None,
         }
+
+    def _extract_framework_cdr_data(
+        self, lines: List[str], start_idx: int
+    ) -> Dict[str, Any]:
+        """Extract framework and CDR data from alignment summary section."""
+        framework_cdr_data = {}
+
+        # Look for region lines in the next few lines after the header
+        for i in range(start_idx + 1, min(start_idx + 10, len(lines))):
+            line = lines[i].strip()
+
+            # Skip empty lines and comment lines
+            if not line or line.startswith("#"):
+                continue
+
+            # Skip the "Total" line
+            if line.startswith("Total"):
+                continue
+
+            # Parse region lines like "FR1-IMGT        1       25      25      25      0       0       100"
+            # or "FR1     1       30      30      30      0       0       100"
+            parts = line.split()
+            if len(parts) >= 8:
+                region_name = parts[0]  # e.g., "FR1-IMGT" or "FR1"
+                try:
+                    start_pos = int(parts[1])
+                    end_pos = int(parts[2])
+                    length = int(parts[3])
+                    matches = int(parts[4])
+                    mismatches = int(parts[5])
+                    gaps = int(parts[6])
+                    percent_identity = float(parts[7])
+
+                    # Clean region name (remove numbering system suffix)
+                    clean_region = region_name.split("-")[
+                        0
+                    ]  # "FR1-IMGT" -> "FR1"
+
+                    # Store data for this region
+                    region_data = {
+                        f"{clean_region.lower()}_start": start_pos,
+                        f"{clean_region.lower()}_end": end_pos,
+                        f"{clean_region.lower()}_length": length,
+                        f"{clean_region.lower()}_matches": matches,
+                        f"{clean_region.lower()}_mismatches": mismatches,
+                        f"{clean_region.lower()}_gaps": gaps,
+                        f"{clean_region.lower()}_percent_identity": percent_identity,
+                    }
+
+                    framework_cdr_data.update(region_data)
+
+                except (ValueError, IndexError):
+                    # Skip lines that don't match the expected format
+                    continue
+
+        return framework_cdr_data
 
     # Chain type extraction and subject URL utilities are in BaseIgBlastParser

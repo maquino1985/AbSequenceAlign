@@ -292,8 +292,8 @@ class TestBlastService:
                 ".psq": Mock(exists=lambda: True),
             }.get(ext, Mock(exists=lambda: False))
 
-            # Set up the glob patterns
-            mock_db_dir.glob.side_effect = lambda pattern: {
+            # Set up the rglob patterns (changed from glob to rglob)
+            mock_db_dir.rglob.side_effect = lambda pattern: {
                 "*.phr": [
                     mock_swissprot_phr,
                     mock_pdbaa_phr,
@@ -323,7 +323,7 @@ class TestBlastService:
 
         with patch("backend.config.BLAST_DB_DIR") as mock_db_dir:
             mock_db_dir.exists.return_value = True
-            mock_db_dir.glob.return_value = []
+            mock_db_dir.rglob.return_value = []
 
             databases = service._get_public_databases()
 
@@ -363,7 +363,7 @@ class TestBlastService:
                 ".nsq": Mock(exists=lambda: True),
             }.get(ext, Mock(exists=lambda: False))
 
-            mock_db_dir.glob.side_effect = lambda pattern: {
+            mock_db_dir.rglob.side_effect = lambda pattern: {
                 "*.phr": [mock_custom_phr],
                 "*.nhr": [mock_custom_nhr],
             }.get(pattern, [])
@@ -478,6 +478,157 @@ class TestIgBlastService:
         assert "hits" in results
         assert "analysis_summary" in results
         assert results["analysis_summary"]["best_v_gene"] == "IGHV1-2*02"
+
+    def test_igblast_service_analyze_antibody_sequence_with_domain_system(
+        self,
+    ):
+        """Test antibody sequence analysis with domain system parameter."""
+        # Create mock adapter
+        mock_igblast_adapter = Mock()
+
+        service = IgBlastService(igblast_adapter=mock_igblast_adapter)
+
+        # Mock the igblast adapter with framework/CDR data
+        mock_results = {
+            "hits": [
+                {
+                    "query_id": "query",
+                    "v_gene": "IGHV1-2*02",
+                    "percent_identity": 98.5,
+                    "fr1_start": 1,
+                    "fr1_end": 25,
+                    "fr1_length": 25,
+                    "fr1_matches": 25,
+                    "fr1_mismatches": 0,
+                    "fr1_gaps": 0,
+                    "fr1_percent_identity": 100.0,
+                    "cdr1_start": 26,
+                    "cdr1_end": 33,
+                    "cdr1_length": 8,
+                    "cdr1_matches": 6,
+                    "cdr1_mismatches": 2,
+                    "cdr1_gaps": 0,
+                    "cdr1_percent_identity": 75.0,
+                }
+            ],
+            "analysis_summary": {
+                "v_gene": "IGHV1-2*02",
+                "fr1_start": 1,
+                "fr1_end": 25,
+                "fr1_length": 25,
+                "fr1_matches": 25,
+                "fr1_mismatches": 0,
+                "fr1_gaps": 0,
+                "fr1_percent_identity": 100.0,
+                "cdr1_start": 26,
+                "cdr1_end": 33,
+                "cdr1_length": 8,
+                "cdr1_matches": 6,
+                "cdr1_mismatches": 2,
+                "cdr1_gaps": 0,
+                "cdr1_percent_identity": 75.0,
+            },
+        }
+
+        protein_sequence = "QVQLVQSGAEVKKPGASVKVSCKASGYTFTNYWMQWVRQAPGQGLEWMGGINPSNGGTNFNEKFKNRVTLTVDKSTSTAYMELSSLRSEDTAVYYCAR"
+
+        mock_igblast_adapter.execute.return_value = mock_results
+        mock_igblast_adapter.get_available_databases.return_value = {
+            "human": {
+                "V": {"path": "/test/human_v"},
+            }
+        }
+
+        # Test with IMGT numbering system
+        results = service.analyze_antibody_sequence(
+            query_sequence=protein_sequence,
+            organism="human",
+            blast_type="igblastp",
+            domain_system="imgt",
+        )
+
+        assert results is not None
+        assert "hits" in results
+        assert "analysis_summary" in results
+
+        # Check framework/CDR data is present
+        analysis_summary = results["analysis_summary"]
+        assert "fr1_start" in analysis_summary
+        assert "fr1_end" in analysis_summary
+        assert "fr1_percent_identity" in analysis_summary
+        assert "cdr1_start" in analysis_summary
+        assert "cdr1_end" in analysis_summary
+        assert "cdr1_percent_identity" in analysis_summary
+
+        # Verify the mock was called with domain_system parameter
+        mock_igblast_adapter.execute.assert_called_once()
+        call_args = mock_igblast_adapter.execute.call_args
+        assert call_args[1]["domain_system"] == "imgt"
+
+    def test_igblast_service_analyze_antibody_sequence_invalid_domain_system(
+        self,
+    ):
+        """Test antibody sequence analysis with invalid domain system."""
+        service = IgBlastService()
+
+        protein_sequence = "QVQLVQSGAEVKKPGASVKVSCKASGYTFTNYWMQWVRQAPGQGLEWMGGINPSNGGTNFNEKFKNRVTLTVDKSTSTAYMELSSLRSEDTAVYYCAR"
+
+        # Test with invalid domain system
+        with pytest.raises(ValueError, match="Unsupported domain system"):
+            service.analyze_antibody_sequence(
+                query_sequence=protein_sequence,
+                organism="human",
+                blast_type="igblastp",
+                domain_system="invalid_system",
+            )
+
+    def test_igblast_service_analyze_antibody_sequence_domain_system_nucleotide(
+        self,
+    ):
+        """Test that domain system parameter is ignored for nucleotide IgBLAST."""
+        # Create mock adapter
+        mock_igblast_adapter = Mock()
+
+        service = IgBlastService(igblast_adapter=mock_igblast_adapter)
+
+        # Mock the igblast adapter
+        mock_results = {
+            "hits": [
+                {
+                    "query_id": "query",
+                    "v_gene": "IGHV1-2*02",
+                    "percent_identity": 98.5,
+                }
+            ],
+            "analysis_summary": {
+                "v_gene": "IGHV1-2*02",
+            },
+        }
+
+        dna_sequence = TEST_SEQUENCES["nucleotide"]["human_antibody_vh"][
+            "sequence"
+        ]
+
+        mock_igblast_adapter.execute.return_value = mock_results
+        mock_igblast_adapter.get_available_databases.return_value = {
+            "human": {
+                "V": {"path": "/test/human_v"},
+                "D": {"path": "/test/human_d"},
+                "J": {"path": "/test/human_j"},
+            }
+        }
+
+        # Test with domain system for nucleotide (should be ignored)
+        results = service.analyze_antibody_sequence(
+            query_sequence=dna_sequence,
+            organism="human",
+            blast_type="igblastn",
+            domain_system="imgt",  # This should be ignored for nucleotide
+        )
+
+        assert results is not None
+        # The domain system parameter should not affect nucleotide results
+        assert "hits" in results
 
     def test_igblast_service_get_supported_organisms(self):
         """Test getting supported organisms."""

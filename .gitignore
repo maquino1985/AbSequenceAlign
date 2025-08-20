@@ -6,6 +6,9 @@ __pycache__/
 #cursor
 agent.yml
 .cursorrules
+.cursor/
+#taskmaster
+.taskmaster/
 
 # C extensions
 *.so

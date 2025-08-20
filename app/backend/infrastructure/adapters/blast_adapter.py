@@ -151,9 +151,13 @@ class BlastAdapter(BaseExternalToolAdapter):
                         blast_cmd += f" -{key} {value}"
 
             # Create the query file in the container and run BLAST
+            # Set BLASTDB environment variable to ensure proper database path resolution
+            # Include subdirectories for nucleotide databases
             command = [
                 "docker",
                 "exec",
+                "-e",
+                "BLASTDB=/blast/blastdb:/blast/blastdb/protein:/blast/blastdb/nucleotide:/blast/blastdb/nucleotide/human_genome:/blast/blastdb/nucleotide/mouse_genome:/blast/blastdb/nucleotide/refseq_select_rna:/blast/blastdb/nucleotide/16S_ribosomal_RNA:/blast/blastdb/euk_cdna:/blast/blastdb_custom",
                 "absequencealign-blast",
                 "bash",
                 "-c",
@@ -217,6 +221,7 @@ class BlastAdapter(BaseExternalToolAdapter):
                 "16S_ribosomal_RNA",
                 "human_genome",
                 "mouse_genome",
+                "euk_cdna",
             ]
 
             if database in protein_dbs:

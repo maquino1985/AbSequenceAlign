@@ -246,6 +246,111 @@ class TestAPIIntegration:
         if "c_gene" in hit:
             assert hit["c_gene"] is None
 
+    def test_blast_search_antibody_endpoint_protein_with_domain_system(
+        self, client
+    ):
+        """Test BLAST antibody search endpoint with domain system parameter."""
+        request_data = {
+            "query_sequence": "EVQLVESGGGLVQPGRSLRLSCAASGFTFDDYAMHWVRQAPGKGLEWVSAITWNSGHIDYADSVEGRFTISRDNAKNSLYLQMNSLRAEDTAVYYCAKVSYLSTASSLDYWGQGTLVTVSS",
+            "organism": "human",
+            "blast_type": "igblastp",
+            "evalue": 1e-10,
+            "domain_system": "imgt",
+        }
+
+        response = client.post("/blast/search/antibody", json=request_data)
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["success"] is True
+        assert "results" in result["data"]
+        assert result["data"]["results"]["blast_type"] == "igblastp"
+
+        # Check that framework/CDR data is present in analysis summary
+        analysis_summary = result["data"]["results"]["analysis_summary"]
+        framework_cdr_fields = [
+            k
+            for k in analysis_summary.keys()
+            if any(
+                region in k for region in ["fr1", "cdr1", "fr2", "cdr2", "fr3"]
+            )
+        ]
+        assert (
+            len(framework_cdr_fields) > 0
+        ), "Framework/CDR data should be present"
+
+    def test_blast_search_antibody_endpoint_protein_with_kabat_domain_system(
+        self, client
+    ):
+        """Test BLAST antibody search endpoint with Kabat domain system."""
+        request_data = {
+            "query_sequence": "EVQLVESGGGLVQPGRSLRLSCAASGFTFDDYAMHWVRQAPGKGLEWVSAITWNSGHIDYADSVEGRFTISRDNAKNSLYLQMNSLRAEDTAVYYCAKVSYLSTASSLDYWGQGTLVTVSS",
+            "organism": "human",
+            "blast_type": "igblastp",
+            "evalue": 1e-10,
+            "domain_system": "kabat",
+        }
+
+        response = client.post("/blast/search/antibody", json=request_data)
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["success"] is True
+        assert "results" in result["data"]
+
+        # Check that framework/CDR data is present with Kabat numbering
+        analysis_summary = result["data"]["results"]["analysis_summary"]
+        framework_cdr_fields = [
+            k
+            for k in analysis_summary.keys()
+            if any(
+                region in k for region in ["fr1", "cdr1", "fr2", "cdr2", "fr3"]
+            )
+        ]
+        assert (
+            len(framework_cdr_fields) > 0
+        ), "Framework/CDR data should be present with Kabat numbering"
+
+    def test_blast_search_antibody_endpoint_invalid_domain_system(
+        self, client
+    ):
+        """Test BLAST antibody search endpoint with invalid domain system."""
+        request_data = {
+            "query_sequence": "EVQLVESGGGLVQPGRSLRLSCAASGFTFDDYAMHWVRQAPGKGLEWVSAITWNSGHIDYADSVEGRFTISRDNAKNSLYLQMNSLRAEDTAVYYCAKVSYLSTASSLDYWGQGTLVTVSS",
+            "organism": "human",
+            "blast_type": "igblastp",
+            "evalue": 1e-10,
+            "domain_system": "invalid_system",
+        }
+
+        response = client.post("/blast/search/antibody", json=request_data)
+
+        # Should return an error for invalid domain system
+        assert response.status_code == 400
+        result = response.json()
+        assert "Unsupported domain system" in result["detail"]
+
+    def test_blast_search_antibody_endpoint_domain_system_nucleotide_ignored(
+        self, client
+    ):
+        """Test that domain system parameter is ignored for nucleotide IgBLAST."""
+        request_data = {
+            "query_sequence": "GAAGTGCAGCTGGTGGAAAGCGGCGGCGGCCTGGTGCAGCCGGGCCGCAGCCTGCGCCTGAGCTGCGCGGCGAGCGGCTTTACCTTTGATGATTATGCGATGCATTGGGTGCGCCAGGCGCCGGGCAAAGGCCTGGAGTGGGTGAGCGCGATTACCTGGAACAGCGGCCATATTGATTATGCGGATAGCGTGGAAGGCCGCTTTACCATTAGCCGCGATAACGCGAAAAACAGCCTGTATCTGCAGATGAACAGCCTGCGCGCGGAAGATACCGCGGTGTATTATTGCGCGAAAGTGAGCTATCTGAGCACCGCGAGCAGCCTGGATTATTGGGGCCAGGGCACCCTGGTGACCGTGAGCAGCGCGAGCACCAAAGGCCCGAGCGTGTTTCCGCTGGCGCCGAGCAGCAAAAGCACCAGCGGCGGCACCGCGGCGCTGGGCTGCCTGGTGAAAGATTATTTTCCGGAACCGGTGACCGTGAGCTGGAACAGCGCGCGCTGACCAGCGGCGTGCATACCTTTCCGGCGGTGCTGCAGAGCAGCGGCCTGTATAGCCTGAGCAGCGTGGTGACCGTGCCGAGCAGCAGCCTGGGCACCCAGACCTATATTTGCAACGTGAACCATAAACCGAGCAACACCAAAGTGGATAAAAAAGTGGAACCGAAAAGCTGCGATAAAACCCATACCTGCCCGCCGTGCCCGGCGCCGGAACTGCTGGGCGGCCCGAGCGTGTTTCTGTTTCCGCCGAAACCGAAAGATACCCTGATGATTAGCCGCACCCCGGAAGTGACCTGCGTGGTGGTGGATGTGAGCCATGAAGATCCGGAAGTGAAATTTAACTGGTATGTGGATGGTGTGGAAGTGCATAACGCGAAAACCAAACCGCGCGAAGAACAGTATAACAGCACCTATCGCGTGGTGAGCGTGCTGACCGTGCTGCATCAGGATTGGCTGAACGGCAAAGAATATAAATGCAAAGTGAGCAACAAAGCGCTGCCGGCGCCGATTGAAAAAACCATTAGCAAAGCGAAGGCCAGCCGCGCGAACCGCAGGTGTATACCCTGCCGCCGAGCCGCGATGAACTGACCAAAAACCAGGTGAGCCTGACCTGCCTGGTGAAAGGCTTTTATCCGAGCGATATTGCGGTGGAATGGGAAAGCAACGGCCAGCCGGAAAACAACTATAAAACCACCCCGCCGGTGCTGGATAGCGATGGCAGCTTTTTTCTGTATAGCAAACTGACCGTGGATAAAAGCCGCTGGCAGCAGGGCAACGTGTTTAGCTGCAGCGTGATGCATGAAGCGCTGCATAACCATTATACCCAGAAAAGCCTGAGCCTGAGCCCGGGCAAA",
+            "organism": "human",
+            "blast_type": "igblastn",
+            "evalue": 1e-10,
+            "domain_system": "imgt",  # Should be ignored for nucleotide
+        }
+
+        response = client.post("/blast/search/antibody", json=request_data)
+
+        # Should work normally (domain system ignored for nucleotide)
+        assert response.status_code == 200
+        result = response.json()
+        assert result["success"] is True
+        assert "results" in result["data"]
+        assert result["data"]["results"]["blast_type"] == "igblastn"
+
     def test_blast_endpoints_error_handling_real(self, client):
         """Test BLAST endpoints error handling with real services."""
         # Test with invalid sequence

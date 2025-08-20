@@ -127,9 +127,11 @@ def get_igblast_c_db_path(organism: str) -> Path:
 
 # BLAST Database Name Mappings
 # Maps logical database names to actual BLAST database names
+# Note: Large databases are split into multiple volumes (.00, .01, etc.)
 BLAST_DB_NAME_MAPPINGS = {
-    "human_genome": "GCF_000001405.39_top_level",
-    "mouse_genome": "GCF_000001635.27_top_level",
+    "human_genome": "GCF_000001405.39_top_level.00 GCF_000001405.39_top_level.01",
+    "mouse_genome": "GCF_000001635.27_top_level.00 GCF_000001635.27_top_level.01",
+    "euk_cdna": "euk_cdna",  # Human+Mouse+Rabbit+Cyno cDNA database
     "refseq_select_rna": "refseq_select_rna",
     "16S_ribosomal_RNA": "16S_ribosomal_RNA",
     "swissprot": "swissprot",

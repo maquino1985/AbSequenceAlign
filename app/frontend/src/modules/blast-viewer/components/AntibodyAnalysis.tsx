@@ -118,9 +118,10 @@ const AntibodyAnalysis: React.FC<AntibodyAnalysisProps> = ({
         {/* Organism Selection and BLAST Type */}
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
           <FormControl sx={{ minWidth: 200, flex: 1 }}>
-            <InputLabel>Organism</InputLabel>
+            <InputLabel id="organism-label">Organism</InputLabel>
             {organisms.length > 0 ? (
               <Select
+                labelId="organism-label"
                 value={organism}
                 label="Organism"
                 onChange={(e) => setOrganism(e.target.value)}
@@ -133,6 +134,7 @@ const AntibodyAnalysis: React.FC<AntibodyAnalysisProps> = ({
               </Select>
             ) : (
               <Select
+                labelId="organism-label"
                 value=""
                 label="Organism"
                 disabled
@@ -149,8 +151,9 @@ const AntibodyAnalysis: React.FC<AntibodyAnalysisProps> = ({
           </FormControl>
 
           <FormControl sx={{ minWidth: 200, flex: 1 }}>
-            <InputLabel>BLAST Type</InputLabel>
+            <InputLabel id="blast-type-label">BLAST Type</InputLabel>
             <Select
+              labelId="blast-type-label"
               value={blastType}
               label="BLAST Type"
               onChange={(e) => setBlastType(e.target.value)}

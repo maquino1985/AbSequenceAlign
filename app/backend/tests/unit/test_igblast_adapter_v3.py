@@ -98,6 +98,64 @@ class TestIgBlastAdapterV3:
             assert "/dev/stdin" in command
             assert "-germline_db_V" in command
             assert "human/V/test" in command
+
+    def test_build_command_with_domain_system_imgt(self):
+        """Test command building with IMGT domain system."""
+        with patch.object(
+            self.adapter, "_validate_database_path", return_value=True
+        ):
+            command = self.adapter._build_command(
+                query_sequence="QVQLVQS",
+                v_db="human/V/test",
+                blast_type="igblastp",
+                domain_system="imgt",
+            )
+
+            assert "-domain_system" in command
+            assert "imgt" in command
+
+    def test_build_command_with_domain_system_kabat(self):
+        """Test command building with Kabat domain system."""
+        with patch.object(
+            self.adapter, "_validate_database_path", return_value=True
+        ):
+            command = self.adapter._build_command(
+                query_sequence="QVQLVQS",
+                v_db="human/V/test",
+                blast_type="igblastp",
+                domain_system="kabat",
+            )
+
+            assert "-domain_system" in command
+            assert "kabat" in command
+
+    def test_build_command_invalid_domain_system(self):
+        """Test command building with invalid domain system."""
+        with patch.object(
+            self.adapter, "_validate_database_path", return_value=True
+        ):
+            with pytest.raises(ValueError, match="Unsupported domain system"):
+                self.adapter._build_command(
+                    query_sequence="QVQLVQS",
+                    v_db="human/V/test",
+                    blast_type="igblastp",
+                    domain_system="invalid",
+                )
+
+    def test_build_command_domain_system_nucleotide_ignored(self):
+        """Test that domain system is ignored for nucleotide IgBLAST."""
+        with patch.object(
+            self.adapter, "_validate_database_path", return_value=True
+        ):
+            command = self.adapter._build_command(
+                query_sequence="ACGTACGT",
+                v_db="human/V/test",
+                blast_type="igblastn",
+                domain_system="imgt",  # Should be ignored for nucleotide
+            )
+
+            # Domain system should not be in command for nucleotide
+            assert "-domain_system" not in command
             assert "-auxiliary_data" in command
 
     def test_build_command_with_all_databases(self):

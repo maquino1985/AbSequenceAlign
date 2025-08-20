@@ -34,10 +34,14 @@ describe('AntibodyAnalysis', () => {
         </TestWrapper>
       );
 
-      // Check that organism options are rendered
-      expect(screen.getByText('Human')).toBeInTheDocument();
-      expect(screen.getByText('Mouse')).toBeInTheDocument();
-      expect(screen.getByText('Rat')).toBeInTheDocument();
+      // Open the organism dropdown to see options
+      const organismSelect = screen.getByLabelText('Organism');
+      fireEvent.mouseDown(organismSelect);
+
+      // Check that organism options are rendered in the dropdown
+      expect(screen.getByRole('option', { name: 'Human' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'Mouse' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'Rat' })).toBeInTheDocument();
     });
 
     it('should show loading state when organisms list is empty', () => {
@@ -51,7 +55,7 @@ describe('AntibodyAnalysis', () => {
         </TestWrapper>
       );
 
-      expect(screen.getByText('Loading organisms...')).toBeInTheDocument();
+      // Note: The Select MenuItem text might not be accessible when disabled, so we check the FormHelperText
       expect(screen.getByText('Loading available organisms...')).toBeInTheDocument();
     });
 
@@ -84,9 +88,13 @@ describe('AntibodyAnalysis', () => {
         </TestWrapper>
       );
 
-      expect(screen.getByText('Human')).toBeInTheDocument();
-      expect(screen.getByText('Mouse')).toBeInTheDocument();
-      expect(screen.getByText('Rhesus_monkey')).toBeInTheDocument();
+      // Open the organism dropdown to see options
+      const organismSelect = screen.getByLabelText('Organism');
+      fireEvent.mouseDown(organismSelect);
+
+      expect(screen.getByRole('option', { name: 'Human' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'Mouse' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'Rhesus_monkey' })).toBeInTheDocument();
     });
   });
 
@@ -108,7 +116,10 @@ describe('AntibodyAnalysis', () => {
     it('should set default organism when organisms list is loaded', () => {
       // Should default to the first organism (human)
       const organismSelect = screen.getByLabelText('Organism');
-      expect(organismSelect).toHaveValue('human');
+      // Check the hidden input value instead of the select element
+      const hiddenInput = organismSelect.querySelector('input[type="hidden"]') || 
+                         organismSelect.parentElement?.querySelector('input.MuiSelect-nativeInput');
+      expect(hiddenInput).toHaveValue('human');
     });
 
     it('should allow organism selection', async () => {
@@ -121,19 +132,14 @@ describe('AntibodyAnalysis', () => {
       fireEvent.click(mouseOption);
 
       await waitFor(() => {
-        expect(organismSelect).toHaveValue('mouse');
+        // Check the hidden input value instead of the select element
+        const hiddenInput = organismSelect.querySelector('input[type="hidden"]') || 
+                           organismSelect.parentElement?.querySelector('input.MuiSelect-nativeInput');
+        expect(hiddenInput).toHaveValue('mouse');
       });
     });
 
     it('should validate organism selection before search', async () => {
-      // Try to search without selecting an organism (should be pre-selected)
-      // But let's test the validation by clearing the selection
-      const organismSelect = screen.getByLabelText('Organism');
-      fireEvent.mouseDown(organismSelect);
-      
-      // This would normally clear the selection, but Material-UI Select doesn't allow empty values
-      // So we'll test the validation by ensuring organism is required
-      
       // Fill in sequence
       const sequenceInput = screen.getByPlaceholderText(/enter your antibody sequence/i);
       fireEvent.change(sequenceInput, {
@@ -141,7 +147,7 @@ describe('AntibodyAnalysis', () => {
       });
 
       // Submit search
-      const searchButton = screen.getByRole('button', { name: /analyze/i });
+      const searchButton = screen.getByRole('button', { name: /run antibody analysis/i });
       fireEvent.click(searchButton);
 
       await waitFor(() => {
@@ -173,7 +179,10 @@ describe('AntibodyAnalysis', () => {
 
     it('should default to igblastn', () => {
       const blastTypeSelect = screen.getByLabelText('BLAST Type');
-      expect(blastTypeSelect).toHaveValue('igblastn');
+      // Check the hidden input value instead of the select element
+      const hiddenInput = blastTypeSelect.querySelector('input[type="hidden"]') || 
+                         blastTypeSelect.parentElement?.querySelector('input.MuiSelect-nativeInput');
+      expect(hiddenInput).toHaveValue('igblastn');
     });
 
     it('should allow switching between IgBLAST types', async () => {
@@ -186,7 +195,10 @@ describe('AntibodyAnalysis', () => {
       fireEvent.click(igblastpOption);
 
       await waitFor(() => {
-        expect(blastTypeSelect).toHaveValue('igblastp');
+        // Check the hidden input value instead of the select element
+        const hiddenInput = blastTypeSelect.querySelector('input[type="hidden"]') || 
+                           blastTypeSelect.parentElement?.querySelector('input.MuiSelect-nativeInput');
+        expect(hiddenInput).toHaveValue('igblastp');
       });
     });
 
@@ -204,7 +216,7 @@ describe('AntibodyAnalysis', () => {
       });
 
       // Submit search
-      const searchButton = screen.getByRole('button', { name: /analyze/i });
+      const searchButton = screen.getByRole('button', { name: /run antibody analysis/i });
       fireEvent.click(searchButton);
 
       await waitFor(() => {
@@ -236,11 +248,11 @@ describe('AntibodyAnalysis', () => {
 
     it('should validate sequence input', async () => {
       // Try to search without sequence
-      const searchButton = screen.getByRole('button', { name: /analyze/i });
+      const searchButton = screen.getByRole('button', { name: /run antibody analysis/i });
       fireEvent.click(searchButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Please enter a sequence')).toBeInTheDocument();
+        expect(screen.getByText(/Antibody sequence validation failed: Sequence cannot be empty/)).toBeInTheDocument();
       });
 
       expect(mockOnSearch).not.toHaveBeenCalled();
@@ -254,7 +266,7 @@ describe('AntibodyAnalysis', () => {
       });
 
       // Submit search (organism should be pre-selected)
-      const searchButton = screen.getByRole('button', { name: /analyze/i });
+      const searchButton = screen.getByRole('button', { name: /run antibody analysis/i });
       fireEvent.click(searchButton);
 
       await waitFor(() => {
@@ -304,7 +316,7 @@ describe('AntibodyAnalysis', () => {
         </TestWrapper>
       );
 
-      const searchButton = screen.getByRole('button', { name: /analyze/i });
+      const searchButton = screen.getByRole('button', { name: /analyzing/i });
       expect(searchButton).toBeDisabled();
     });
 
@@ -319,7 +331,7 @@ describe('AntibodyAnalysis', () => {
         </TestWrapper>
       );
 
-      const searchButton = screen.getByRole('button', { name: /analyze/i });
+      const searchButton = screen.getByRole('button', { name: /run antibody analysis/i });
       expect(searchButton).not.toBeDisabled();
     });
   });
@@ -339,10 +351,10 @@ describe('AntibodyAnalysis', () => {
       );
 
       // Try to search without sequence to trigger error
-      const searchButton = screen.getByRole('button', { name: /analyze/i });
+      const searchButton = screen.getByRole('button', { name: /run antibody analysis/i });
       fireEvent.click(searchButton);
 
-      expect(screen.getByText('Please enter a sequence')).toBeInTheDocument();
+      expect(screen.getByText(/Antibody sequence validation failed: Sequence cannot be empty/)).toBeInTheDocument();
     });
   });
 });

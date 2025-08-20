@@ -30,6 +30,9 @@ class IgBlastSearchRequest(BaseModel):
     organism: str  # Required for IgBLAST
     blast_type: str = "igblastn"
     evalue: float = 1e-10
+    domain_system: Optional[str] = (
+        "imgt"  # Numbering system for protein IgBLAST
+    )
 
 
 class BlastSearchResponse(BaseModel):
@@ -192,6 +195,7 @@ async def analyze_antibody_sequence(request: IgBlastSearchRequest):
             organism=request.organism,
             blast_type=request.blast_type,
             evalue=request.evalue,
+            domain_system=request.domain_system,
         )
 
         # Get additional analysis

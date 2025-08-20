@@ -33,6 +33,7 @@ class IgBlastService:
         organism: str = "human",
         blast_type: str = "igblastn",
         evalue: float = 1e-10,
+        domain_system: Optional[str] = None,
         **kwargs,
     ) -> Dict[str, Any]:
         """
@@ -43,6 +44,7 @@ class IgBlastService:
             organism: Target organism (human, mouse, rat, etc.)
             blast_type: Type of IgBLAST search (igblastn, igblastp)
             evalue: E-value threshold
+            domain_system: Numbering system for protein IgBLAST (imgt, kabat). Only applies to igblastp.
             **kwargs: Additional IgBLAST parameters
 
         Returns:
@@ -57,6 +59,13 @@ class IgBlastService:
             query_sequence, self._get_sequence_type(blast_type)
         ):
             raise ValueError("Invalid antibody sequence provided")
+
+        # Validate domain system for protein IgBLAST
+        if blast_type == "igblastp" and domain_system is not None:
+            if domain_system not in ["imgt", "kabat"]:
+                raise ValueError(
+                    f"Unsupported domain system: {domain_system}. Supported: imgt, kabat"
+                )
 
         # Execute IgBLAST analysis
         if self.igblast_adapter is None:
@@ -76,11 +85,15 @@ class IgBlastService:
         # Execute with appropriate databases
         if blast_type == "igblastp":
             # For protein IgBLAST, only use V database
+            adapter_kwargs = kwargs.copy()
+            if domain_system is not None:
+                adapter_kwargs["domain_system"] = domain_system
+
             results = self.igblast_adapter.execute(
                 query_sequence=query_sequence,
                 v_db=organism_dbs["V"]["path"],
                 blast_type=blast_type,
-                **kwargs,
+                **adapter_kwargs,
             )
         else:
             # For nucleotide IgBLAST, use V, D, J databases

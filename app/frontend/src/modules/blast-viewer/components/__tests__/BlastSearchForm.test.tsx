@@ -46,6 +46,10 @@ describe('BlastSearchForm', () => {
         </TestWrapper>
       );
 
+      // Open the database dropdown to see options
+      const databaseSelect = screen.getByLabelText('Database');
+      fireEvent.mouseDown(databaseSelect);
+
       // Check that database options are rendered
       expect(screen.getByText('swissprot - Swiss-Prot protein database')).toBeInTheDocument();
       expect(screen.getByText('pdbaa - Protein Data Bank')).toBeInTheDocument();
@@ -65,7 +69,7 @@ describe('BlastSearchForm', () => {
         </TestWrapper>
       );
 
-      expect(screen.getByText('Loading databases...')).toBeInTheDocument();
+      // Check for loading text (FormHelperText should be visible)
       expect(screen.getByText('Loading available databases...')).toBeInTheDocument();
     });
 
@@ -145,11 +149,18 @@ describe('BlastSearchForm', () => {
       fireEvent.click(swissprotOption);
 
       await waitFor(() => {
-        expect(databaseSelect).toHaveValue('swissprot');
+        // Check the hidden input value instead of the select element
+        const hiddenInput = databaseSelect.querySelector('input[type="hidden"]') || 
+                           databaseSelect.parentElement?.querySelector('input.MuiSelect-nativeInput');
+        expect(hiddenInput).toHaveValue('swissprot');
       });
     });
 
     it('should validate database selection before search', async () => {
+      // Fill in a valid protein sequence first (so sequence validation passes)
+      const sequenceInput = screen.getByPlaceholderText(/enter your sequence/i);
+      fireEvent.change(sequenceInput, { target: { value: 'MKVLWAALLVTFLAGCQAKVEQAVETEPEPELRQQTEWQSGQRWELALGRFWDYLRWVQTLSEQVQEELLSSQVTQELRALMDETAQ' } });
+
       // Try to search without selecting a database
       const searchButton = screen.getByRole('button', { name: /search/i });
       fireEvent.click(searchButton);

@@ -252,6 +252,15 @@ class IgBlastAdapterV3(BaseExternalToolAdapter):
                         f"C gene database {c_db} is invalid or too small, skipping"
                     )
 
+        # Add domain system for protein IgBLAST
+        if blast_type == "igblastp" and kwargs.get("domain_system"):
+            domain_system = kwargs["domain_system"]
+            if domain_system not in ["imgt", "kabat"]:
+                raise ValueError(
+                    f"Unsupported domain system: {domain_system}. Supported: imgt, kabat"
+                )
+            command.extend(["-domain_system", domain_system])
+
         # Add output format (at the end)
         if use_airr_format:
             command.extend(["-outfmt", "19"])  # AIRR format
