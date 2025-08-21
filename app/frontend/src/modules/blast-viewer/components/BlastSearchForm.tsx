@@ -95,7 +95,10 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
 
   // Removed searchTypes - no longer needed as we're simplifying to single database selection
 
-  const handleDatabaseChange = (event: any) => {
+  const handleDatabaseChange = (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    event: any
+  ) => {
     const value = event.target.value as string;
     setSelectedDatabase(value);
   };
@@ -182,7 +185,9 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
     
     // Handle new database structure: { protein: {...}, nucleotide: {...} }
     if (databases.protein) {
-      Object.entries(databases.protein as Record<string, any>).forEach(([key, dbInfo]) => {
+      Object.entries(databases.protein as Record<string, 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        any>).forEach(([key, dbInfo]) => {
         if (dbInfo && typeof dbInfo === 'object' && 'name' in dbInfo && 'description' in dbInfo) {
           options.push({ 
             value: dbInfo.path || key, 
@@ -193,7 +198,9 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
     }
     
     if (databases.nucleotide) {
-      Object.entries(databases.nucleotide as Record<string, any>).forEach(([key, dbInfo]) => {
+      Object.entries(databases.nucleotide as Record<string, 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        any>).forEach(([key, dbInfo]) => {
         if (dbInfo && typeof dbInfo === 'object' && 'name' in dbInfo && 'description' in dbInfo) {
           options.push({ 
             value: dbInfo.path || key, 
@@ -206,7 +213,9 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
     // Handle legacy database structure: { public: {...}, custom: {...}, internal: {...} }
     // Now showing all databases without distinction
     if (databases.public) {
-      Object.entries(databases.public as Record<string, any>).forEach(([key, value]) => {
+      Object.entries(databases.public as Record<string, 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        any>).forEach(([key, value]) => {
         if (typeof value === 'string') {
           options.push({ 
             value: key, 
@@ -216,8 +225,10 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
       });
     }
 
-    if (databases.custom) {
-      Object.entries(databases.custom as Record<string, any>).forEach(([key, value]) => {
+          if (databases.custom) {
+        Object.entries(databases.custom as Record<string, 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          any>).forEach(([key, value]) => {
         if (typeof value === 'string') {
           options.push({ 
             value: key, 
@@ -227,8 +238,10 @@ const BlastSearchForm: React.FC<BlastSearchFormProps> = ({
       });
     }
 
-    if (databases.internal) {
-      Object.entries(databases.internal as Record<string, any>).forEach(([key, value]) => {
+          if (databases.internal) {
+        Object.entries(databases.internal as Record<string, 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          any>).forEach(([key, value]) => {
         if (typeof value === 'string') {
           options.push({ 
             value: key, 

@@ -15,12 +15,8 @@ import {
   Card,
   CardContent,
   CardHeader,
-  Divider,
   Stack,
-  Tooltip,
   IconButton,
-  Alert,
-  LinearProgress,
   Link,
 } from '@mui/material';
 import {
@@ -28,14 +24,10 @@ import {
   Timeline,
   Biotech,
   Visibility,
-  Download,
   Info,
-  CheckCircle,
-  Warning,
-  Error as ErrorIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import type { BlastHit, BlastSearchResponse } from '../../../types/apiV2';
+import type { BlastHit } from '../../../types/apiV2';
 import SequenceAlignmentDisplay from './SequenceAlignmentDisplay';
 
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -49,17 +41,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-const SequenceDisplay = styled(Box)(({ theme }) => ({
-  fontFamily: 'Monaco, Consolas, "Courier New", monospace',
-  fontSize: '14px',
-  lineHeight: 1.6,
-  backgroundColor: '#FAFAFA',
-  border: '1px solid #E0E0E0',
-  borderRadius: theme.spacing(1),
-  padding: theme.spacing(2),
-  overflow: 'auto',
-  maxHeight: '300px',
-}));
+// SequenceDisplay component removed as it's not used
 
 interface AdvancedBlastAnalysisProps {
   hit: BlastHit;
@@ -81,7 +63,7 @@ const AdvancedBlastAnalysis: React.FC<AdvancedBlastAnalysisProps> = ({
     return evalue.toExponential(2);
   };
 
-  const getIdentityColor = (identity: number) => {
+  const getIdentityColor = (identity: number): 'success' | 'warning' | 'error' => {
     if (identity >= 90) return 'success';
     if (identity >= 70) return 'warning';
     return 'error';
@@ -106,16 +88,11 @@ const AdvancedBlastAnalysis: React.FC<AdvancedBlastAnalysisProps> = ({
                     </Typography>
                     <Chip 
                       label={`${hit.identity.toFixed(1)}%`}
-                      color={getIdentityColor(hit.identity) as any}
+                      color={getIdentityColor(hit.identity)}
                       size="small"
                     />
                   </Box>
-                  <LinearProgress 
-                    variant="determinate" 
-                    value={hit.identity} 
-                    color={getIdentityColor(hit.identity) as any}
-                    sx={{ height: 8, borderRadius: 4 }}
-                  />
+                  {/* LinearProgress component removed as it's not imported */}
                 </Box>
                 
                 <Box>

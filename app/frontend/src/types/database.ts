@@ -30,7 +30,9 @@ export interface IgBlastRequest {
 
 export interface IgBlastResponse {
   success: boolean;
-  result: any;
+  result: 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any;
   databases_used: DatabaseSelection;
   total_hits: number;
 }

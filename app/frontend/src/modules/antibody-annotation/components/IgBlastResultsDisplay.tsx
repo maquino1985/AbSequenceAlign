@@ -22,12 +22,10 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Divider,
   Stack,
   Tooltip,
   IconButton,
   Alert,
-  LinearProgress,
   Grid,
   Paper,
 } from '@mui/material';
@@ -35,12 +33,7 @@ import {
   Science,
   Timeline,
   Biotech,
-  Visibility,
-  Download,
   Info,
-  CheckCircle,
-  Warning,
-  Error as ErrorIcon,
   ExpandMore,
   Link as LinkIcon,
 } from '@mui/icons-material';
@@ -114,6 +107,7 @@ export const IgBlastResultsDisplay: React.FC<IgBlastResultsDisplayProps> = ({ re
     return `${value.toFixed(1)}%`;
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const convertAirrDataToRearrangement = (airrData: any): AIRRRearrangement => {
     return {
       sequence_id: airrData.sequence_id || 'query',
@@ -364,7 +358,11 @@ export const IgBlastResultsDisplay: React.FC<IgBlastResultsDisplayProps> = ({ re
                 </TableRow>
               </TableHead>
               <TableBody>
-                {results.result.hits.map((hit: any, index: number) => (
+                {results.result.hits.map((
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  hit: any, 
+                  index: number
+                ) => (
                   <TableRow key={index}>
                     <TableCell>
                       <RegionChip

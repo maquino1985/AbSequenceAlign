@@ -58,7 +58,7 @@ export const DatabaseSelector: React.FC<DatabaseSelectorProps> = React.memo(({
       };
       onChange(newSelection);
     }
-  }, [selectedOrganism, databases]); // Removed onChange from dependencies
+  }, [selectedOrganism, databases, onChange]);
 
   const handleOrganismChange = useCallback((organism: string) => {
     setSelectedOrganism(organism);

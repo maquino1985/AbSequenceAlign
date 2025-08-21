@@ -49,9 +49,15 @@ export interface MSAState {
   error: string | null;
   msaId: string | null;
   jobId: string | null;
-  jobStatus: any | null; // Will be properly typed when imported
-  msaResult: any | null; // Will be properly typed when imported
-  annotationResult: any | null; // Will be properly typed when imported
+  jobStatus: 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any | null;
+  msaResult: 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any | null;
+  annotationResult: 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any | null;
   consensus: string;
   pssmData: PSSMData | null;
   selectedRegions: string[];

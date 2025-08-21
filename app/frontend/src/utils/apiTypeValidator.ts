@@ -5,13 +5,7 @@
  * It helps identify type mismatches between backend responses and frontend expectations.
  */
 
-import type { 
-  IgBlastSearchResponse, 
-  BlastSearchResponse, 
-  IgBlastHit, 
-  BlastHit,
-  AIRRRearrangement 
-} from '../types/apiV2';
+// BlastHit and AIRRRearrangement imports removed as they're not used
 
 export interface TypeValidationResult {
   isValid: boolean;
@@ -23,7 +17,7 @@ export interface TypeValidationResult {
     field: string;
     expected: string;
     actual: string;
-    value: any;
+    value: unknown;
   }>;
 }
 
@@ -42,6 +36,7 @@ export class APITypeValidator {
   /**
    * Validate IgBLAST search response against the expected interface
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   validateIgBlastResponse(data: any): TypeValidationResult {
     const result: TypeValidationResult = {
       isValid: true,
@@ -100,6 +95,7 @@ export class APITypeValidator {
   /**
    * Validate standard BLAST search response
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   validateBlastResponse(data: any): TypeValidationResult {
     const result: TypeValidationResult = {
       isValid: true,
@@ -137,11 +133,13 @@ export class APITypeValidator {
   /**
    * Validate IgBLAST result structure
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private validateIgBlastResult(result: any, validation: TypeValidationResult) {
     this.validateRequiredFields(result, ['blast_type', 'query_info', 'hits', 'analysis_summary', 'total_hits'], validation);
 
     // Validate hits array
     if (Array.isArray(result.hits)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       result.hits.forEach((hit: any, index: number) => {
         this.validateIgBlastHit(hit, validation, `hits[${index}]`);
       });
@@ -163,11 +161,13 @@ export class APITypeValidator {
   /**
    * Validate standard BLAST result structure
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private validateBlastResult(result: any, validation: TypeValidationResult) {
     this.validateRequiredFields(result, ['blast_type', 'query_info', 'hits', 'total_hits'], validation);
 
     // Validate hits array
     if (Array.isArray(result.hits)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       result.hits.forEach((hit: any, index: number) => {
         this.validateBlastHit(hit, validation, `hits[${index}]`);
       });
@@ -179,6 +179,7 @@ export class APITypeValidator {
   /**
    * Validate IgBLAST hit structure
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private validateIgBlastHit(hit: any, validation: TypeValidationResult, prefix: string = '') {
     const requiredFields = [
       'query_id', 'subject_id', 'identity', 'alignment_length', 
@@ -191,7 +192,7 @@ export class APITypeValidator {
     // Validate antibody-specific fields
     const antibodyFields = ['v_gene', 'd_gene', 'j_gene', 'c_gene', 'cdr3_sequence', 'cdr3_start', 'cdr3_end'];
     antibodyFields.forEach(field => {
-      if (hit.hasOwnProperty(field)) {
+      if (Object.prototype.hasOwnProperty.call(hit, field)) {
         const fieldPath = prefix ? `${prefix}.${field}` : field;
         this.validateFieldType(hit[field], ['string', 'number', 'null'], fieldPath, validation);
       }
@@ -200,7 +201,7 @@ export class APITypeValidator {
     // Validate optional fields
     const optionalFields = ['productive', 'locus', 'complete_vdj', 'stop_codon', 'vj_in_frame'];
     optionalFields.forEach(field => {
-      if (hit.hasOwnProperty(field)) {
+      if (Object.prototype.hasOwnProperty.call(hit, field)) {
         const fieldPath = prefix ? `${prefix}.${field}` : field;
         this.validateFieldType(hit[field], ['boolean', 'string', 'null'], fieldPath, validation);
       }
@@ -210,6 +211,7 @@ export class APITypeValidator {
   /**
    * Validate standard BLAST hit structure
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private validateBlastHit(hit: any, validation: TypeValidationResult, prefix: string = '') {
     const requiredFields = [
       'query_id', 'subject_id', 'identity', 'alignment_length', 
@@ -223,6 +225,7 @@ export class APITypeValidator {
   /**
    * Validate analysis summary structure
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private validateAnalysisSummary(summary: any, validation: TypeValidationResult) {
     const requiredFields = ['total_hits'];
     this.validateRequiredFields(summary, requiredFields, validation, 'analysis_summary');
@@ -237,7 +240,7 @@ export class APITypeValidator {
     ];
 
     optionalFields.forEach(field => {
-      if (summary.hasOwnProperty(field)) {
+      if (Object.prototype.hasOwnProperty.call(summary, field)) {
         const fieldPath = `analysis_summary.${field}`;
         if (field.includes('_genes') && Array.isArray(summary[field])) {
           // Array of strings
@@ -258,10 +261,12 @@ export class APITypeValidator {
   /**
    * Validate AIRR result structure
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private validateAIRRResult(airrResult: any, validation: TypeValidationResult) {
     this.validateRequiredFields(airrResult, ['rearrangements'], validation, 'airr_result');
 
     if (Array.isArray(airrResult.rearrangements)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       airrResult.rearrangements.forEach((rearrangement: any, index: number) => {
         this.validateAIRRRearrangement(rearrangement, validation, `airr_result.rearrangements[${index}]`);
       });
@@ -277,6 +282,7 @@ export class APITypeValidator {
   /**
    * Validate AIRR rearrangement structure
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private validateAIRRRearrangement(rearrangement: any, validation: TypeValidationResult, prefix: string = '') {
     const requiredFields = ['sequence_id', 'sequence', 'locus'];
     this.validateRequiredFields(rearrangement, requiredFields, validation, prefix);
@@ -310,6 +316,7 @@ export class APITypeValidator {
   /**
    * Validate alignment structure
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private validateAlignment(alignment: any, validation: TypeValidationResult, prefix: string = '') {
     const requiredFields = ['start', 'end', 'sequence_alignment', 'germline_alignment', 'score', 'identity', 'cigar', 'support'];
     this.validateRequiredFields(alignment, requiredFields, validation, prefix);
@@ -322,6 +329,7 @@ export class APITypeValidator {
   /**
    * Validate junction region structure
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private validateJunctionRegion(junction: any, validation: TypeValidationResult, prefix: string = '') {
     const optionalFields = [
       'junction', 'junction_aa', 'junction_length', 'junction_aa_length',
@@ -334,6 +342,7 @@ export class APITypeValidator {
   /**
    * Validate summary structure
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private validateSummary(summary: any, validation: TypeValidationResult) {
     const requiredFields = ['total_hits', 'best_identity'];
     this.validateRequiredFields(summary, requiredFields, validation, 'summary');
@@ -350,6 +359,7 @@ export class APITypeValidator {
   /**
    * Validate gene assignments structure
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private validateGeneAssignments(assignments: any, validation: TypeValidationResult, prefix: string = '') {
     const optionalFields = ['v_gene', 'd_gene', 'j_gene', 'c_gene'];
     this.validateOptionalFields(assignments, optionalFields, validation, prefix);
@@ -358,6 +368,7 @@ export class APITypeValidator {
   /**
    * Validate CDR3 info structure
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private validateCDR3Info(cdr3Info: any, validation: TypeValidationResult, prefix: string = '') {
     const requiredFields = ['sequence', 'start', 'end'];
     this.validateRequiredFields(cdr3Info, requiredFields, validation, prefix);
@@ -366,10 +377,11 @@ export class APITypeValidator {
   /**
    * Validate required fields exist
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private validateRequiredFields(obj: any, fields: string[], validation: TypeValidationResult, prefix: string = '') {
     fields.forEach(field => {
       const fieldPath = prefix ? `${prefix}.${field}` : field;
-      if (!obj.hasOwnProperty(field)) {
+      if (!Object.prototype.hasOwnProperty.call(obj, field)) {
         validation.missingFields.push(fieldPath);
         validation.isValid = false;
       }
@@ -379,9 +391,10 @@ export class APITypeValidator {
   /**
    * Validate optional fields if they exist
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private validateOptionalFields(obj: any, fields: string[], validation: TypeValidationResult, prefix: string = '') {
     fields.forEach(field => {
-      if (obj.hasOwnProperty(field)) {
+      if (Object.prototype.hasOwnProperty.call(obj, field)) {
         const fieldPath = prefix ? `${prefix}.${field}` : field;
         // Basic type checking for optional fields
         if (obj[field] !== null && obj[field] !== undefined) {
@@ -394,7 +407,7 @@ export class APITypeValidator {
   /**
    * Validate field type
    */
-  private validateFieldType(value: any, expectedTypes: string[], fieldPath: string, validation: TypeValidationResult) {
+  private validateFieldType(value: unknown, expectedTypes: string[], fieldPath: string, validation: TypeValidationResult) {
     const actualType = this.getTypeOf(value);
     
     if (!expectedTypes.includes(actualType)) {
@@ -411,7 +424,7 @@ export class APITypeValidator {
   /**
    * Get type of value
    */
-  private getTypeOf(value: any): string {
+  private getTypeOf(value: unknown): string {
     if (value === null) return 'null';
     if (value === undefined) return 'undefined';
     if (Array.isArray(value)) return 'array';

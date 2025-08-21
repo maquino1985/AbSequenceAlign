@@ -20,8 +20,6 @@ import {
   MenuItem,
   Alert,
   CircularProgress,
-  Divider,
-  Chip,
   Grid
 } from '@mui/material';
 import { PlayArrow as PlayIcon, Refresh as RefreshIcon } from '@mui/icons-material';
@@ -140,7 +138,7 @@ export const IgBlastTool: React.FC<IgBlastToolProps> = ({ onResults }) => {
     } finally {
       setLoading(false);
     }
-  }, [validateInput, sequence, databaseSelection, blastType, useAirrFormat, onResults]);
+  }, [validateInput, sequence, databaseSelection, blastType, useAirrFormat, domainSystem, onResults]);
 
   const handleClear = useCallback(() => {
     setSequence('');

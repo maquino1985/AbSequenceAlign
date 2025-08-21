@@ -54,14 +54,7 @@ const PositionLabel = styled(Typography)(({ theme }) => ({
   paddingRight: '4px',
 }));
 
-const PositionContent = styled(Box)({
-  flex: 1,
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '1px',
-  fontSize: '10px',
-  color: '#666',
-});
+// PositionContent component removed as it's not used
 
 // New styled component for region boundary indicators
 const RegionBoundaryIndicator = styled(Box, {

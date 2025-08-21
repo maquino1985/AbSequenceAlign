@@ -15,12 +15,9 @@ import {
   Card,
   CardContent,
   CardHeader,
-  Divider,
   Stack,
-  Tooltip,
   IconButton,
   Alert,
-  LinearProgress,
   Button,
 } from '@mui/material';
 import {
@@ -28,14 +25,12 @@ import {
   Timeline,
   Biotech,
   Visibility,
-  Download,
   Info,
   CheckCircle,
-  Warning,
   Error as ErrorIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import type { AIRRRearrangement, IgBlastSearchResponse } from '../../../types/apiV2';
+import type { AIRRRearrangement } from '../../../types/apiV2';
 import SequenceAlignmentDisplay from './SequenceAlignmentDisplay';
 import CDRFrameworkDisplay from '../../antibody-annotation/components/CDRFrameworkDisplay';
 
@@ -50,17 +45,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-const SequenceDisplay = styled(Box)(({ theme }) => ({
-  fontFamily: 'Monaco, Consolas, "Courier New", monospace',
-  fontSize: '14px',
-  lineHeight: 1.6,
-  backgroundColor: '#FAFAFA',
-  border: '1px solid #E0E0E0',
-  borderRadius: theme.spacing(1),
-  padding: theme.spacing(2),
-  overflow: 'auto',
-  maxHeight: '300px',
-}));
+// SequenceDisplay component removed as it's not used
 
 const RegionChip = styled(Chip)<{ regionType: string }>(({ theme, regionType }) => {
   const colors = {

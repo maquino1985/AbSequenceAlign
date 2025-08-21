@@ -442,7 +442,9 @@ export interface AIRRAnalysisResult {
   unique_v_genes: string[];
   unique_d_genes: string[];
   unique_j_genes: string[];
-  analysis_metadata: Record<string, any>;
+  analysis_metadata: Record<string, 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any>;
 }
 
 

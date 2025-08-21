@@ -15,30 +15,16 @@ import {
   Alert,
   Stack,
   Tooltip,
-  IconButton,
   Chip,
   Grid,
 } from '@mui/material';
 import {
   Biotech,
   Visibility,
-  Science,
-  Info,
-  ExpandMore,
-  ExpandLess,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 
-const StyledCard = styled(Card)(({ theme }) => ({
-  marginBottom: theme.spacing(2),
-  borderRadius: theme.spacing(2),
-  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  '&:hover': {
-    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
-    transform: 'translateY(-2px)',
-  },
-}));
+// StyledCard component removed as it's not used
 
 const RegionChip = styled(Chip)<{ regionType: string }>(({ theme, regionType }) => {
   const colors = {
@@ -82,7 +68,7 @@ const RegionHighlight = styled(Box, {
   start: number; 
   end: number; 
   sequenceLength: number;
-}>(({ theme, regionType, start, end, sequenceLength }) => {
+}>(({ regionType, start, end, sequenceLength }) => {
   const colors = {
     FWR1: '#E3F2FD',
     CDR1: '#FFE0B2',
@@ -157,12 +143,7 @@ export const CDRFrameworkDisplay: React.FC<CDRFrameworkDisplayProps> = ({
   const [expanded, setExpanded] = useState<string | false>(false);
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
 
-  const handleAccordionChange = (panel: string) => (
-    event: React.SyntheticEvent,
-    isExpanded: boolean
-  ) => {
-    setExpanded(isExpanded ? panel : false);
-  };
+  // handleAccordionChange function removed as it's not used
 
   const regions = [
     { key: 'fwr1_sequence', aaKey: 'fwr1_aa', name: 'FWR1', label: 'Framework Region 1', type: 'FWR1' },

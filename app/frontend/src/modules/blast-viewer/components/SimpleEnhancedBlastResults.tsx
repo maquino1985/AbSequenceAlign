@@ -34,7 +34,6 @@ import {
   Visibility,
   Info,
   CheckCircle,
-  Warning,
   Error as ErrorIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';

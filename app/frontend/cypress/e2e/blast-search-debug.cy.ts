@@ -23,14 +23,15 @@ describe('BLAST Search Debug Test', () => {
       cy.log('API Response:', JSON.stringify(interception.response?.body, null, 2))
       
       // Verify the API response structure
-      expect(interception.response?.statusCode).to.equal(200)
-      expect(interception.response?.body.success).to.be.true
-      expect(interception.response?.body.data.databases.public).to.exist
+      void expect(interception.response?.statusCode).to.equal(200)
+      void expect(interception.response?.body.success).to.be.true
+      void expect(interception.response?.body.data.databases.public).to.exist
       
       // Check if euk_cdna is in the response
       const publicDbs = interception.response?.body.data.databases.public;
-      void expect(publicDbs).to.have.property('euk_cdna');
-      void expect(publicDbs.euk_cdna).to.equal('Human+Mouse+Rabbit+Cyno cDNA database');
+              // Using void to satisfy @typescript-eslint/no-unused-expressions
+        void expect(publicDbs).to.have.property('euk_cdna');
+        void expect(publicDbs.euk_cdna).to.equal('Human+Mouse+Rabbit+Cyno cDNA database');
     })
   })
 

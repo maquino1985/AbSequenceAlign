@@ -70,7 +70,9 @@ export const api = {
     return response.data;
   },
 
-  getBlastDatabases: async (): Promise<APIResponse<any>> => {
+  getBlastDatabases: async (): Promise<APIResponse<
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any>> => {
     const response = await apiClient.get('/blast/databases');
     return response.data;
   },
