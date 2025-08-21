@@ -19,6 +19,7 @@ import {
   IconButton,
   Alert,
   Button,
+  LinearProgress,
 } from '@mui/material';
 import {
   Science,
@@ -28,6 +29,7 @@ import {
   Info,
   CheckCircle,
   Error as ErrorIcon,
+  Download,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import type { AIRRRearrangement } from '../../../types/apiV2';

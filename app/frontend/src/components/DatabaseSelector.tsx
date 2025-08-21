@@ -14,7 +14,8 @@ import {
   Typography,
   Alert,
   CircularProgress,
-  Button
+  Button,
+  Chip
 } from '@mui/material';
 import { Refresh as RefreshIcon } from '@mui/icons-material';
 import { useDatabaseDiscovery } from '../hooks/useDatabaseDiscovery';

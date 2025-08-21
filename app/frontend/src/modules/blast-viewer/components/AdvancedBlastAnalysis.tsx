@@ -18,6 +18,7 @@ import {
   Stack,
   IconButton,
   Link,
+  LinearProgress,
 } from '@mui/material';
 import {
   Science,
@@ -25,6 +26,9 @@ import {
   Biotech,
   Visibility,
   Info,
+  Download,
+  CheckCircle,
+  Error as ErrorIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import type { BlastHit } from '../../../types/apiV2';

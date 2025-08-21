@@ -7,7 +7,8 @@ import api from '../../../../services/api';
 // Mock the API module
 vi.mock('../../../../services/api');
 
-const mockApi = api as jest.Mocked<typeof api>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockApi = api as any;
 
 // Create a theme for Material-UI components
 const theme = createTheme();
