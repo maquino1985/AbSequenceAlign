@@ -2,10 +2,8 @@ import React from 'react';
 import {
   Box,
   Typography,
-  Paper,
   Divider,
   Stack,
-  Chip,
   Card,
   CardContent,
   CardHeader,
@@ -74,7 +72,7 @@ const RegionBoundaryIndicator = styled(Box, {
   end: number; 
   sequenceLength: number;
   isStart: boolean;
-}>(({ theme, regionType, start, end, sequenceLength, isStart }) => {
+}>(({ regionType, start, end, sequenceLength, isStart }) => {
   const colors = {
     FWR1: '#E3F2FD',
     CDR1: '#FFE0B2',
@@ -127,7 +125,7 @@ const RegionSpanIndicator = styled(Box, {
   start: number; 
   end: number; 
   sequenceLength: number;
-}>(({ theme, regionType, start, end, sequenceLength }) => {
+}>(({ regionType, start, end, sequenceLength }) => {
   const colors = {
     FWR1: '#E3F2FD',
     CDR1: '#FFE0B2',
@@ -280,8 +278,6 @@ const SequenceAlignmentDisplay: React.FC<SequenceAlignmentDisplayProps> = ({
   regionBoundaries = [],
 }) => {
   const LINE_LENGTH = 60; // Characters per line
-  const charWidth = isAminoAcid ? 12 : 10;
-  const positionWidth = isAminoAcid ? 12 : 10;
 
   const compareSequences = (seq1: string, seq2: string) => {
     const result = [];
@@ -319,7 +315,7 @@ const SequenceAlignmentDisplay: React.FC<SequenceAlignmentDisplayProps> = ({
     return lines;
   };
 
-  const alignment = compareSequences(querySequence, subjectSequence);
+  // const alignment = compareSequences(querySequence, subjectSequence);
   const queryLines = splitIntoLines(querySequence, queryStart);
   const subjectLines = splitIntoLines(subjectSequence, subjectStart);
 

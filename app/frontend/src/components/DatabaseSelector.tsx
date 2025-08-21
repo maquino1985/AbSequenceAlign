@@ -4,7 +4,7 @@
  * Allows users to select IgBLAST databases for V, D, J, and C genes
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   FormControl,
   InputLabel,
@@ -12,14 +12,13 @@ import {
   MenuItem,
   Box,
   Typography,
-  Chip,
   Alert,
   CircularProgress,
   Button
 } from '@mui/material';
 import { Refresh as RefreshIcon } from '@mui/icons-material';
 import { useDatabaseDiscovery } from '../hooks/useDatabaseDiscovery';
-import type { DatabaseOption, DatabaseSelection } from '../types/database';
+import type { DatabaseSelection } from '../types/database';
 
 interface DatabaseSelectorProps {
   value: DatabaseSelection;
@@ -39,7 +38,6 @@ export const DatabaseSelector: React.FC<DatabaseSelectorProps> = React.memo(({
   const {
     databases,
     organisms,
-    geneTypes,
     loading,
     error,
     refreshDatabases,

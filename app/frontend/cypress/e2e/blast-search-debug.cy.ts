@@ -28,9 +28,9 @@ describe('BLAST Search Debug Test', () => {
       expect(interception.response?.body.data.databases.public).to.exist
       
       // Check if euk_cdna is in the response
-      const publicDbs = interception.response?.body.data.databases.public
-      expect(publicDbs).to.have.property('euk_cdna')
-      expect(publicDbs.euk_cdna).to.equal('Human+Mouse+Rabbit+Cyno cDNA database')
+      const publicDbs = interception.response?.body.data.databases.public;
+      void expect(publicDbs).to.have.property('euk_cdna');
+      void expect(publicDbs.euk_cdna).to.equal('Human+Mouse+Rabbit+Cyno cDNA database');
     })
   })
 

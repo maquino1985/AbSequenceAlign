@@ -32,7 +32,6 @@ import {
   Timeline,
   Science,
   Visibility,
-  Download,
   Info,
   CheckCircle,
   Warning,
@@ -43,8 +42,7 @@ import type {
   BlastSearchResponse, 
   IgBlastSearchResponse, 
   IgBlastHit,
-  BlastHit,
-  AIRRRearrangement
+  BlastHit
 } from '../../../types/apiV2';
 import AdvancedBlastAnalysis from './AdvancedBlastAnalysis';
 import AdvancedAIRRAnalysis from './AdvancedAIRRAnalysis';
@@ -117,7 +115,7 @@ const SimpleEnhancedBlastResults: React.FC<SimpleEnhancedBlastResultsProps> = ({
   searchType 
 }) => {
   const [expanded, setExpanded] = useState<string | false>('summary');
-  const [selectedHit, setSelectedHit] = useState<number | null>(null);
+  // const [selectedHit, setSelectedHit] = useState<number | null>(null);
   const [advancedAnalysisOpen, setAdvancedAnalysisOpen] = useState(false);
   const [selectedHitForAnalysis, setSelectedHitForAnalysis] = useState<number | null>(null);
 

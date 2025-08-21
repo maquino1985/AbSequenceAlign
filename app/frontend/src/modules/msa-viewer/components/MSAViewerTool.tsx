@@ -124,7 +124,7 @@ export const MSAViewerTool: React.FC = () => {
     if (!msaState.jobId) return;
 
     let pollCount = 0;
-    const maxPolls = 150; // Maximum 5 minutes of polling (150 * 2s)
+    // const maxPolls = 150; // Maximum 5 minutes of polling (150 * 2s)
 
     const pollJobStatus = async () => {
       try {

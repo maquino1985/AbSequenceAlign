@@ -7,7 +7,7 @@ import api from '../../../../services/api';
 // Mock the API module
 vi.mock('../../../../services/api');
 
-const mockApi = api as any;
+const mockApi = api as jest.Mocked<typeof api>;
 
 // Create a theme for Material-UI components
 const theme = createTheme();
@@ -38,7 +38,7 @@ describe('BlastViewerTool', () => {
         }
       };
 
-      const mockOrganisms = ['human', 'mouse'];
+      // mockOrganisms is not used in this test
 
       mockApi.getBlastDatabases.mockResolvedValue({
         success: true,
