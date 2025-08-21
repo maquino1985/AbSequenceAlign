@@ -12,6 +12,7 @@
     "type-check": "tsc -b --noEmit",
     "preview": "vite preview",
     "test": "vitest",
+    "test:ci": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "cypress:open": "cypress open",
