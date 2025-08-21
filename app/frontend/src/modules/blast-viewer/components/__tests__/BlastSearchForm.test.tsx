@@ -187,7 +187,11 @@ describe('BlastSearchForm', () => {
           databases: ['swissprot'],
           blast_type: 'blastp',
           evalue: 1e-10,
-          max_target_seqs: 10
+          max_target_seqs: 10,
+          matrix: 'BLOSUM62',
+          gapopen: 11,
+          gapextend: 1,
+          soft_masking: true
         });
       });
     });
@@ -242,7 +246,11 @@ describe('BlastSearchForm', () => {
           databases: ['swissprot'],
           blast_type: 'blastp',
           evalue: 1e-10,
-          max_target_seqs: 10
+          max_target_seqs: 10,
+          matrix: 'BLOSUM62',
+          gapopen: 11,
+          gapextend: 1,
+          soft_masking: true
         });
       });
     });

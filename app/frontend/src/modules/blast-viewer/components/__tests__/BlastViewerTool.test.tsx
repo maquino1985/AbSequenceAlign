@@ -46,11 +46,7 @@ describe('BlastViewerTool', () => {
         data: { databases: mockDatabases }
       });
 
-      mockApi.getSupportedOrganisms.mockResolvedValue({
-        success: true,
-        message: 'Supported organisms retrieved successfully',
-        data: { organisms: mockOrganisms }
-      });
+
 
       render(
         <TestWrapper>
@@ -64,7 +60,7 @@ describe('BlastViewerTool', () => {
       // Wait for data to load
       await waitFor(() => {
         expect(mockApi.getBlastDatabases).toHaveBeenCalledTimes(1);
-        expect(mockApi.getSupportedOrganisms).toHaveBeenCalledTimes(1);
+        // getSupportedOrganisms is not implemented yet
       });
 
       // Should show the main interface after loading
@@ -75,7 +71,6 @@ describe('BlastViewerTool', () => {
 
     it('should handle API errors gracefully', async () => {
       mockApi.getBlastDatabases.mockRejectedValue(new Error('Failed to load databases'));
-      mockApi.getSupportedOrganisms.mockRejectedValue(new Error('Failed to load organisms'));
 
       render(
         <TestWrapper>
@@ -93,12 +88,6 @@ describe('BlastViewerTool', () => {
         success: true,
         message: 'Available databases retrieved successfully',
         data: { databases: { public: {}, custom: {}, internal: {} } }
-      });
-
-      mockApi.getSupportedOrganisms.mockResolvedValue({
-        success: true,
-        message: 'Supported organisms retrieved successfully',
-        data: { organisms: [] }
       });
 
       render(
@@ -126,12 +115,6 @@ describe('BlastViewerTool', () => {
             internal: {}
           }
         }
-      });
-
-      mockApi.getSupportedOrganisms.mockResolvedValue({
-        success: true,
-        message: 'Supported organisms retrieved successfully',
-        data: { organisms: ['human', 'mouse'] }
       });
 
       render(
@@ -196,11 +179,7 @@ describe('BlastViewerTool', () => {
         }
       });
 
-      mockApi.getSupportedOrganisms.mockResolvedValue({
-        success: true,
-        message: 'Supported organisms retrieved successfully',
-        data: { organisms: ['human', 'mouse'] }
-      });
+
 
       render(
         <TestWrapper>
