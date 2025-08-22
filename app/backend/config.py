@@ -25,6 +25,12 @@ ISOTYPE_HMM_DIR = os.getenv(
 # Environment
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
+# CI Environment Detection
+IS_CI = (
+    os.getenv("CI", "false").lower() == "true"
+    or os.getenv("GITHUB_ACTIONS", "false").lower() == "true"
+)
+
 # Database Configuration
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = int(os.getenv("DB_PORT", "5433"))
@@ -42,4 +48,103 @@ DB_POOL_RECYCLE = int(os.getenv("DB_POOL_RECYCLE", "3600"))
 DB_ECHO = os.getenv("DB_ECHO", "true").lower() == "true"
 DB_ECHO_POOL = os.getenv("DB_ECHO_POOL", "false").lower() == "true"
 
-# Add other config constants as needed
+from pathlib import Path
+
+# BLAST and IgBLAST Configuration
+BLAST_DB_DIR = Path(os.getenv("BLAST_DB_DIR", os.path.join(DATA_DIR, "blast")))
+IGBLAST_DB_DIR = Path(
+    os.getenv("IGBLAST_DB_DIR", os.path.join(DATA_DIR, "igblast"))
+)
+IGBLAST_INTERNAL_DATA_DIR = Path(
+    os.getenv(
+        "IGBLAST_INTERNAL_DATA_DIR",
+        os.path.join(IGBLAST_DB_DIR, "internal_data"),
+    )
+)
+IGBLAST_OPTIONAL_FILE_DIR = Path(
+    os.getenv(
+        "IGBLAST_OPTIONAL_FILE_DIR",
+        os.path.join(IGBLAST_DB_DIR, "optional_file"),
+    )
+)
+
+# IgBLAST Database Paths
+IGBLAST_HUMAN_V_DB = Path(
+    os.getenv(
+        "IGBLAST_HUMAN_V_DB",
+        os.path.join(IGBLAST_INTERNAL_DATA_DIR, "human", "airr_c_human_ig.V"),
+    )
+)
+IGBLAST_HUMAN_D_DB = Path(
+    os.getenv(
+        "IGBLAST_HUMAN_D_DB",
+        os.path.join(IGBLAST_INTERNAL_DATA_DIR, "human", "airr_c_human_igh.D"),
+    )
+)
+IGBLAST_HUMAN_J_DB = Path(
+    os.getenv(
+        "IGBLAST_HUMAN_J_DB",
+        os.path.join(IGBLAST_INTERNAL_DATA_DIR, "human", "airr_c_human_ig.J"),
+    )
+)
+IGBLAST_HUMAN_C_DB = Path(
+    os.getenv(
+        "IGBLAST_HUMAN_C_DB",
+        os.path.join(IGBLAST_INTERNAL_DATA_DIR, "ncbi_human_c_genes"),
+    )
+)
+
+
+# Generic IgBLAST database path patterns
+def get_igblast_v_db_path(organism: str) -> Path:
+    """Get V gene database path for organism"""
+    if organism == "human":
+        return IGBLAST_HUMAN_V_DB
+    # For mouse and other organisms, use the gl_ prefix pattern
+    return IGBLAST_INTERNAL_DATA_DIR / organism / f"{organism}_gl_V"
+
+
+def get_igblast_d_db_path(organism: str) -> Path:
+    """Get D gene database path for organism"""
+    if organism == "human":
+        return IGBLAST_HUMAN_D_DB
+    # For mouse and other organisms, use the gl_ prefix pattern
+    return IGBLAST_INTERNAL_DATA_DIR / organism / f"{organism}_gl_D"
+
+
+def get_igblast_j_db_path(organism: str) -> Path:
+    """Get J gene database path for organism"""
+    if organism == "human":
+        return IGBLAST_HUMAN_J_DB
+    # For mouse and other organisms, use the gl_ prefix pattern
+    return IGBLAST_INTERNAL_DATA_DIR / organism / f"{organism}_gl_J"
+
+
+def get_igblast_c_db_path(organism: str) -> Path:
+    """Get C gene database path for organism"""
+    if organism == "human":
+        return IGBLAST_HUMAN_C_DB
+    elif organism == "mouse":
+        # Use the newly created mouse C gene database
+        return IGBLAST_INTERNAL_DATA_DIR / "mouse_c_genes"
+    # For other organisms, use the gl_ prefix pattern
+    return IGBLAST_INTERNAL_DATA_DIR / f"ncbi_{organism}_c_genes"
+
+
+# BLAST Database Name Mappings
+# Maps logical database names to actual BLAST database names
+# Note: Large databases are split into multiple volumes (.00, .01, etc.)
+BLAST_DB_NAME_MAPPINGS = {
+    "human_genome": "GCF_000001405.39_top_level.00 GCF_000001405.39_top_level.01",
+    "mouse_genome": "GCF_000001635.27_top_level.00 GCF_000001635.27_top_level.01",
+    "euk_cdna": "euk_cdna",  # Human+Mouse+Rabbit+Cyno cDNA database
+    "refseq_select_rna": "refseq_select_rna",
+    "16S_ribosomal_RNA": "16S_ribosomal_RNA",
+    "swissprot": "swissprot",
+    "pdb": "pdb",
+}
+
+
+def get_blast_db_name(logical_name: str) -> str:
+    """Get the actual BLAST database name from logical name"""
+    return BLAST_DB_NAME_MAPPINGS.get(logical_name, logical_name)

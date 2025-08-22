@@ -11,6 +11,8 @@ dependencies:
   - hmmer
   - anarci
   - clustalo
+  - blast
+  - igblast
   # Python packages
   - biopython
   - scipy
@@ -47,3 +49,4 @@ dependencies:
       - asyncpg==0.29.0
       - psycopg2-binary==2.9.9
       - click>=8.0.0
+      - docker>=6.0.0

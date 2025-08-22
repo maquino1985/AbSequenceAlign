@@ -1,0 +1,350 @@
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import BlastSearchForm from '../BlastSearchForm';
+
+// Create a theme for Material-UI components
+const theme = createTheme();
+
+// Wrapper component to provide theme context
+const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <ThemeProvider theme={theme}>
+    {children}
+  </ThemeProvider>
+);
+
+describe('BlastSearchForm', () => {
+  const mockOnSearch = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('Dynamic Database Rendering', () => {
+    it('should render database options from dynamic data', () => {
+      const mockDatabases = {
+        public: {
+          swissprot: 'Swiss-Prot protein database',
+          pdbaa: 'Protein Data Bank'
+        },
+        custom: {},
+        internal: {}
+      };
+
+      render(
+        <TestWrapper>
+          <BlastSearchForm
+            databases={mockDatabases}
+            onSearch={mockOnSearch}
+            loading={false}
+          />
+        </TestWrapper>
+      );
+
+      // Open the database dropdown to see options
+      const databaseSelect = screen.getByLabelText('Database');
+      fireEvent.mouseDown(databaseSelect);
+
+      // Check that database options are rendered (only protein databases for blastp)
+      expect(screen.getByText('swissprot - Swiss-Prot protein database')).toBeInTheDocument();
+      expect(screen.getByText('pdbaa - Protein Data Bank')).toBeInTheDocument();
+    });
+
+    it('should show loading state when databases are null', () => {
+      render(
+        <TestWrapper>
+          <BlastSearchForm
+            databases={null}
+            onSearch={mockOnSearch}
+            loading={false}
+          />
+        </TestWrapper>
+      );
+
+      // Check for loading text (FormHelperText should be visible)
+      expect(screen.getByText('Loading available databases...')).toBeInTheDocument();
+    });
+
+    it('should show empty state when no databases are available', () => {
+      const emptyDatabases = {
+        public: {},
+        custom: {},
+        internal: {}
+      };
+
+      render(
+        <TestWrapper>
+          <BlastSearchForm
+            databases={emptyDatabases}
+            onSearch={mockOnSearch}
+            loading={false}
+          />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText('No databases available')).toBeInTheDocument();
+    });
+
+    it('should show database count in helper text', () => {
+      const mockDatabases = {
+        public: {
+          swissprot: 'Swiss-Prot protein database',
+          pdbaa: 'Protein Data Bank'
+        },
+        custom: {},
+        internal: {}
+      };
+
+      render(
+        <TestWrapper>
+          <BlastSearchForm
+            databases={mockDatabases}
+            onSearch={mockOnSearch}
+            loading={false}
+          />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText('Select a database to search against (2 available)')).toBeInTheDocument();
+    });
+  });
+
+  describe('Single Select Database Functionality', () => {
+    const mockDatabases = {
+      public: {
+        swissprot: 'Swiss-Prot protein database',
+        pdbaa: 'Protein Data Bank'
+      },
+      custom: {},
+      internal: {}
+    };
+
+    beforeEach(() => {
+      render(
+        <TestWrapper>
+          <BlastSearchForm
+            databases={mockDatabases}
+            onSearch={mockOnSearch}
+            loading={false}
+          />
+        </TestWrapper>
+      );
+    });
+
+    it('should allow single database selection', async () => {
+      // Open the database dropdown
+      const databaseSelect = screen.getByLabelText('Database');
+      fireEvent.mouseDown(databaseSelect);
+
+      // Select swissprot
+      const swissprotOption = screen.getByText('swissprot - Swiss-Prot protein database');
+      fireEvent.click(swissprotOption);
+
+      await waitFor(() => {
+        // Check the hidden input value instead of the select element
+        const hiddenInput = databaseSelect.querySelector('input[type="hidden"]') || 
+                           databaseSelect.parentElement?.querySelector('input.MuiSelect-nativeInput');
+        expect(hiddenInput).toHaveValue('swissprot');
+      });
+    });
+
+    it('should validate database selection before search', async () => {
+      // Fill in a valid protein sequence first (so sequence validation passes)
+      const sequenceInput = screen.getByPlaceholderText(/enter your sequence/i);
+      fireEvent.change(sequenceInput, { target: { value: 'MKVLWAALLVTFLAGCQAKVEQAVETEPEPELRQQTEWQSGQRWELALGRFWDYLRWVQTLSEQVQEELLSSQVTQELRALMDETAQ' } });
+
+      // Try to search without selecting a database
+      const searchButton = screen.getByRole('button', { name: /search/i });
+      fireEvent.click(searchButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Please select a database')).toBeInTheDocument();
+      });
+
+      expect(mockOnSearch).not.toHaveBeenCalled();
+    });
+
+    it('should call onSearch with selected database', async () => {
+      // Select a database
+      const databaseSelect = screen.getByLabelText('Database');
+      fireEvent.mouseDown(databaseSelect);
+      const swissprotOption = screen.getByText('swissprot - Swiss-Prot protein database');
+      fireEvent.click(swissprotOption);
+
+      // Fill in sequence
+      const sequenceInput = screen.getByPlaceholderText(/enter your sequence/i);
+      fireEvent.change(sequenceInput, {
+        target: { value: 'DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK' }
+      });
+
+      // Submit search
+      const searchButton = screen.getByRole('button', { name: /search/i });
+      fireEvent.click(searchButton);
+
+      await waitFor(() => {
+        expect(mockOnSearch).toHaveBeenCalledWith({
+          query_sequence: 'DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK',
+          databases: ['swissprot'],
+          blast_type: 'blastp',
+          evalue: 1e-10,
+          max_target_seqs: 10,
+          matrix: 'BLOSUM62',
+          gapopen: 11,
+          gapextend: 1,
+          soft_masking: true
+        });
+      });
+    });
+  });
+
+  describe('Search Type Functionality', () => {
+    const mockDatabases = {
+      public: {
+        swissprot: 'Swiss-Prot protein database'
+      },
+      custom: {},
+      internal: {}
+    };
+
+    beforeEach(() => {
+      render(
+        <TestWrapper>
+          <BlastSearchForm
+            databases={mockDatabases}
+            onSearch={mockOnSearch}
+            loading={false}
+          />
+        </TestWrapper>
+      );
+    });
+
+    it('should always show database selector', () => {
+      // Database selector should always be visible after removing search type distinction
+      expect(screen.getByLabelText('Database')).toBeInTheDocument();
+    });
+
+    it('should call onSearch without search type', async () => {
+      // Fill in sequence
+      const sequenceInput = screen.getByPlaceholderText(/enter your sequence/i);
+      fireEvent.change(sequenceInput, {
+        target: { value: 'DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK' }
+      });
+
+      // Select a database
+      const databaseSelect = screen.getByLabelText('Database');
+      fireEvent.mouseDown(databaseSelect);
+      const swissprotOption = screen.getByText('swissprot - Swiss-Prot protein database');
+      fireEvent.click(swissprotOption);
+
+      // Submit search
+      const searchButton = screen.getByRole('button', { name: /search/i });
+      fireEvent.click(searchButton);
+
+      await waitFor(() => {
+        expect(mockOnSearch).toHaveBeenCalledWith({
+          query_sequence: 'DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK',
+          databases: ['swissprot'],
+          blast_type: 'blastp',
+          evalue: 1e-10,
+          max_target_seqs: 10,
+          matrix: 'BLOSUM62',
+          gapopen: 11,
+          gapextend: 1,
+          soft_masking: true
+        });
+      });
+    });
+  });
+
+  describe('Form Validation', () => {
+    const mockDatabases = {
+      public: {
+        swissprot: 'Swiss-Prot protein database'
+      },
+      custom: {},
+      internal: {}
+    };
+
+    beforeEach(() => {
+      render(
+        <TestWrapper>
+          <BlastSearchForm
+            databases={mockDatabases}
+            onSearch={mockOnSearch}
+            loading={false}
+          />
+        </TestWrapper>
+      );
+    });
+
+    it('should validate sequence input', async () => {
+      // Try to search without sequence
+      const searchButton = screen.getByRole('button', { name: /search/i });
+      fireEvent.click(searchButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Please enter a sequence')).toBeInTheDocument();
+      });
+
+      expect(mockOnSearch).not.toHaveBeenCalled();
+    });
+
+    it('should validate database selection', async () => {
+      // Fill in sequence but don't select database
+      const sequenceInput = screen.getByPlaceholderText(/enter your sequence/i);
+      fireEvent.change(sequenceInput, {
+        target: { value: 'DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK' }
+      });
+
+      // Submit search
+      const searchButton = screen.getByRole('button', { name: /search/i });
+      fireEvent.click(searchButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Please select a database')).toBeInTheDocument();
+      });
+
+      expect(mockOnSearch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Loading State', () => {
+    const mockDatabases = {
+      public: {
+        swissprot: 'Swiss-Prot protein database'
+      },
+      custom: {},
+      internal: {}
+    };
+
+    it('should show loading state when loading is true', () => {
+      render(
+        <TestWrapper>
+          <BlastSearchForm
+            databases={mockDatabases}
+            onSearch={mockOnSearch}
+            loading={true}
+          />
+        </TestWrapper>
+      );
+
+      const searchButton = screen.getByRole('button', { name: /search/i });
+      expect(searchButton).toBeDisabled();
+    });
+
+    it('should enable search button when loading is false', () => {
+      render(
+        <TestWrapper>
+          <BlastSearchForm
+            databases={mockDatabases}
+            onSearch={mockOnSearch}
+            loading={false}
+          />
+        </TestWrapper>
+      );
+
+      const searchButton = screen.getByRole('button', { name: /search/i });
+      expect(searchButton).not.toBeDisabled();
+    });
+  });
+});

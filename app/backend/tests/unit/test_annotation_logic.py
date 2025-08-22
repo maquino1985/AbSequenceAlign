@@ -3,7 +3,6 @@ Unit tests for complex annotation logic and object transformations.
 Focus on testing business logic without heavy mocking.
 """
 
-import pytest
 from unittest.mock import Mock
 
 from backend.models.models_v2 import DomainType

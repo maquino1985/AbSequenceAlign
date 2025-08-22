@@ -12,10 +12,12 @@
     "type-check": "tsc -b --noEmit",
     "preview": "vite preview",
     "test": "vitest",
+    "test:ci": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
+    "cypress:run:ci": "cypress run --spec 'cypress/e2e/0-health-check.cy.ts'",
     "test:e2e": "./scripts/test-e2e.sh",
     "test:e2e:prod": "./scripts/test-e2e-prod.sh"
   },

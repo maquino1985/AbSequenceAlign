@@ -2,25 +2,29 @@
 Integration tests for API endpoints with real request/response handling.
 """
 
-import pytest
 import time
-from fastapi.testclient import TestClient
 from unittest.mock import patch, Mock
-from fastapi.exceptions import RequestValidationError
+
+import pytest
+from fastapi.testclient import TestClient
+
+from backend.api.v2.blast_endpoints import router as blast_router
 from backend.api.v2.endpoints import router
+from backend.jobs.job_manager import job_manager
 from backend.models.models import (
-    NumberingScheme,
-    AlignmentMethod,
     SequenceInput,
 )
-from backend.jobs.job_manager import job_manager
-from fastapi import HTTPException
 
 
 @pytest.fixture
 def client():
     """FastAPI test client."""
-    return TestClient(router)
+    from fastapi import FastAPI
+
+    app = FastAPI()
+    app.include_router(router)
+    app.include_router(blast_router, prefix="/blast")
+    return TestClient(app)
 
 
 @pytest.fixture
@@ -94,9 +98,290 @@ class TestAPIIntegration:
             "sequences": [],  # Empty sequences
             "numbering_scheme": "invalid_scheme",
         }
-        # Test that the client raises a validation error for invalid request
-        with pytest.raises(RequestValidationError):
-            client.post("/annotate", json=invalid_request)
+        # Test that the client returns a validation error response for invalid request
+        response = client.post("/annotate", json=invalid_request)
+        assert response.status_code == 422  # Validation error status code
+        result = response.json()
+        assert "detail" in result  # Should have validation error details
+
+    @pytest.mark.skip(
+        reason="Real service test - skip for now to focus on unit tests"
+    )
+    def test_blast_databases_endpoint_real(self, client):
+        """Test BLAST databases endpoint with real service."""
+        response = client.get("/blast/databases")
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["success"] is True
+        assert "databases" in result["data"]
+        assert "public" in result["data"]["databases"]
+        # Check that we have at least one database
+        assert len(result["data"]["databases"]["public"]) > 0
+
+    @pytest.mark.skip(
+        reason="Real service test - skip for now to focus on unit tests"
+    )
+    def test_blast_organisms_endpoint_real(self, client):
+        """Test BLAST organisms endpoint with real service."""
+        response = client.get("/blast/organisms")
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["success"] is True
+        assert "organisms" in result["data"]
+        # Check that we have at least one organism
+        assert len(result["data"]["organisms"]) > 0
+        # Should include human and mouse
+        organisms = result["data"]["organisms"]
+        assert "human" in organisms or "mouse" in organisms
+
+    def test_blast_search_public_endpoint_real(self, client):
+        """Test BLAST public search endpoint with real service."""
+        # Use the verified working protein sequence
+        request_data = {
+            "query_sequence": "EVQLVESGGGLVQPGRSLRLSCAASGFTFDDYAMHWVRQAPGKGLEWVSAITWNSGHIDYADSVEGRFTISRDNAKNSLYLQMNSLRAEDTAVYYCAKVSYLSTASSLDYWGQGTLVTVSS",
+            "databases": ["swissprot"],
+            "blast_type": "blastp",
+            "evalue": 1e-10,
+            "max_target_seqs": 5,
+        }
+
+        response = client.post("/blast/search/public", json=request_data)
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["success"] is True
+        assert "results" in result["data"]
+        assert result["data"]["results"]["blast_type"] == "blastp"
+        # Should have some hits for this known antibody sequence
+        assert len(result["data"]["results"]["hits"]) > 0
+
+        # Check hit structure
+        hit = result["data"]["results"]["hits"][0]
+        assert "query_id" in hit
+        assert "subject_id" in hit
+        assert (
+            "identity" in hit
+        )  # Public BLAST uses "identity", IgBLAST uses "percent_identity"
+        assert "evalue" in hit
+        assert "bit_score" in hit
+
+    def test_blast_search_antibody_endpoint_nucleotide_real(self, client):
+        """Test BLAST antibody search endpoint with real service - nucleotide."""
+        request_data = {
+            "query_sequence": "CAGGTGCAGCTGGTGGAGTCTGGGGGAGGCGTGGTCCAGCCTGGGAGGTCCCTGAGACTCTCCTGTGCAGCCTCTGGATTCACCTTTAGCAGCTATGCCATGAGCTGGGTCCGCCAGGCTCCAGGCAAGGGGCTGGAGTGGGTGGCAGTTATATCATATGATGGAAGTAATAAATACTATGCAGACTCCGTGAAGGGCCGATTCACCATCTCCAGAGACAATTCCAAGAACACGCTGTATCTGCAAATGAACAGCCTGAGAGCCGAGGACACGGCTGTGTATTACTGTGCGAGAGA",
+            "organism": "human",
+            "blast_type": "igblastn",
+            "evalue": 1e-10,
+        }
+
+        response = client.post("/blast/search/antibody", json=request_data)
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["success"] is True
+        assert "results" in result["data"]
+        assert result["data"]["results"]["blast_type"] == "igblastn"
+        # Should have some hits for this known nucleotide sequence
+        assert len(result["data"]["results"]["hits"]) > 0
+
+        # Check hit structure for nucleotide search
+        hit = result["data"]["results"]["hits"][0]
+        assert "query_id" in hit
+        assert "subject_id" in hit
+        assert (
+            "percent_identity" in hit
+        )  # Changed from "identity" to "percent_identity"
+        assert "v_gene" in hit
+        assert hit["v_gene"] is not None  # Should have V gene assignment
+        assert (
+            "IGHV3-30" in hit["v_gene"]
+        )  # Should match expected V gene family
+        assert (
+            hit["percent_identity"] > 95.0
+        )  # Changed from "identity" to "percent_identity"
+
+    def test_blast_search_antibody_endpoint_protein_real(self, client):
+        """Test BLAST antibody search endpoint with real service - protein."""
+        request_data = {
+            "query_sequence": "EVQLVESGGGLVQPGRSLRLSCAASGFTFDDYAMHWVRQAPGKGLEWVSAITWNSGHIDYADSVEGRFTISRDNAKNSLYLQMNSLRAEDTAVYYCAKVSYLSTASSLDYWGQGTLVTVSS",
+            "organism": "human",
+            "blast_type": "igblastp",
+            "evalue": 1e-10,
+        }
+
+        response = client.post("/blast/search/antibody", json=request_data)
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["success"] is True
+        assert "results" in result["data"]
+        assert result["data"]["results"]["blast_type"] == "igblastp"
+        # Should have some hits for this known protein sequence
+        assert len(result["data"]["results"]["hits"]) > 0
+
+        # Check hit structure for protein search
+        hit = result["data"]["results"]["hits"][0]
+        assert "query_id" in hit
+        assert "subject_id" in hit
+        assert (
+            "percent_identity" in hit
+        )  # Changed from "identity" to "percent_identity"
+        assert "v_gene" in hit
+        assert hit["v_gene"] is not None  # Should have V gene assignment
+        assert (
+            "IGHV3-9" in hit["v_gene"]
+        )  # Should match expected V gene family
+        assert (
+            hit["percent_identity"] > 90.0
+        )  # Changed from "identity" to "percent_identity"
+
+        # For protein searches, D/J/C genes should be None or not present
+        # Check if fields exist, and if they do, they should be None
+        if "d_gene" in hit:
+            assert hit["d_gene"] is None
+        if "j_gene" in hit:
+            assert hit["j_gene"] is None
+        if "c_gene" in hit:
+            assert hit["c_gene"] is None
+
+    def test_blast_search_antibody_endpoint_protein_with_domain_system(
+        self, client
+    ):
+        """Test BLAST antibody search endpoint with domain system parameter."""
+        request_data = {
+            "query_sequence": "EVQLVESGGGLVQPGRSLRLSCAASGFTFDDYAMHWVRQAPGKGLEWVSAITWNSGHIDYADSVEGRFTISRDNAKNSLYLQMNSLRAEDTAVYYCAKVSYLSTASSLDYWGQGTLVTVSS",
+            "organism": "human",
+            "blast_type": "igblastp",
+            "evalue": 1e-10,
+            "domain_system": "imgt",
+        }
+
+        response = client.post("/blast/search/antibody", json=request_data)
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["success"] is True
+        assert "results" in result["data"]
+        assert result["data"]["results"]["blast_type"] == "igblastp"
+
+        # Check that framework/CDR data is present in analysis summary
+        analysis_summary = result["data"]["results"]["analysis_summary"]
+        framework_cdr_fields = [
+            k
+            for k in analysis_summary.keys()
+            if any(
+                region in k for region in ["fr1", "cdr1", "fr2", "cdr2", "fr3"]
+            )
+        ]
+        assert (
+            len(framework_cdr_fields) > 0
+        ), "Framework/CDR data should be present"
+
+    def test_blast_search_antibody_endpoint_protein_with_kabat_domain_system(
+        self, client
+    ):
+        """Test BLAST antibody search endpoint with Kabat domain system."""
+        request_data = {
+            "query_sequence": "EVQLVESGGGLVQPGRSLRLSCAASGFTFDDYAMHWVRQAPGKGLEWVSAITWNSGHIDYADSVEGRFTISRDNAKNSLYLQMNSLRAEDTAVYYCAKVSYLSTASSLDYWGQGTLVTVSS",
+            "organism": "human",
+            "blast_type": "igblastp",
+            "evalue": 1e-10,
+            "domain_system": "kabat",
+        }
+
+        response = client.post("/blast/search/antibody", json=request_data)
+
+        assert response.status_code == 200
+        result = response.json()
+        assert result["success"] is True
+        assert "results" in result["data"]
+
+        # Check that framework/CDR data is present with Kabat numbering
+        analysis_summary = result["data"]["results"]["analysis_summary"]
+        framework_cdr_fields = [
+            k
+            for k in analysis_summary.keys()
+            if any(
+                region in k for region in ["fr1", "cdr1", "fr2", "cdr2", "fr3"]
+            )
+        ]
+        assert (
+            len(framework_cdr_fields) > 0
+        ), "Framework/CDR data should be present with Kabat numbering"
+
+    def test_blast_search_antibody_endpoint_invalid_domain_system(
+        self, client
+    ):
+        """Test BLAST antibody search endpoint with invalid domain system."""
+        request_data = {
+            "query_sequence": "EVQLVESGGGLVQPGRSLRLSCAASGFTFDDYAMHWVRQAPGKGLEWVSAITWNSGHIDYADSVEGRFTISRDNAKNSLYLQMNSLRAEDTAVYYCAKVSYLSTASSLDYWGQGTLVTVSS",
+            "organism": "human",
+            "blast_type": "igblastp",
+            "evalue": 1e-10,
+            "domain_system": "invalid_system",
+        }
+
+        response = client.post("/blast/search/antibody", json=request_data)
+
+        # Should return an error for invalid domain system
+        assert response.status_code == 400
+        result = response.json()
+        assert "Unsupported domain system" in result["detail"]
+
+    def test_blast_search_antibody_endpoint_domain_system_nucleotide_ignored(
+        self, client
+    ):
+        """Test that domain system parameter is ignored for nucleotide IgBLAST."""
+        request_data = {
+            "query_sequence": "GAAGTGCAGCTGGTGGAAAGCGGCGGCGGCCTGGTGCAGCCGGGCCGCAGCCTGCGCCTGAGCTGCGCGGCGAGCGGCTTTACCTTTGATGATTATGCGATGCATTGGGTGCGCCAGGCGCCGGGCAAAGGCCTGGAGTGGGTGAGCGCGATTACCTGGAACAGCGGCCATATTGATTATGCGGATAGCGTGGAAGGCCGCTTTACCATTAGCCGCGATAACGCGAAAAACAGCCTGTATCTGCAGATGAACAGCCTGCGCGCGGAAGATACCGCGGTGTATTATTGCGCGAAAGTGAGCTATCTGAGCACCGCGAGCAGCCTGGATTATTGGGGCCAGGGCACCCTGGTGACCGTGAGCAGCGCGAGCACCAAAGGCCCGAGCGTGTTTCCGCTGGCGCCGAGCAGCAAAAGCACCAGCGGCGGCACCGCGGCGCTGGGCTGCCTGGTGAAAGATTATTTTCCGGAACCGGTGACCGTGAGCTGGAACAGCGCGCGCTGACCAGCGGCGTGCATACCTTTCCGGCGGTGCTGCAGAGCAGCGGCCTGTATAGCCTGAGCAGCGTGGTGACCGTGCCGAGCAGCAGCCTGGGCACCCAGACCTATATTTGCAACGTGAACCATAAACCGAGCAACACCAAAGTGGATAAAAAAGTGGAACCGAAAAGCTGCGATAAAACCCATACCTGCCCGCCGTGCCCGGCGCCGGAACTGCTGGGCGGCCCGAGCGTGTTTCTGTTTCCGCCGAAACCGAAAGATACCCTGATGATTAGCCGCACCCCGGAAGTGACCTGCGTGGTGGTGGATGTGAGCCATGAAGATCCGGAAGTGAAATTTAACTGGTATGTGGATGGTGTGGAAGTGCATAACGCGAAAACCAAACCGCGCGAAGAACAGTATAACAGCACCTATCGCGTGGTGAGCGTGCTGACCGTGCTGCATCAGGATTGGCTGAACGGCAAAGAATATAAATGCAAAGTGAGCAACAAAGCGCTGCCGGCGCCGATTGAAAAAACCATTAGCAAAGCGAAGGCCAGCCGCGCGAACCGCAGGTGTATACCCTGCCGCCGAGCCGCGATGAACTGACCAAAAACCAGGTGAGCCTGACCTGCCTGGTGAAAGGCTTTTATCCGAGCGATATTGCGGTGGAATGGGAAAGCAACGGCCAGCCGGAAAACAACTATAAAACCACCCCGCCGGTGCTGGATAGCGATGGCAGCTTTTTTCTGTATAGCAAACTGACCGTGGATAAAAGCCGCTGGCAGCAGGGCAACGTGTTTAGCTGCAGCGTGATGCATGAAGCGCTGCATAACCATTATACCCAGAAAAGCCTGAGCCTGAGCCCGGGCAAA",
+            "organism": "human",
+            "blast_type": "igblastn",
+            "evalue": 1e-10,
+            "domain_system": "imgt",  # Should be ignored for nucleotide
+        }
+
+        response = client.post("/blast/search/antibody", json=request_data)
+
+        # Should work normally (domain system ignored for nucleotide)
+        assert response.status_code == 200
+        result = response.json()
+        assert result["success"] is True
+        assert "results" in result["data"]
+        assert result["data"]["results"]["blast_type"] == "igblastn"
+
+    def test_blast_endpoints_error_handling_real(self, client):
+        """Test BLAST endpoints error handling with real services."""
+        # Test with invalid sequence
+        request_data = {
+            "query_sequence": "INVALID_SEQUENCE_123!@#",
+            "databases": ["swissprot"],
+            "blast_type": "blastp",
+            "evalue": 1e-10,
+            "max_target_seqs": 5,
+        }
+
+        response = client.post("/blast/search/public", json=request_data)
+
+        # Should handle invalid sequences gracefully
+        assert response.status_code in [
+            400,
+            500,
+        ]  # Either validation error or execution error
+
+        # Test with invalid organism
+        request_data = {
+            "query_sequence": "DIVLTQSPATLSLSPGERATLSCRASQDVNTAVAWYQQKPDQSPKLLIYWASTRHTGVPARFTGSGSGTDYTLTISSLQPEDEAVYFCQQHHVSPWTFGGGTKVEIK",
+            "organism": "invalid_organism",
+            "blast_type": "igblastp",
+            "evalue": 1e-10,
+        }
+
+        response = client.post("/blast/search/antibody", json=request_data)
+
+        # Should handle invalid organisms gracefully
+        assert response.status_code in [400, 500]
 
     def test_msa_upload_endpoint_structure(self, client):
         """Test MSA upload endpoint with file upload."""
@@ -226,13 +511,11 @@ class TestAPIIntegration:
         job_manager.cleanup_old_jobs(max_age_hours=0)
 
         # Try to get status of non-existent job
-        # Since we're using TestClient(router), exceptions are raised directly
-        # instead of being converted to HTTP responses
-        with pytest.raises(HTTPException) as exc_info:
-            client.get("/msa-viewer/job/nonexistent_job_id")
-
-        assert exc_info.value.status_code == 404
-        assert "Job not found" in str(exc_info.value.detail)
+        # TestClient converts exceptions to HTTP responses
+        response = client.get("/msa-viewer/job/nonexistent_job_id")
+        assert response.status_code == 404
+        result = response.json()
+        assert "Job not found" in result["detail"]
 
     def test_list_jobs_real(self, client, sample_sequences):
         """Test list jobs endpoint with real job manager."""

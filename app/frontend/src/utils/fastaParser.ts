@@ -53,7 +53,7 @@ export const parseFasta = (fastaContent: string): FastaSequence[] => {
     } else if (currentSequence) {
       // Validate sequence line contains only valid characters
       const cleanLine = trimmedLine.replace(/\s/g, '').toUpperCase();
-      const validAminoAcids = /^[ACDEFGHIKLMNPQRSTVWY]*$/;
+      const validAminoAcids = /^[ACDEFGHIKLMNPQRSTVWY]+$/;
       
       if (!validAminoAcids.test(cleanLine)) {
         const invalidChars = [...cleanLine].filter(char => !/[ACDEFGHIKLMNPQRSTVWY]/.test(char));
@@ -93,30 +93,65 @@ export const generateFasta = (sequences: FastaSequence[]): string => {
     .join('\n\n');
 };
 
-export const validateSequence = (sequence: string): { isValid: boolean; errors: string[] } => {
+export const validateSequence = (sequence: string, sequenceType: 'protein' | 'nucleotide' = 'protein'): { isValid: boolean; errors: string[]; cleanSequence: string } => {
   const errors: string[] = [];
   
   // Check for empty sequence
   if (!sequence.trim()) {
     errors.push('Sequence cannot be empty');
-    return { isValid: false, errors };
+    return { isValid: false, errors, cleanSequence: '' };
   }
   
-  // Clean sequence
-  const cleanSeq = sequence.replace(/\s/g, '').toUpperCase();
+  // Clean sequence - remove all whitespace (spaces, newlines, tabs) and convert to uppercase
+  const cleanSeq = sequence.replace(/\s+/g, '').toUpperCase();
   
-  // Check for valid amino acids
-  const validAminoAcids = new Set('ACDEFGHIKLMNPQRSTVWY');
-  const invalidChars = [...cleanSeq].filter(char => !validAminoAcids.has(char));
-  
-  if (invalidChars.length > 0) {
-    errors.push(`Invalid amino acids found: ${[...new Set(invalidChars)].join(', ')}`);
+  if (!cleanSeq) {
+    errors.push('Sequence cannot be empty after cleaning');
+    return { isValid: false, errors, cleanSequence: '' };
   }
   
-  // Check minimum length
-  if (cleanSeq.length < 15) {
-    errors.push(`Sequence too short (${cleanSeq.length} AA). Minimum 15 AA required.`);
+  if (sequenceType === 'protein') {
+    // Check for valid amino acids
+    const validAminoAcids = new Set('ACDEFGHIKLMNPQRSTVWY');
+    const invalidChars = [...cleanSeq].filter(char => !validAminoAcids.has(char));
+    
+    if (invalidChars.length > 0) {
+      errors.push(`Invalid amino acids found: ${[...new Set(invalidChars)].join(', ')}`);
+    }
+    
+    // Check minimum length for proteins
+    if (cleanSeq.length < 15) {
+      errors.push(`Protein sequence too short (${cleanSeq.length} AA). Minimum 15 AA required.`);
+    }
+  } else {
+    // Nucleotide validation - support DNA (ATGC), RNA (ATGCU), and ambiguous (N)
+    const validNucleotides = new Set('ATGCUN');
+    const invalidChars = [...cleanSeq].filter(char => !validNucleotides.has(char));
+    
+    if (invalidChars.length > 0) {
+      errors.push(`Invalid nucleotides found: ${[...new Set(invalidChars)].join(', ')}`);
+    }
+    
+    // Check minimum length for nucleotides
+    if (cleanSeq.length < 30) {
+      errors.push(`Nucleotide sequence too short (${cleanSeq.length} nt). Minimum 30 nt required.`);
+    }
   }
   
-  return { isValid: errors.length === 0, errors };
+  return { isValid: errors.length === 0, errors, cleanSequence: cleanSeq };
+};
+
+// Helper function to determine sequence type from BLAST type
+export const getSequenceTypeFromBlastType = (blastType: string): 'protein' | 'nucleotide' => {
+  const proteinTypes = ['blastp', 'blastx', 'tblastn', 'igblastp'];
+  const nucleotideTypes = ['blastn', 'tblastx', 'igblastn'];
+  
+  if (proteinTypes.includes(blastType.toLowerCase())) {
+    return 'protein';
+  } else if (nucleotideTypes.includes(blastType.toLowerCase())) {
+    return 'nucleotide';
+  }
+  
+  // Default to protein
+  return 'protein';
 };

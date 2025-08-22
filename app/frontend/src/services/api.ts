@@ -11,6 +11,13 @@ import type {
   MSAAnnotationResultV2,
   MSAJobStatusV2
 } from '../types/apiV2';
+import type {
+  DatabaseDiscoveryResponse,
+  DatabaseValidationResponse,
+  DatabaseSuggestionResponse,
+  IgBlastRequest,
+  IgBlastResponse
+} from '../types/database';
 
 // Configure axios defaults
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -57,6 +64,39 @@ export const api = {
     return response.data;
   },
 
+  // Database Discovery Methods
+  getIgBlastDatabases: async (): Promise<DatabaseDiscoveryResponse> => {
+    const response = await apiClient.get('/database/databases/igblast');
+    return response.data;
+  },
+
+  getBlastDatabases: async (): Promise<APIResponse<
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any>> => {
+    const response = await apiClient.get('/blast/databases');
+    return response.data;
+  },
+
+  validateDatabasePath: async (dbPath: string): Promise<DatabaseValidationResponse> => {
+    const response = await apiClient.get('/database/databases/validate', {
+      params: { path: dbPath }
+    });
+    return response.data;
+  },
+
+  getDatabaseSuggestion: async (organism: string, geneType: string): Promise<DatabaseSuggestionResponse> => {
+    const response = await apiClient.get('/database/databases/suggestions', {
+      params: { organism, gene_type: geneType }
+    });
+    return response.data;
+  },
+
+  // IgBLAST Execution
+  executeIgBlast: async (request: IgBlastRequest): Promise<IgBlastResponse> => {
+    const response = await apiClient.post('/database/igblast/execute', request);
+    return response.data;
+  },
+
   // V2 Annotate sequences (structured)
   annotateSequencesV2: async (
     request: import('../types/apiV2').AnnotationRequestV2
@@ -100,6 +140,36 @@ export const api = {
 
   listJobs: async (): Promise<APIResponse<{ jobs: MSAJobStatusV2[] }>> => {
     const response = await apiClient.get('/msa-viewer/jobs');
+    return response.data;
+  },
+
+  // BLAST Methods
+  searchPublicDatabases: async (request: Record<string, unknown>): Promise<APIResponse<Record<string, unknown>>> => {
+    const response = await apiClient.post('/blast/search/public', request);
+    return response.data;
+  },
+
+  searchInternalDatabase: async (request: Record<string, unknown>): Promise<APIResponse<Record<string, unknown>>> => {
+    const response = await apiClient.post('/blast/search/internal', request);
+    return response.data;
+  },
+
+  analyzeAntibodySequence: async (request: Record<string, unknown>): Promise<APIResponse<Record<string, unknown>>> => {
+    const response = await apiClient.post('/blast/search/antibody', request);
+    return response.data;
+  },
+
+  getSupportedOrganisms: async (): Promise<APIResponse<{ organisms: string[] }>> => {
+    const response = await apiClient.get('/blast/organisms');
+    return response.data;
+  },
+
+  uploadSequencesForBlast: async (data: FormData): Promise<APIResponse<Record<string, unknown>>> => {
+    const response = await apiClient.post('/blast/upload', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 };

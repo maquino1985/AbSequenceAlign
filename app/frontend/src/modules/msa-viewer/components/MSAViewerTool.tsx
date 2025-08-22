@@ -23,6 +23,9 @@ import { NUMBERING_SCHEMES } from '../../../utils/numberingSchemes';
 import type { AlignmentMethod } from '../../../types/api';
 import type { MSAResultV2, MSAAnnotationResultV2, MSAJobStatusV2 } from '../../../types/apiV2';
 
+// Constants
+const POLL_TIMEOUT_COUNT = 150; // Maximum 5 minutes of polling (150 * 2s)
+
 // Define region type for MSA
 interface MSARegion {
   id: string;
@@ -121,14 +124,14 @@ export const MSAViewerTool: React.FC = () => {
     if (!msaState.jobId) return;
 
     let pollCount = 0;
-    const maxPolls = 150; // Maximum 5 minutes of polling (150 * 2s)
+    // const maxPolls = 150; // Maximum 5 minutes of polling (150 * 2s)
 
     const pollJobStatus = async () => {
       try {
         pollCount++;
         
         // Stop polling after max attempts
-        if (pollCount > maxPolls) {
+        if (pollCount > POLL_TIMEOUT_COUNT) {
           setMsaState(prev => ({
             ...prev,
             error: 'Job polling timeout. The job may still be processing. Please try refreshing the page.',

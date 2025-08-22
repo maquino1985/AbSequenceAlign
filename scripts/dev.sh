@@ -121,7 +121,6 @@ if ! $CONDA_CMD env list | grep -q "AbSequenceAlign"; then
                     # Unknown shell, do not source anything
                     ;;
             esac
-        fi
         $CONDA_CMD env create -f environment.yml || $CONDA_CMD env update -f environment.yml
     )
     (cd app/frontend && npm install)
